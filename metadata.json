@@ -1,0 +1,6 @@
+{
+  "name": "Keyboard Pro – كيبورد احترافي",
+  "description": "تطبيق لوحة مفاتيح حقيقي لنظام Android يدعم العربية والإنجليزية، الحافظة الدائمة، التنبؤ، الإيموجي، الزخرفة، والكتابة بالصوت.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
