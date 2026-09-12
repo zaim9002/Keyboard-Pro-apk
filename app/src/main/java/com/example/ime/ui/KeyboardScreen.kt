@@ -18,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
@@ -73,6 +74,7 @@ fun KeyboardScreen(
     arabicNumerals: Boolean = true,
     onTextInput: (String) -> Unit,
     onDelete: () -> Unit,
+    onDeleteAll: () -> Unit = {},
     onEnter: () -> Unit,
     onSpace: () -> Unit,
     onSwitchLanguage: () -> Unit,
@@ -334,11 +336,14 @@ fun KeyboardScreen(
                                             actionIcon = actionIcon,
                                             onTextInput = onTextInput,
                                             onDelete = onDelete,
+                                            onDeleteAll = onDeleteAll,
                                             onSpace = onSpace,
                                             onEnter = onEnter,
                                             onSwitchMode = { layoutMode = LayoutMode.SYMBOLS_1 },
                                             onSwitchLanguage = onSwitchLanguage,
                                             onLongPressLanguage = { showLanguagePicker = true },
+                                            onOpenClipboard = { activePanel = KeyboardPanel.CLIPBOARD },
+                                            onOpenEmoji = { activePanel = KeyboardPanel.EMOJI },
                                             onToggleTashkeel = { showTashkeelRow = !showTashkeelRow },
                                             onMoveCursor = onMoveCursor,
                                             onLongPressKey = { activePopupKey = it }
@@ -553,22 +558,49 @@ private fun ArabicKeyboardLayout(
     actionIcon: androidx.compose.ui.graphics.vector.ImageVector,
     onTextInput: (String) -> Unit,
     onDelete: () -> Unit,
+    onDeleteAll: () -> Unit,
     onSpace: () -> Unit,
     onEnter: () -> Unit,
     onSwitchMode: () -> Unit,
     onSwitchLanguage: () -> Unit,
     onLongPressLanguage: (() -> Unit)? = null,
+    onOpenClipboard: () -> Unit,
+    onOpenEmoji: () -> Unit,
     onToggleTashkeel: () -> Unit,
     onMoveCursor: (Int) -> Unit,
     onLongPressKey: (KeyModel) -> Unit
 ) {
-    // Row 1
+    // Quick Shortcut Row (👑 💋 ة ؤ ء ـ ئ ى ڷ 😂 خاص)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 1.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        for (key in KeyboardLayouts.arabicQuickRow) {
+            KeyButton(
+                text = key.primaryText,
+                height = 36.dp,
+                fontSize = if (key.primaryText.length > 2) 11.sp else 16.sp,
+                colorScheme = colorScheme,
+                hapticEnabled = hapticEnabled,
+                soundEnabled = soundEnabled,
+                modifier = Modifier.weight(if (key.primaryText.length > 2) 1.25f else 1f),
+                onLongClick = if (key.popupOptions.isNotEmpty()) { { onLongPressKey(key) } } else null
+            ) {
+                onTextInput(key.primaryText)
+            }
+        }
+    }
+
+    // Row 1 (ض ص ق ف غ ع ه خ ح ج)
     Row(modifier = Modifier.fillMaxWidth()) {
         for (key in KeyboardLayouts.arabicRow1) {
             KeyButton(
                 text = key.primaryText,
                 secondaryText = key.secondaryText,
                 height = keyHeight,
+                fontSize = 20.sp,
                 colorScheme = colorScheme,
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
@@ -580,12 +612,14 @@ private fun ArabicKeyboardLayout(
         }
     }
 
-    // Row 2
+    // Row 2 (ش س ي ب ل ا ت ن م ك)
     Row(modifier = Modifier.fillMaxWidth()) {
         for (key in KeyboardLayouts.arabicRow2) {
             KeyButton(
                 text = key.primaryText,
+                secondaryText = key.secondaryText,
                 height = keyHeight,
+                fontSize = 20.sp,
                 colorScheme = colorScheme,
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
@@ -597,27 +631,14 @@ private fun ArabicKeyboardLayout(
         }
     }
 
-    // Row 3
+    // Row 3 (ظ ط ذ د ز ر و ة ث + Delete on the right!)
     Row(modifier = Modifier.fillMaxWidth()) {
-        // Tashkeel trigger button
-        KeyButton(
-            text = "تشكيل َ",
-            isSpecial = true,
-            fontSize = 11.sp,
-            height = keyHeight,
-            colorScheme = colorScheme,
-            hapticEnabled = hapticEnabled,
-            soundEnabled = soundEnabled,
-            modifier = Modifier.weight(1.3f)
-        ) {
-            onToggleTashkeel()
-        }
-
-        // Arabic Letters
-        for (key in KeyboardLayouts.arabicRow3.filter { it.type == KeyType.CHARACTER }) {
+        for (key in KeyboardLayouts.arabicRow3) {
             KeyButton(
                 text = key.primaryText,
+                secondaryText = key.secondaryText,
                 height = keyHeight,
+                fontSize = 20.sp,
                 colorScheme = colorScheme,
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
@@ -628,40 +649,183 @@ private fun ArabicKeyboardLayout(
             }
         }
 
-        // Backspace
+        // Repeating Delete Button on the Right
+        RepeatingDeleteKeyButton(
+            height = keyHeight,
+            colorScheme = colorScheme,
+            hapticEnabled = hapticEnabled,
+            soundEnabled = soundEnabled,
+            modifier = Modifier.weight(1.3f),
+            onDelete = onDelete,
+            onDeleteAll = onDeleteAll
+        )
+    }
+
+    // Row 4: Bottom control row matching screenshot
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // 123!#()
         KeyButton(
-            text = "⌫",
+            text = "123!#()",
             isSpecial = true,
-            fontSize = 18.sp,
+            fontSize = 11.5.sp,
             height = keyHeight,
             colorScheme = colorScheme,
             hapticEnabled = hapticEnabled,
             soundEnabled = soundEnabled,
             modifier = Modifier.weight(1.3f)
         ) {
-            onDelete()
+            onSwitchMode()
+        }
+
+        // Clipboard shortcut icon
+        KeyButton(
+            text = "📋",
+            isSpecial = true,
+            fontSize = 15.sp,
+            height = keyHeight,
+            colorScheme = colorScheme,
+            hapticEnabled = hapticEnabled,
+            soundEnabled = soundEnabled,
+            modifier = Modifier.weight(0.9f)
+        ) {
+            onOpenClipboard()
+        }
+
+        // Dash key
+        KeyButton(
+            text = "—",
+            height = keyHeight,
+            fontSize = 16.sp,
+            colorScheme = colorScheme,
+            hapticEnabled = hapticEnabled,
+            soundEnabled = soundEnabled,
+            modifier = Modifier.weight(0.8f)
+        ) {
+            onTextInput("—")
+        }
+
+        // Spacebar with "عربي اساسي" and gesture
+        var totalDragX by remember { mutableStateOf(0f) }
+        Box(
+            modifier = Modifier
+                .weight(3.6f)
+                .height(keyHeight)
+                .padding(horizontal = 2.dp, vertical = 2.5.dp)
+                .shadow(
+                    elevation = 1.dp,
+                    shape = RoundedCornerShape(8.dp),
+                    ambientColor = Color.Black.copy(alpha = 0.35f),
+                    spotColor = Color.Black.copy(alpha = 0.35f)
+                )
+                .clip(RoundedCornerShape(8.dp))
+                .background(colorScheme.keyBackground)
+                .pointerInput(Unit) {
+                    detectDragGestures(
+                        onDrag = { change, dragAmount ->
+                            change.consume()
+                            totalDragX += dragAmount.x
+                            if (totalDragX > 35f) {
+                                onMoveCursor(1)
+                                totalDragX = 0f
+                            } else if (totalDragX < -35f) {
+                                onMoveCursor(-1)
+                                totalDragX = 0f
+                            }
+                        },
+                        onDragEnd = { totalDragX = 0f }
+                    )
+                }
+                .clickable { onSpace() },
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "عربي اساسي",
+                    color = colorScheme.keyText.copy(alpha = 0.7f),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1
+                )
+                Text(
+                    text = "└───┘",
+                    color = colorScheme.keyText.copy(alpha = 0.4f),
+                    fontSize = 9.sp,
+                    lineHeight = 9.sp
+                )
+            }
+        }
+
+        // Period
+        KeyButton(
+            text = ".",
+            height = keyHeight,
+            fontSize = 18.sp,
+            colorScheme = colorScheme,
+            hapticEnabled = hapticEnabled,
+            soundEnabled = soundEnabled,
+            modifier = Modifier.weight(0.8f)
+        ) {
+            onTextInput(".")
+        }
+
+        // Question mark
+        KeyButton(
+            text = "؟",
+            height = keyHeight,
+            fontSize = 18.sp,
+            colorScheme = colorScheme,
+            hapticEnabled = hapticEnabled,
+            soundEnabled = soundEnabled,
+            modifier = Modifier.weight(0.8f)
+        ) {
+            onTextInput("؟")
+        }
+
+        // Emoji shortcut icon
+        KeyButton(
+            text = "😊",
+            isSpecial = true,
+            fontSize = 16.sp,
+            height = keyHeight,
+            colorScheme = colorScheme,
+            hapticEnabled = hapticEnabled,
+            soundEnabled = soundEnabled,
+            modifier = Modifier.weight(0.9f)
+        ) {
+            onOpenEmoji()
+        }
+
+        // Enter key
+        Box(
+            modifier = Modifier
+                .weight(1.25f)
+                .height(keyHeight)
+                .padding(horizontal = 2.dp, vertical = 2.5.dp)
+                .shadow(
+                    elevation = 1.dp,
+                    shape = RoundedCornerShape(8.dp),
+                    ambientColor = Color.Black.copy(alpha = 0.35f),
+                    spotColor = Color.Black.copy(alpha = 0.35f)
+                )
+                .clip(RoundedCornerShape(8.dp))
+                .background(colorScheme.specialKeyBackground)
+                .clickable { onEnter() },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = actionIcon,
+                contentDescription = "إدخال",
+                tint = colorScheme.specialKeyText,
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
-
-    // Row 4: Bottom row
-    BottomControlRow(
-        modeLabel = "١٢٣",
-        langLabel = "🌐",
-        spaceLabel = "العربية",
-        commaLabel = "،",
-        colorScheme = colorScheme,
-        keyHeight = keyHeight,
-        hapticEnabled = hapticEnabled,
-        soundEnabled = soundEnabled,
-        actionIcon = actionIcon,
-        onSwitchMode = onSwitchMode,
-        onSwitchLanguage = onSwitchLanguage,
-        onLongPressLanguage = onLongPressLanguage,
-        onSpace = onSpace,
-        onEnter = onEnter,
-        onMoveCursor = onMoveCursor,
-        onTextInput = onTextInput
-    )
 }
 
 @Composable

@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ime.theme.KeyboardColorScheme
@@ -73,7 +74,47 @@ fun KeyboardToolbar(
             }
         }
 
-        // Toolbar Action Items
+        // Settings Gear on far left (as in screenshot)
+        ToolbarIconButton(
+            icon = Icons.Default.Settings,
+            tooltip = "إعدادات",
+            isSelected = false,
+            colorScheme = colorScheme,
+            onClick = onOpenSettings
+        )
+
+        // Language indicator button (ع / EN)
+        val isArabic = currentLanguage == "ar"
+        val langShort = if (isArabic) "ع" else currentLanguage.uppercase()
+        Box(
+            modifier = Modifier
+                .height(34.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(colorScheme.keyBackground.copy(alpha = 0.5f))
+                .clickable { onSwitchLanguage() }
+                .padding(horizontal = 10.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = langShort,
+                color = colorScheme.keyText,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        // Translate
+        ToolbarIconButton(
+            icon = Icons.Default.Translate,
+            tooltip = "ترجمة فورية",
+            isSelected = activePanel == KeyboardPanel.TRANSLATE,
+            colorScheme = colorScheme,
+            onClick = {
+                onPanelSelect(if (activePanel == KeyboardPanel.TRANSLATE) KeyboardPanel.NONE else KeyboardPanel.TRANSLATE)
+            }
+        )
+
+        // Clipboard
         ToolbarIconButton(
             icon = Icons.Default.ContentPaste,
             tooltip = "الحافظة",
@@ -84,46 +125,7 @@ fun KeyboardToolbar(
             }
         )
 
-        ToolbarIconButton(
-            icon = Icons.Default.Mood,
-            tooltip = "إيموجي",
-            isSelected = activePanel == KeyboardPanel.EMOJI,
-            colorScheme = colorScheme,
-            onClick = {
-                onPanelSelect(if (activePanel == KeyboardPanel.EMOJI) KeyboardPanel.NONE else KeyboardPanel.EMOJI)
-            }
-        )
-
-        ToolbarIconButton(
-            icon = Icons.Default.AutoAwesome,
-            tooltip = "زخرفة",
-            isSelected = activePanel == KeyboardPanel.DECORATIONS,
-            colorScheme = colorScheme,
-            onClick = {
-                onPanelSelect(if (activePanel == KeyboardPanel.DECORATIONS) KeyboardPanel.NONE else KeyboardPanel.DECORATIONS)
-            }
-        )
-
-        ToolbarIconButton(
-            icon = Icons.Default.Palette,
-            tooltip = "ملصقات",
-            isSelected = activePanel == KeyboardPanel.STICKERS,
-            colorScheme = colorScheme,
-            onClick = {
-                onPanelSelect(if (activePanel == KeyboardPanel.STICKERS) KeyboardPanel.NONE else KeyboardPanel.STICKERS)
-            }
-        )
-
-        ToolbarIconButton(
-            icon = Icons.Default.Gif,
-            tooltip = "GIF",
-            isSelected = activePanel == KeyboardPanel.GIFS,
-            colorScheme = colorScheme,
-            onClick = {
-                onPanelSelect(if (activePanel == KeyboardPanel.GIFS) KeyboardPanel.NONE else KeyboardPanel.GIFS)
-            }
-        )
-
+        // Voice
         ToolbarIconButton(
             icon = Icons.Default.Mic,
             tooltip = "كتابة بالصوت",
@@ -134,26 +136,51 @@ fun KeyboardToolbar(
             }
         )
 
+        // Emoji
         ToolbarIconButton(
-            icon = Icons.Default.Translate,
-            tooltip = "ترجمة",
-            isSelected = activePanel == KeyboardPanel.TRANSLATE,
+            icon = Icons.Default.Mood,
+            tooltip = "إيموجي",
+            isSelected = activePanel == KeyboardPanel.EMOJI,
             colorScheme = colorScheme,
             onClick = {
-                onPanelSelect(if (activePanel == KeyboardPanel.TRANSLATE) KeyboardPanel.NONE else KeyboardPanel.TRANSLATE)
+                onPanelSelect(if (activePanel == KeyboardPanel.EMOJI) KeyboardPanel.NONE else KeyboardPanel.EMOJI)
             }
         )
 
+        // Decorations / AI
         ToolbarIconButton(
-            icon = Icons.Default.MenuBook,
-            tooltip = "قاموس",
-            isSelected = activePanel == KeyboardPanel.DICTIONARY,
+            icon = Icons.Default.AutoAwesome,
+            tooltip = "زخرفة وذكاء اصطناعي",
+            isSelected = activePanel == KeyboardPanel.DECORATIONS,
             colorScheme = colorScheme,
             onClick = {
-                onPanelSelect(if (activePanel == KeyboardPanel.DICTIONARY) KeyboardPanel.NONE else KeyboardPanel.DICTIONARY)
+                onPanelSelect(if (activePanel == KeyboardPanel.DECORATIONS) KeyboardPanel.NONE else KeyboardPanel.DECORATIONS)
             }
         )
 
+        // Stickers
+        ToolbarIconButton(
+            icon = Icons.Default.Palette,
+            tooltip = "ملصقات",
+            isSelected = activePanel == KeyboardPanel.STICKERS,
+            colorScheme = colorScheme,
+            onClick = {
+                onPanelSelect(if (activePanel == KeyboardPanel.STICKERS) KeyboardPanel.NONE else KeyboardPanel.STICKERS)
+            }
+        )
+
+        // GIF
+        ToolbarIconButton(
+            icon = Icons.Default.Gif,
+            tooltip = "GIF",
+            isSelected = activePanel == KeyboardPanel.GIFS,
+            colorScheme = colorScheme,
+            onClick = {
+                onPanelSelect(if (activePanel == KeyboardPanel.GIFS) KeyboardPanel.NONE else KeyboardPanel.GIFS)
+            }
+        )
+
+        // Edit
         ToolbarIconButton(
             icon = Icons.Default.Edit,
             tooltip = "تحديد ومؤشر",
@@ -162,39 +189,6 @@ fun KeyboardToolbar(
             onClick = {
                 onPanelSelect(if (activePanel == KeyboardPanel.EDITING) KeyboardPanel.NONE else KeyboardPanel.EDITING)
             }
-        )
-
-        // Language indicator button
-        val langLabel = remember(currentLanguage) {
-            try {
-                com.example.KeyboardProApp.instance.languageManager.getLanguageInfo(currentLanguage)?.let {
-                    "${it.flag} ${it.id.uppercase()}"
-                } ?: if (currentLanguage == "ar") "🇸🇦 AR" else "🌐 ${currentLanguage.uppercase()}"
-            } catch (e: Throwable) {
-                if (currentLanguage == "ar") "🇸🇦 AR" else "🌐 ${currentLanguage.uppercase()}"
-            }
-        }
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(8.dp))
-                .background(colorScheme.keyBackground)
-                .clickable { onSwitchLanguage() }
-                .padding(horizontal = 8.dp, vertical = 6.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = langLabel,
-                color = colorScheme.keyText,
-                fontSize = 11.sp
-            )
-        }
-
-        ToolbarIconButton(
-            icon = Icons.Default.Settings,
-            tooltip = "إعدادات",
-            isSelected = false,
-            colorScheme = colorScheme,
-            onClick = onOpenSettings
         )
     }
 }

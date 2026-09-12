@@ -169,10 +169,10 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
                 android.view.ViewGroup.LayoutParams.MATCH_PARENT,
                 android.view.ViewGroup.LayoutParams.WRAP_CONTENT
             )
-            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnLifecycleDestroyed(lifecycle))
             setViewTreeLifecycleOwner(this@KeyboardInputMethodService)
             setViewTreeViewModelStoreOwner(this@KeyboardInputMethodService)
             setViewTreeSavedStateRegistryOwner(this@KeyboardInputMethodService)
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
         }
 
         composeView.setContent {
@@ -210,6 +210,7 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
                 arabicNumerals = arabicNumerals,
                 onTextInput = { text -> handleTextInput(text) },
                 onDelete = { handleDelete() },
+                onDeleteAll = { handleDeleteAll() },
                 onEnter = { handleEnter() },
                 onSpace = { handleSpace() },
                 onSwitchLanguage = {
@@ -340,6 +341,23 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
             updateSuggestions()
         } catch (e: Throwable) {
             Log.e("KeyboardIME", "Error in handleDelete", e)
+        }
+    }
+
+    private fun handleDeleteAll() {
+        try {
+            val ic = currentInputConnection ?: return
+            val selectedText = ic.getSelectedText(0)
+            if (!selectedText.isNullOrEmpty()) {
+                ic.commitText("", 1)
+            } else {
+                // Delete line or surroundings
+                ic.deleteSurroundingText(2500, 2500)
+            }
+            currentWordBuffer.clear()
+            updateSuggestions()
+        } catch (e: Throwable) {
+            Log.e("KeyboardIME", "Error in handleDeleteAll", e)
         }
     }
 

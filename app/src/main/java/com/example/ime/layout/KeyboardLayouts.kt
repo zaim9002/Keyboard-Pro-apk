@@ -25,47 +25,56 @@ object KeyboardLayouts {
 
     val arabicTashkeel = listOf("َ", "ً", "ُ", "ٌ", "ِ", "ٍ", "ْ", "ّ", "ٰ", "ـ")
 
+    val arabicQuickRow = listOf(
+        KeyModel("👑"),
+        KeyModel("💋"),
+        KeyModel("ة", popupOptions = listOf("ه")),
+        KeyModel("ؤ", popupOptions = listOf("و")),
+        KeyModel("ء", popupOptions = listOf("ئ", "ؤ", "أ", "إ", "آ")),
+        KeyModel("ـ"),
+        KeyModel("ئ", popupOptions = listOf("ي", "ى")),
+        KeyModel("ى", popupOptions = listOf("ي")),
+        KeyModel("ڷ", popupOptions = listOf("ل", "لا")),
+        KeyModel("😂"),
+        KeyModel("خاص")
+    )
+
     val arabicRow1 = listOf(
-        KeyModel("ض", secondaryText = "١", popupOptions = listOf("١", "1")),
-        KeyModel("ص", secondaryText = "٢", popupOptions = listOf("٢", "2", "ض")),
-        KeyModel("ث", secondaryText = "٣", popupOptions = listOf("٣", "3")),
-        KeyModel("ق", secondaryText = "٤", popupOptions = listOf("٤", "4")),
-        KeyModel("ف", secondaryText = "٥", popupOptions = listOf("٥", "5", "ڤ")),
-        KeyModel("غ", secondaryText = "٦", popupOptions = listOf("٦", "6")),
-        KeyModel("ع", secondaryText = "٧", popupOptions = listOf("٧", "7", "غ")),
-        KeyModel("ه", secondaryText = "٨", popupOptions = listOf("٨", "8", "ة", "هـ")),
-        KeyModel("خ", secondaryText = "٩", popupOptions = listOf("٩", "9")),
-        KeyModel("ح", secondaryText = "٠", popupOptions = listOf("٠", "0", "خ", "ج")),
-        KeyModel("ج", popupOptions = listOf("چ", "ح", "خ")),
-        KeyModel("د", popupOptions = listOf("ذ"))
+        KeyModel("ض", secondaryText = "¨", popupOptions = listOf("١", "1", "ص")),
+        KeyModel("ص", secondaryText = "¨", popupOptions = listOf("٢", "2", "ض")),
+        KeyModel("ق", secondaryText = "¨", popupOptions = listOf("٣", "3")),
+        KeyModel("ف", secondaryText = "¨", popupOptions = listOf("٤", "4", "ڤ")),
+        KeyModel("غ", secondaryText = "¨", popupOptions = listOf("٥", "5")),
+        KeyModel("ع", secondaryText = "¨", popupOptions = listOf("٦", "6", "غ")),
+        KeyModel("ه", secondaryText = "¨", popupOptions = listOf("٧", "7", "ة", "هـ")),
+        KeyModel("خ", secondaryText = "¨", popupOptions = listOf("٨", "8")),
+        KeyModel("ح", secondaryText = "¨", popupOptions = listOf("٩", "9", "خ", "ج")),
+        KeyModel("ج", secondaryText = "¨", popupOptions = listOf("٠", "0", "چ", "ح"))
     )
 
     val arabicRow2 = listOf(
-        KeyModel("ش", popupOptions = listOf("س")),
-        KeyModel("س", popupOptions = listOf("ش")),
-        KeyModel("ي", popupOptions = listOf("ى", "ئ")),
-        KeyModel("ب", popupOptions = listOf("پ")),
-        KeyModel("ل", popupOptions = listOf("لا", "لأ", "لإ", "لآ")),
-        KeyModel("ا", popupOptions = listOf("أ", "إ", "آ", "ء", "ٱ")),
-        KeyModel("ت", popupOptions = listOf("ة", "ث")),
-        KeyModel("ن"),
-        KeyModel("م"),
-        KeyModel("ك", popupOptions = listOf("گ", "ڨ")),
-        KeyModel("ط", popupOptions = listOf("ظ"))
+        KeyModel("ش", secondaryText = "¨", popupOptions = listOf("س")),
+        KeyModel("س", secondaryText = "¨", popupOptions = listOf("ش")),
+        KeyModel("ي", secondaryText = "¨", popupOptions = listOf("ى", "ئ")),
+        KeyModel("ب", secondaryText = "¨", popupOptions = listOf("پ", "ـ")),
+        KeyModel("ل", secondaryText = "¨", popupOptions = listOf("لا", "لأ", "لإ", "لآ")),
+        KeyModel("ا", secondaryText = "¨", popupOptions = listOf("أ", "إ", "آ", "ء", "ٱ")),
+        KeyModel("ت", secondaryText = "¨", popupOptions = listOf("ة", "ث")),
+        KeyModel("ن", secondaryText = "¨"),
+        KeyModel("م", secondaryText = "¨"),
+        KeyModel("ك", secondaryText = "¨", popupOptions = listOf("گ", "ڨ"))
     )
 
     val arabicRow3 = listOf(
-        KeyModel("تشكيل", type = KeyType.TASHKEEL, weight = 1.3f),
-        KeyModel("ئ"),
-        KeyModel("ء"),
-        KeyModel("ؤ"),
-        KeyModel("ر", popupOptions = listOf("ز", "ژ")),
-        KeyModel("ى", popupOptions = listOf("ي")),
-        KeyModel("ة", popupOptions = listOf("ه")),
-        KeyModel("و", popupOptions = listOf("ؤ")),
-        KeyModel("ز", popupOptions = listOf("ژ")),
-        KeyModel("ظ", popupOptions = listOf("ط")),
-        KeyModel("حذف", type = KeyType.BACKSPACE, weight = 1.3f)
+        KeyModel("ظ", secondaryText = "¨", popupOptions = listOf("ط")),
+        KeyModel("ط", secondaryText = "¨", popupOptions = listOf("ظ")),
+        KeyModel("ذ", secondaryText = "¨", popupOptions = listOf("د")),
+        KeyModel("د", secondaryText = "¨", popupOptions = listOf("ذ")),
+        KeyModel("ز", secondaryText = "¨", popupOptions = listOf("ژ", "ر")),
+        KeyModel("ر", secondaryText = "¨", popupOptions = listOf("ز", "ژ")),
+        KeyModel("و", secondaryText = "¨", popupOptions = listOf("ؤ")),
+        KeyModel("ة", secondaryText = "¨", popupOptions = listOf("ه")),
+        KeyModel("ث", secondaryText = "¨", popupOptions = listOf("ت"))
     )
 
     val englishRow1 = listOf(

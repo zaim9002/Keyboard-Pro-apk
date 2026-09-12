@@ -3,14 +3,18 @@ package com.example.ime
 import android.inputmethodservice.InputMethodService
 import android.os.Bundle
 import android.util.Log
+import android.view.Window
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 
 abstract class ComposeInputMethodService : InputMethodService(),
     LifecycleOwner,
@@ -37,58 +41,81 @@ abstract class ComposeInputMethodService : InputMethodService(),
         dispatchLifecycleEvent(Lifecycle.Event.ON_CREATE)
     }
 
+    override fun onConfigureWindow(win: Window, isFullscreen: Boolean, isCandidatesOnly: Boolean) {
+        super.onConfigureWindow(win, isFullscreen, isCandidatesOnly)
+        try {
+            win.decorView.let { decorView ->
+                decorView.setViewTreeLifecycleOwner(this)
+                decorView.setViewTreeViewModelStoreOwner(this)
+                decorView.setViewTreeSavedStateRegistryOwner(this)
+            }
+        } catch (e: Throwable) {
+            Log.w("ComposeIME", "onConfigureWindow decorView setup error: ${e.message}")
+        }
+    }
+
     override fun onStartInput(attribute: android.view.inputmethod.EditorInfo?, restarting: Boolean) {
         super.onStartInput(attribute, restarting)
-        if (lifecycleRegistry.currentState == Lifecycle.State.CREATED) {
-            dispatchLifecycleEvent(Lifecycle.Event.ON_START)
-        }
+        ensureStarted()
     }
 
     override fun onStartInputView(info: android.view.inputmethod.EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
-        if (lifecycleRegistry.currentState == Lifecycle.State.CREATED) {
-            dispatchLifecycleEvent(Lifecycle.Event.ON_START)
-        }
-        dispatchLifecycleEvent(Lifecycle.Event.ON_RESUME)
+        ensureResumed()
     }
 
     override fun onWindowShown() {
         super.onWindowShown()
-        if (lifecycleRegistry.currentState == Lifecycle.State.CREATED) {
-            dispatchLifecycleEvent(Lifecycle.Event.ON_START)
-        }
-        if (lifecycleRegistry.currentState.isAtLeast(Lifecycle.State.STARTED)) {
-            dispatchLifecycleEvent(Lifecycle.Event.ON_RESUME)
-        }
+        ensureResumed()
     }
 
     override fun onWindowHidden() {
         super.onWindowHidden()
-        if (lifecycleRegistry.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
-            dispatchLifecycleEvent(Lifecycle.Event.ON_PAUSE)
-        }
+        ensurePaused()
     }
 
     override fun onFinishInputView(finishingInput: Boolean) {
         super.onFinishInputView(finishingInput)
-        if (lifecycleRegistry.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
-            dispatchLifecycleEvent(Lifecycle.Event.ON_PAUSE)
-        }
-        if (lifecycleRegistry.currentState.isAtLeast(Lifecycle.State.STARTED)) {
-            dispatchLifecycleEvent(Lifecycle.Event.ON_STOP)
-        }
+        ensureStopped()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        if (lifecycleRegistry.currentState.isAtLeast(Lifecycle.State.STARTED)) {
-            dispatchLifecycleEvent(Lifecycle.Event.ON_STOP)
-        }
+        ensureStopped()
         dispatchLifecycleEvent(Lifecycle.Event.ON_DESTROY)
         try {
             store.clear()
         } catch (e: Throwable) {
             Log.w("ComposeIME", "store clear error: ${e.message}")
+        }
+    }
+
+    private fun ensureStarted() {
+        if (lifecycleRegistry.currentState == Lifecycle.State.INITIALIZED) {
+            dispatchLifecycleEvent(Lifecycle.Event.ON_CREATE)
+        }
+        if (lifecycleRegistry.currentState == Lifecycle.State.CREATED) {
+            dispatchLifecycleEvent(Lifecycle.Event.ON_START)
+        }
+    }
+
+    private fun ensureResumed() {
+        ensureStarted()
+        if (lifecycleRegistry.currentState == Lifecycle.State.STARTED) {
+            dispatchLifecycleEvent(Lifecycle.Event.ON_RESUME)
+        }
+    }
+
+    private fun ensurePaused() {
+        if (lifecycleRegistry.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+            dispatchLifecycleEvent(Lifecycle.Event.ON_PAUSE)
+        }
+    }
+
+    private fun ensureStopped() {
+        ensurePaused()
+        if (lifecycleRegistry.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            dispatchLifecycleEvent(Lifecycle.Event.ON_STOP)
         }
     }
 

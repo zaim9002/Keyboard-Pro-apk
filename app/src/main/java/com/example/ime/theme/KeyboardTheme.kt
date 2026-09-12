@@ -21,15 +21,29 @@ object KeyboardThemes {
     val Midnight = KeyboardColorScheme(
         name = "Midnight",
         isDark = true,
-        background = Color(0xFF0F172A),
-        keyBackground = Color(0xFF1E293B),
-        keyText = Color(0xFFF8FAFC),
-        specialKeyBackground = Color(0xFF334155),
-        specialKeyText = Color(0xFF38BDF8),
-        accent = Color(0xFF38BDF8),
-        suggestionBar = Color(0xFF1E293B),
+        background = Color(0xFF141921),
+        keyBackground = Color(0xFF38465B),
+        keyText = Color(0xFFFFFFFF),
+        specialKeyBackground = Color(0xFF2A3647),
+        specialKeyText = Color(0xFFFFFFFF),
+        accent = Color(0xFF435670),
+        suggestionBar = Color(0xFF141921),
         suggestionText = Color(0xFFE2E8F0),
-        borderColor = Color(0x3338BDF8)
+        borderColor = Color(0x18FFFFFF)
+    )
+
+    val ProSlateDark = KeyboardColorScheme(
+        name = "ProSlateDark",
+        isDark = true,
+        background = Color(0xFF141921),
+        keyBackground = Color(0xFF38465B),
+        keyText = Color(0xFFFFFFFF),
+        specialKeyBackground = Color(0xFF2A3647),
+        specialKeyText = Color(0xFFFFFFFF),
+        accent = Color(0xFF435670),
+        suggestionBar = Color(0xFF141921),
+        suggestionText = Color(0xFFE2E8F0),
+        borderColor = Color(0x18FFFFFF)
     )
 
     val Dark = KeyboardColorScheme(
@@ -144,6 +158,7 @@ object KeyboardThemes {
     )
 
     val allThemes = listOf(
+        ProSlateDark,
         Midnight,
         Dark,
         Ocean,
