@@ -18,6 +18,48 @@ data class KeyboardColorScheme(
 
 object KeyboardThemes {
 
+    val GboardDark = KeyboardColorScheme(
+        name = "Gboard Dark",
+        isDark = true,
+        background = Color(0xFF1F2125),
+        keyBackground = Color(0xFF33353A),
+        keyText = Color(0xFFE8EAED),
+        specialKeyBackground = Color(0xFF282A2E),
+        specialKeyText = Color(0xFFE8EAED),
+        accent = Color(0xFF8AB4F8),
+        suggestionBar = Color(0xFF1F2125),
+        suggestionText = Color(0xFFE8EAED),
+        borderColor = Color(0x15FFFFFF)
+    )
+
+    val GboardLight = KeyboardColorScheme(
+        name = "Gboard Light",
+        isDark = false,
+        background = Color(0xFFECEFF1),
+        keyBackground = Color(0xFFFFFFFF),
+        keyText = Color(0xFF202124),
+        specialKeyBackground = Color(0xFFDFE3E8),
+        specialKeyText = Color(0xFF202124),
+        accent = Color(0xFF1A73E8),
+        suggestionBar = Color(0xFFECEFF1),
+        suggestionText = Color(0xFF202124),
+        borderColor = Color(0x18000000)
+    )
+
+    val SwiftKeyDark = KeyboardColorScheme(
+        name = "SwiftKey Dark",
+        isDark = true,
+        background = Color(0xFF13171F),
+        keyBackground = Color(0xFF242F3E),
+        keyText = Color(0xFFF8FAFC),
+        specialKeyBackground = Color(0xFF1A222E),
+        specialKeyText = Color(0xFFF8FAFC),
+        accent = Color(0xFF38BDF8),
+        suggestionBar = Color(0xFF13171F),
+        suggestionText = Color(0xFFE2E8F0),
+        borderColor = Color(0x1AFFFFFF)
+    )
+
     val Midnight = KeyboardColorScheme(
         name = "Midnight",
         isDark = true,
@@ -158,6 +200,9 @@ object KeyboardThemes {
     )
 
     val allThemes = listOf(
+        GboardDark,
+        SwiftKeyDark,
+        GboardLight,
         ProSlateDark,
         Midnight,
         Dark,
