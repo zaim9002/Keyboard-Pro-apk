@@ -1,5 +1,6 @@
 package com.example.ime.ui
 
+import android.view.SoundEffectConstants
 import android.view.inputmethod.EditorInfo
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -21,11 +22,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ime.util.HapticHelper
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
@@ -1140,6 +1144,9 @@ private fun BottomControlRow(
     onMoveCursor: (Int) -> Unit,
     onTextInput: (String) -> Unit
 ) {
+    val context = LocalContext.current
+    val view = LocalView.current
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -1207,9 +1214,11 @@ private fun BottomControlRow(
                             change.consume()
                             totalDragX += dragAmount.x
                             if (totalDragX > 35f) {
+                                if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
                                 onMoveCursor(1)
                                 totalDragX = 0f
                             } else if (totalDragX < -35f) {
+                                if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
                                 onMoveCursor(-1)
                                 totalDragX = 0f
                             }
@@ -1217,7 +1226,11 @@ private fun BottomControlRow(
                         onDragEnd = { totalDragX = 0f }
                     )
                 }
-                .clickable { onSpace() },
+                .clickable {
+                    if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
+                    if (soundEnabled) view.playSoundEffect(SoundEffectConstants.CLICK)
+                    onSpace()
+                },
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -1272,7 +1285,11 @@ private fun BottomControlRow(
                 )
                 .clip(RoundedCornerShape(8.dp))
                 .background(colorScheme.accent)
-                .clickable { onEnter() },
+                .clickable {
+                    if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
+                    if (soundEnabled) view.playSoundEffect(SoundEffectConstants.CLICK)
+                    onEnter()
+                },
             contentAlignment = Alignment.Center
         ) {
             Icon(

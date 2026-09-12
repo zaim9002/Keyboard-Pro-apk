@@ -19,7 +19,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import com.example.ime.util.HapticHelper
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -48,6 +50,7 @@ fun KeyButton(
     onClick: () -> Unit
 ) {
     val view = LocalView.current
+    val context = LocalContext.current
     val bgColor = if (isSpecial) colorScheme.specialKeyBackground else colorScheme.keyBackground
     val textColor = if (isSpecial) colorScheme.specialKeyText else colorScheme.keyText
 
@@ -66,7 +69,7 @@ fun KeyButton(
             .combinedClickable(
                 onClick = {
                     if (hapticEnabled) {
-                        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                        HapticHelper.performKeyHaptic(context, view)
                     }
                     if (soundEnabled) {
                         view.playSoundEffect(SoundEffectConstants.CLICK)
@@ -112,6 +115,7 @@ fun RepeatingDeleteKeyButton(
     onDeleteAll: (() -> Unit)? = null
 ) {
     val view = LocalView.current
+    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var isPressed by remember { mutableStateOf(false) }
 
@@ -138,7 +142,7 @@ fun RepeatingDeleteKeyButton(
                     onPress = {
                         isPressed = true
                         if (hapticEnabled) {
-                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                            HapticHelper.performKeyHaptic(context, view)
                         }
                         if (soundEnabled) {
                             view.playSoundEffect(SoundEffectConstants.CLICK)
@@ -157,7 +161,7 @@ fun RepeatingDeleteKeyButton(
                                     currentOnDelete()
                                 }
                                 if (hapticEnabled && repeatCount % 3 == 0) {
-                                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                    HapticHelper.performKeyHaptic(context, view)
                                 }
                                 val delayTime = if (repeatCount > 18) 30L else if (repeatCount > 8) 50L else 75L
                                 delay(delayTime)

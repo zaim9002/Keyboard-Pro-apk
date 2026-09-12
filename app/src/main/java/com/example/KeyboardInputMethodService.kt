@@ -396,12 +396,44 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
         try {
             val ic = currentInputConnection ?: return
             val info = currentEditorInfo
-            val action = info?.imeOptions?.and(EditorInfo.IME_MASK_ACTION) ?: EditorInfo.IME_ACTION_NONE
+            val imeOptions = info?.imeOptions ?: 0
+            val action = imeOptions and EditorInfo.IME_MASK_ACTION
+            val inputType = info?.inputType ?: 0
+            val isMultiLine = (inputType and InputType.TYPE_TEXT_FLAG_MULTI_LINE) != 0
+            val noEnterAction = (imeOptions and EditorInfo.IME_FLAG_NO_ENTER_ACTION) != 0
 
-            if (action != EditorInfo.IME_ACTION_NONE && action != EditorInfo.IME_ACTION_UNSPECIFIED) {
-                ic.performEditorAction(action)
-            } else {
-                sendKeyEvents(KeyEvent.KEYCODE_ENTER)
+            // 1. Explicit custom action from target app (e.g. custom send/search ID)
+            if (info?.actionId != null && info.actionId != 0) {
+                val handled = ic.performEditorAction(info.actionId)
+                if (!handled) {
+                    sendKeyEvents(KeyEvent.KEYCODE_ENTER)
+                }
+            }
+            // 2. Explicit standard action (Send, Search, Go, Next, Done) when not restricted by multiline
+            else if (!isMultiLine && !noEnterAction && action != EditorInfo.IME_ACTION_NONE && action != EditorInfo.IME_ACTION_UNSPECIFIED) {
+                val handled = ic.performEditorAction(action)
+                if (!handled) {
+                    sendKeyEvents(KeyEvent.KEYCODE_ENTER)
+                }
+            }
+            // 3. For Telegram, WhatsApp, Messenger, multiline chat and text fields:
+            // Insert newline directly or trigger send key event
+            else {
+                if (action == EditorInfo.IME_ACTION_SEND) {
+                    val handled = ic.performEditorAction(EditorInfo.IME_ACTION_SEND)
+                    if (!handled) {
+                        val committed = ic.commitText("\n", 1)
+                        if (!committed) {
+                            sendKeyEvents(KeyEvent.KEYCODE_ENTER)
+                        }
+                    }
+                } else {
+                    // Standard multiline / return: commit \n and fallback to KEYCODE_ENTER
+                    val committed = ic.commitText("\n", 1)
+                    if (!committed) {
+                        sendKeyEvents(KeyEvent.KEYCODE_ENTER)
+                    }
+                }
             }
             currentWordBuffer.clear()
             updateSuggestions()
