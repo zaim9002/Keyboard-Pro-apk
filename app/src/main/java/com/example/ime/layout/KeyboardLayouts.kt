@@ -69,16 +69,15 @@ object KeyboardLayouts {
 
     val arabicRow3 = listOf(
         KeyModel("ذ", popupOptions = listOf("د")),
-        KeyModel("ئ", popupOptions = listOf("ي", "ى")),
         KeyModel("ء", popupOptions = listOf("ئ", "ؤ", "أ", "إ", "آ")),
         KeyModel("ؤ", popupOptions = listOf("و")),
         KeyModel("ر", popupOptions = listOf("ز", "ژ")),
-        KeyModel("لا", popupOptions = listOf("لأ", "لإ", "لآ")),
-        KeyModel("ى", popupOptions = listOf("ي")),
-        KeyModel("ة", popupOptions = listOf("ه")),
+        KeyModel("ى", popupOptions = listOf("ي", "ئ")),
+        KeyModel("ة", popupOptions = listOf("ه", "ت")),
         KeyModel("و", popupOptions = listOf("ؤ")),
         KeyModel("ز", popupOptions = listOf("ژ", "ر")),
-        KeyModel("ظ", popupOptions = listOf("ط"))
+        KeyModel("ظ", popupOptions = listOf("ط")),
+        KeyModel("د", popupOptions = listOf("ذ"))
     )
 
     val englishRow1 = listOf(

@@ -21,6 +21,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -269,66 +271,131 @@ fun KeyboardScreen(
                         }
 
                         // The Keyboard layout
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(horizontal = 2.dp, vertical = 2.dp)
-                        ) {
-                            // Tashkeel bar if activated
-                            if (currentLanguage == "ar" && showTashkeelRow && layoutMode == LayoutMode.ALPHA) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .background(colorScheme.specialKeyBackground.copy(alpha = 0.5f))
-                                        .padding(horizontal = 2.dp, vertical = 2.dp),
-                                    horizontalArrangement = Arrangement.SpaceEvenly
-                                ) {
-                                    for (tashkeel in KeyboardLayouts.arabicTashkeel) {
-                                        KeyButton(
-                                            text = tashkeel,
-                                            isSpecial = true,
-                                            height = 36.dp,
-                                            fontSize = 20.sp,
-                                            colorScheme = colorScheme,
-                                            hapticEnabled = hapticEnabled,
-                                            soundEnabled = soundEnabled,
-                                            modifier = Modifier.weight(1f)
-                                        ) {
-                                            onTextInput(tashkeel)
+                        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(horizontal = 2.dp, vertical = 2.dp)
+                            ) {
+                                // Tashkeel bar if activated
+                                if (currentLanguage == "ar" && showTashkeelRow && layoutMode == LayoutMode.ALPHA) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(colorScheme.specialKeyBackground.copy(alpha = 0.5f))
+                                            .padding(horizontal = 2.dp, vertical = 2.dp),
+                                        horizontalArrangement = Arrangement.SpaceEvenly
+                                    ) {
+                                        for (tashkeel in KeyboardLayouts.arabicTashkeel) {
+                                            KeyButton(
+                                                text = tashkeel,
+                                                isSpecial = true,
+                                                height = 36.dp,
+                                                fontSize = 20.sp,
+                                                colorScheme = colorScheme,
+                                                hapticEnabled = hapticEnabled,
+                                                soundEnabled = soundEnabled,
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                onTextInput(tashkeel)
+                                            }
                                         }
                                     }
                                 }
-                            }
 
-                            // Optional Number Row on top
-                            if (showNumberRow && layoutMode == LayoutMode.ALPHA) {
-                                val numRow = if (currentLanguage == "ar" && arabicNumerals) KeyboardLayouts.arabicNumberRow else KeyboardLayouts.englishNumberRow
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceEvenly
-                                ) {
-                                    for (num in numRow) {
-                                        KeyButton(
-                                            text = num,
-                                            isSpecial = true,
-                                            height = 36.dp,
-                                            fontSize = 15.sp,
-                                            colorScheme = colorScheme,
-                                            hapticEnabled = hapticEnabled,
-                                            soundEnabled = soundEnabled,
-                                            modifier = Modifier.weight(1f)
-                                        ) {
-                                            onTextInput(num)
+                                // Optional Number Row on top
+                                if (showNumberRow && layoutMode == LayoutMode.ALPHA) {
+                                    val numRow = if (currentLanguage == "ar" && arabicNumerals) KeyboardLayouts.arabicNumberRow else KeyboardLayouts.englishNumberRow
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceEvenly
+                                    ) {
+                                        for (num in numRow) {
+                                            KeyButton(
+                                                text = num,
+                                                isSpecial = true,
+                                                height = 36.dp,
+                                                fontSize = 15.sp,
+                                                colorScheme = colorScheme,
+                                                hapticEnabled = hapticEnabled,
+                                                soundEnabled = soundEnabled,
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                onTextInput(num)
+                                            }
                                         }
                                     }
                                 }
-                            }
 
-                            // Dynamic Layout Rows based on Language & Mode
-                            when (layoutMode) {
-                                LayoutMode.ALPHA -> {
-                                    if (currentLanguage == "ar") {
-                                        ArabicKeyboardLayout(
+                                // Dynamic Layout Rows based on Language & Mode
+                                when (layoutMode) {
+                                    LayoutMode.ALPHA -> {
+                                        if (currentLanguage == "ar") {
+                                            ArabicKeyboardLayout(
+                                                colorScheme = colorScheme,
+                                                keyHeight = keyHeight,
+                                                hapticEnabled = hapticEnabled,
+                                                soundEnabled = soundEnabled,
+                                                actionIcon = actionIcon,
+                                                onTextInput = onTextInput,
+                                                onDelete = onDelete,
+                                                onDeleteAll = onDeleteAll,
+                                                onSpace = onSpace,
+                                                onEnter = onEnter,
+                                                onSwitchMode = { layoutMode = LayoutMode.SYMBOLS_1 },
+                                                onSwitchLanguage = onSwitchLanguage,
+                                                onLongPressLanguage = { showLanguagePicker = true },
+                                                onOpenClipboard = { activePanel = KeyboardPanel.CLIPBOARD },
+                                                onOpenEmoji = { activePanel = KeyboardPanel.EMOJI },
+                                                onToggleTashkeel = { showTashkeelRow = !showTashkeelRow },
+                                                onMoveCursor = onMoveCursor,
+                                                onLongPressKey = { activePopupKey = it }
+                                            )
+                                        } else {
+                                            val layoutData = remember(currentLanguage) {
+                                                try {
+                                                    KeyboardProApp.instance.languageManager.getCurrentLayout()
+                                                } catch (e: Throwable) {
+                                                    KeyboardLayoutManager.getLayout("en", LayoutFamily.QWERTY)
+                                                }
+                                            }
+                                            DynamicKeyboardLayout(
+                                                layoutData = layoutData,
+                                                colorScheme = colorScheme,
+                                                keyHeight = keyHeight,
+                                                shiftState = shiftState,
+                                                hapticEnabled = hapticEnabled,
+                                                soundEnabled = soundEnabled,
+                                                actionIcon = actionIcon,
+                                                onTextInput = { char ->
+                                                    val text = if (shiftState != ShiftState.OFF) char.uppercase() else char.lowercase()
+                                                    onTextInput(text)
+                                                    if (shiftState == ShiftState.ON) {
+                                                        shiftState = ShiftState.OFF
+                                                    }
+                                                },
+                                                onDelete = onDelete,
+                                                onDeleteAll = onDeleteAll,
+                                                onSpace = onSpace,
+                                                onEnter = onEnter,
+                                                onOpenEmoji = { activePanel = KeyboardPanel.EMOJI },
+                                                onShiftClick = {
+                                                    shiftState = when (shiftState) {
+                                                        ShiftState.OFF -> ShiftState.ON
+                                                        ShiftState.ON -> ShiftState.CAPS_LOCK
+                                                        ShiftState.CAPS_LOCK -> ShiftState.OFF
+                                                    }
+                                                },
+                                                onSwitchMode = { layoutMode = LayoutMode.SYMBOLS_1 },
+                                                onSwitchLanguage = onSwitchLanguage,
+                                                onLongPressLanguage = { showLanguagePicker = true },
+                                                onMoveCursor = onMoveCursor,
+                                                onLongPressKey = { activePopupKey = it }
+                                            )
+                                        }
+                                    }
+                                    LayoutMode.SYMBOLS_1 -> {
+                                        Symbols1Layout(
                                             colorScheme = colorScheme,
                                             keyHeight = keyHeight,
                                             hapticEnabled = hapticEnabled,
@@ -336,94 +403,31 @@ fun KeyboardScreen(
                                             actionIcon = actionIcon,
                                             onTextInput = onTextInput,
                                             onDelete = onDelete,
-                                            onDeleteAll = onDeleteAll,
                                             onSpace = onSpace,
                                             onEnter = onEnter,
-                                            onSwitchMode = { layoutMode = LayoutMode.SYMBOLS_1 },
+                                            onSwitchToAlpha = { layoutMode = LayoutMode.ALPHA },
+                                            onSwitchToSymbols2 = { layoutMode = LayoutMode.SYMBOLS_2 },
                                             onSwitchLanguage = onSwitchLanguage,
-                                            onLongPressLanguage = { showLanguagePicker = true },
-                                            onOpenClipboard = { activePanel = KeyboardPanel.CLIPBOARD },
-                                            onOpenEmoji = { activePanel = KeyboardPanel.EMOJI },
-                                            onToggleTashkeel = { showTashkeelRow = !showTashkeelRow },
-                                            onMoveCursor = onMoveCursor,
-                                            onLongPressKey = { activePopupKey = it }
+                                            onMoveCursor = onMoveCursor
                                         )
-                                    } else {
-                                        val layoutData = remember(currentLanguage) {
-                                            try {
-                                                KeyboardProApp.instance.languageManager.getCurrentLayout()
-                                            } catch (e: Throwable) {
-                                                KeyboardLayoutManager.getLayout("en", LayoutFamily.QWERTY)
-                                            }
-                                        }
-                                        DynamicKeyboardLayout(
-                                            layoutData = layoutData,
+                                    }
+                                    LayoutMode.SYMBOLS_2 -> {
+                                        Symbols2Layout(
                                             colorScheme = colorScheme,
                                             keyHeight = keyHeight,
-                                            shiftState = shiftState,
                                             hapticEnabled = hapticEnabled,
                                             soundEnabled = soundEnabled,
                                             actionIcon = actionIcon,
-                                            onTextInput = { char ->
-                                                val text = if (shiftState != ShiftState.OFF) char.uppercase() else char.lowercase()
-                                                onTextInput(text)
-                                                if (shiftState == ShiftState.ON) {
-                                                    shiftState = ShiftState.OFF
-                                                }
-                                            },
+                                            onTextInput = onTextInput,
                                             onDelete = onDelete,
-                                            onDeleteAll = onDeleteAll,
                                             onSpace = onSpace,
                                             onEnter = onEnter,
-                                            onOpenEmoji = { activePanel = KeyboardPanel.EMOJI },
-                                            onShiftClick = {
-                                                shiftState = when (shiftState) {
-                                                    ShiftState.OFF -> ShiftState.ON
-                                                    ShiftState.ON -> ShiftState.CAPS_LOCK
-                                                    ShiftState.CAPS_LOCK -> ShiftState.OFF
-                                                }
-                                            },
-                                            onSwitchMode = { layoutMode = LayoutMode.SYMBOLS_1 },
+                                            onSwitchToAlpha = { layoutMode = LayoutMode.ALPHA },
+                                            onSwitchToSymbols1 = { layoutMode = LayoutMode.SYMBOLS_1 },
                                             onSwitchLanguage = onSwitchLanguage,
-                                            onLongPressLanguage = { showLanguagePicker = true },
-                                            onMoveCursor = onMoveCursor,
-                                            onLongPressKey = { activePopupKey = it }
+                                            onMoveCursor = onMoveCursor
                                         )
                                     }
-                                }
-                                LayoutMode.SYMBOLS_1 -> {
-                                    Symbols1Layout(
-                                        colorScheme = colorScheme,
-                                        keyHeight = keyHeight,
-                                        hapticEnabled = hapticEnabled,
-                                        soundEnabled = soundEnabled,
-                                        actionIcon = actionIcon,
-                                        onTextInput = onTextInput,
-                                        onDelete = onDelete,
-                                        onSpace = onSpace,
-                                        onEnter = onEnter,
-                                        onSwitchToAlpha = { layoutMode = LayoutMode.ALPHA },
-                                        onSwitchToSymbols2 = { layoutMode = LayoutMode.SYMBOLS_2 },
-                                        onSwitchLanguage = onSwitchLanguage,
-                                        onMoveCursor = onMoveCursor
-                                    )
-                                }
-                                LayoutMode.SYMBOLS_2 -> {
-                                    Symbols2Layout(
-                                        colorScheme = colorScheme,
-                                        keyHeight = keyHeight,
-                                        hapticEnabled = hapticEnabled,
-                                        soundEnabled = soundEnabled,
-                                        actionIcon = actionIcon,
-                                        onTextInput = onTextInput,
-                                        onDelete = onDelete,
-                                        onSpace = onSpace,
-                                        onEnter = onEnter,
-                                        onSwitchToAlpha = { layoutMode = LayoutMode.ALPHA },
-                                        onSwitchToSymbols1 = { layoutMode = LayoutMode.SYMBOLS_1 },
-                                        onSwitchLanguage = onSwitchLanguage,
-                                        onMoveCursor = onMoveCursor
-                                    )
                                 }
                             }
                         }
