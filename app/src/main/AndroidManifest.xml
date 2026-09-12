@@ -31,7 +31,7 @@
         </activity>
 
         <service
-            android:name=".ime.KeyboardImeService"
+            android:name=".KeyboardInputMethodService"
             android:label="@string/ime_name"
             android:permission="android.permission.BIND_INPUT_METHOD"
             android:exported="true">

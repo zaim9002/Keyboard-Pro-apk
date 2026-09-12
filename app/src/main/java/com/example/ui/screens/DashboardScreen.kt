@@ -31,7 +31,8 @@ fun DashboardScreen(
     onNavigateToThemes: () -> Unit,
     onNavigateToClipboard: () -> Unit,
     onNavigateToShortcuts: () -> Unit,
-    onNavigateToSettings: () -> Unit
+    onNavigateToSettings: () -> Unit,
+    onNavigateToLanguages: () -> Unit
 ) {
     val context = LocalContext.current
     val prefs = KeyboardProApp.instance.preferences
@@ -115,7 +116,7 @@ fun DashboardScreen(
                     }
                     Column {
                         Text(
-                            text = "Keyboard Pro",
+                            text = "كيبورد محمد v3",
                             color = Color.White,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold
@@ -321,18 +322,18 @@ fun DashboardScreen(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             QuickNavCard(
+                title = "لغات الكيبورد",
+                subtitle = "العربية و40+ لغة عالمية",
+                icon = Icons.Default.Language,
+                modifier = Modifier.weight(1f),
+                onClick = onNavigateToLanguages
+            )
+            QuickNavCard(
                 title = "الثيمات والمظهر",
                 subtitle = "9 ثيمات وتخصيص كامل",
                 icon = Icons.Default.Palette,
                 modifier = Modifier.weight(1f),
                 onClick = onNavigateToThemes
-            )
-            QuickNavCard(
-                title = "الحافظة الدائمة",
-                subtitle = "تثبيت وتصنيف النصوص",
-                icon = Icons.Default.ContentPaste,
-                modifier = Modifier.weight(1f),
-                onClick = onNavigateToClipboard
             )
         }
 
@@ -341,15 +342,28 @@ fun DashboardScreen(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             QuickNavCard(
+                title = "الحافظة الدائمة",
+                subtitle = "تثبيت وتصنيف النصوص",
+                icon = Icons.Default.ContentPaste,
+                modifier = Modifier.weight(1f),
+                onClick = onNavigateToClipboard
+            )
+            QuickNavCard(
                 title = "اختصارات النصوص",
                 subtitle = "توسيع العبارات تلقائياً",
                 icon = Icons.Default.FlashOn,
                 modifier = Modifier.weight(1f),
                 onClick = onNavigateToShortcuts
             )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             QuickNavCard(
                 title = "الإعدادات العامة",
-                subtitle = "الصوت، الاهتزاز، الحجم",
+                subtitle = "الصوت، الاهتزاز، الحجم، الاقتراحات",
                 icon = Icons.Default.Settings,
                 modifier = Modifier.weight(1f),
                 onClick = onNavigateToSettings

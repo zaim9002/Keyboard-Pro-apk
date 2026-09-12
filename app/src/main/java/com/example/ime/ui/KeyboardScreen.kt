@@ -23,6 +23,13 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.IconButton
+import com.example.KeyboardProApp
 import com.example.data.local.entity.ClipboardEntity
 import com.example.ime.layout.KeyboardLayouts
 import com.example.ime.layout.KeyModel
@@ -30,6 +37,9 @@ import com.example.ime.layout.KeyType
 import com.example.ime.theme.KeyboardColorScheme
 import com.example.ime.ui.components.*
 import com.example.ime.ui.panels.*
+import com.example.language.layout.KeyboardLayoutData
+import com.example.language.layout.KeyboardLayoutManager
+import com.example.language.model.LayoutFamily
 
 enum class LayoutMode {
     ALPHA,
@@ -46,7 +56,7 @@ enum class ShiftState {
 @Composable
 fun KeyboardScreen(
     colorScheme: KeyboardColorScheme,
-    currentLanguage: String, // "ar" or "en"
+    currentLanguage: String, // "ar" or "en" or any 40+ supported language
     imeOptions: Int,
     isIncognito: Boolean,
     keyboardHeight: String, // "Small", "Medium", "Large"
@@ -59,11 +69,14 @@ fun KeyboardScreen(
     isVoiceListening: Boolean,
     voiceStatusText: String,
     voicePartialText: String,
+    showSuggestions: Boolean = true,
+    arabicNumerals: Boolean = true,
     onTextInput: (String) -> Unit,
     onDelete: () -> Unit,
     onEnter: () -> Unit,
     onSpace: () -> Unit,
     onSwitchLanguage: () -> Unit,
+    onSelectLanguage: (String) -> Unit = {},
     onMoveCursor: (Int) -> Unit,
     onSelectSuggestion: (String) -> Unit,
     onTogglePinClip: (Long, Boolean) -> Unit,
@@ -84,6 +97,7 @@ fun KeyboardScreen(
     var shiftState by remember { mutableStateOf(ShiftState.OFF) }
     var activePanel by remember { mutableStateOf(KeyboardPanel.NONE) }
     var showTashkeelRow by remember { mutableStateOf(false) }
+    var showLanguagePicker by remember { mutableStateOf(false) }
     var activePopupKey by remember { mutableStateOf<KeyModel?>(null) }
 
     val keyHeight = when (keyboardHeight) {
@@ -122,8 +136,8 @@ fun KeyboardScreen(
             onOpenSettings = onOpenSettings
         )
 
-        // 2. Suggestion Bar (عندما لا تكون اللوحات المخصصة مفتوحة)
-        if (activePanel == KeyboardPanel.NONE) {
+        // 2. Suggestion Bar (عندما لا تكون اللوحات المخصصة مفتوحة وتكون مفعلة في الإعدادات)
+        if (activePanel == KeyboardPanel.NONE && showSuggestions) {
             SuggestionBar(
                 suggestions = suggestions,
                 colorScheme = colorScheme,
@@ -286,7 +300,7 @@ fun KeyboardScreen(
 
                             // Optional Number Row on top
                             if (showNumberRow && layoutMode == LayoutMode.ALPHA) {
-                                val numRow = if (currentLanguage == "ar") KeyboardLayouts.arabicNumberRow else KeyboardLayouts.englishNumberRow
+                                val numRow = if (currentLanguage == "ar" && arabicNumerals) KeyboardLayouts.arabicNumberRow else KeyboardLayouts.englishNumberRow
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceEvenly
@@ -324,12 +338,21 @@ fun KeyboardScreen(
                                             onEnter = onEnter,
                                             onSwitchMode = { layoutMode = LayoutMode.SYMBOLS_1 },
                                             onSwitchLanguage = onSwitchLanguage,
+                                            onLongPressLanguage = { showLanguagePicker = true },
                                             onToggleTashkeel = { showTashkeelRow = !showTashkeelRow },
                                             onMoveCursor = onMoveCursor,
                                             onLongPressKey = { activePopupKey = it }
                                         )
                                     } else {
-                                        EnglishKeyboardLayout(
+                                        val layoutData = remember(currentLanguage) {
+                                            try {
+                                                KeyboardProApp.instance.languageManager.getCurrentLayout()
+                                            } catch (e: Throwable) {
+                                                KeyboardLayoutManager.getLayout("en", LayoutFamily.QWERTY)
+                                            }
+                                        }
+                                        DynamicKeyboardLayout(
+                                            layoutData = layoutData,
                                             colorScheme = colorScheme,
                                             keyHeight = keyHeight,
                                             shiftState = shiftState,
@@ -355,6 +378,7 @@ fun KeyboardScreen(
                                             },
                                             onSwitchMode = { layoutMode = LayoutMode.SYMBOLS_1 },
                                             onSwitchLanguage = onSwitchLanguage,
+                                            onLongPressLanguage = { showLanguagePicker = true },
                                             onMoveCursor = onMoveCursor,
                                             onLongPressKey = { activePopupKey = it }
                                         )
@@ -450,6 +474,23 @@ fun KeyboardScreen(
                     }
                 }
             }
+
+            // Quick Language Picker Overlay
+            if (showLanguagePicker) {
+                LanguagePickerModal(
+                    currentLanguage = currentLanguage,
+                    colorScheme = colorScheme,
+                    onSelect = { langId ->
+                        onSelectLanguage(langId)
+                        showLanguagePicker = false
+                    },
+                    onOpenManager = {
+                        showLanguagePicker = false
+                        onOpenSettings()
+                    },
+                    onDismiss = { showLanguagePicker = false }
+                )
+            }
         }
     }
 }
@@ -516,6 +557,7 @@ private fun ArabicKeyboardLayout(
     onEnter: () -> Unit,
     onSwitchMode: () -> Unit,
     onSwitchLanguage: () -> Unit,
+    onLongPressLanguage: (() -> Unit)? = null,
     onToggleTashkeel: () -> Unit,
     onMoveCursor: (Int) -> Unit,
     onLongPressKey: (KeyModel) -> Unit
@@ -605,6 +647,8 @@ private fun ArabicKeyboardLayout(
     BottomControlRow(
         modeLabel = "١٢٣",
         langLabel = "🌐",
+        spaceLabel = "العربية",
+        commaLabel = "،",
         colorScheme = colorScheme,
         keyHeight = keyHeight,
         hapticEnabled = hapticEnabled,
@@ -612,6 +656,7 @@ private fun ArabicKeyboardLayout(
         actionIcon = actionIcon,
         onSwitchMode = onSwitchMode,
         onSwitchLanguage = onSwitchLanguage,
+        onLongPressLanguage = onLongPressLanguage,
         onSpace = onSpace,
         onEnter = onEnter,
         onMoveCursor = onMoveCursor,
@@ -620,7 +665,8 @@ private fun ArabicKeyboardLayout(
 }
 
 @Composable
-private fun EnglishKeyboardLayout(
+private fun DynamicKeyboardLayout(
+    layoutData: KeyboardLayoutData,
     colorScheme: KeyboardColorScheme,
     keyHeight: androidx.compose.ui.unit.Dp,
     shiftState: ShiftState,
@@ -634,6 +680,7 @@ private fun EnglishKeyboardLayout(
     onShiftClick: () -> Unit,
     onSwitchMode: () -> Unit,
     onSwitchLanguage: () -> Unit,
+    onLongPressLanguage: (() -> Unit)? = null,
     onMoveCursor: (Int) -> Unit,
     onLongPressKey: (KeyModel) -> Unit
 ) {
@@ -641,7 +688,7 @@ private fun EnglishKeyboardLayout(
 
     // Row 1
     Row(modifier = Modifier.fillMaxWidth()) {
-        for (key in KeyboardLayouts.englishRow1) {
+        for (key in layoutData.row1) {
             val letter = if (isUpper) key.primaryText.uppercase() else key.primaryText.lowercase()
             KeyButton(
                 text = letter,
@@ -650,7 +697,7 @@ private fun EnglishKeyboardLayout(
                 colorScheme = colorScheme,
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(key.weight),
                 onLongClick = if (key.popupOptions.isNotEmpty()) { { onLongPressKey(key) } } else null
             ) {
                 onTextInput(letter)
@@ -660,7 +707,7 @@ private fun EnglishKeyboardLayout(
 
     // Row 2
     Row(modifier = Modifier.fillMaxWidth()) {
-        for (key in KeyboardLayouts.englishRow2) {
+        for (key in layoutData.row2) {
             val letter = if (isUpper) key.primaryText.uppercase() else key.primaryText.lowercase()
             KeyButton(
                 text = letter,
@@ -668,7 +715,7 @@ private fun EnglishKeyboardLayout(
                 colorScheme = colorScheme,
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(key.weight),
                 onLongClick = if (key.popupOptions.isNotEmpty()) { { onLongPressKey(key) } } else null
             ) {
                 onTextInput(letter)
@@ -697,7 +744,7 @@ private fun EnglishKeyboardLayout(
             onShiftClick()
         }
 
-        for (key in KeyboardLayouts.englishRow3.filter { it.type == KeyType.CHARACTER }) {
+        for (key in layoutData.row3.filter { it.type == KeyType.CHARACTER }) {
             val letter = if (isUpper) key.primaryText.uppercase() else key.primaryText.lowercase()
             KeyButton(
                 text = letter,
@@ -705,7 +752,7 @@ private fun EnglishKeyboardLayout(
                 colorScheme = colorScheme,
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(key.weight),
                 onLongClick = if (key.popupOptions.isNotEmpty()) { { onLongPressKey(key) } } else null
             ) {
                 onTextInput(letter)
@@ -731,6 +778,8 @@ private fun EnglishKeyboardLayout(
     BottomControlRow(
         modeLabel = "?123",
         langLabel = "🌐",
+        spaceLabel = layoutData.spaceLabel,
+        commaLabel = ",",
         colorScheme = colorScheme,
         keyHeight = keyHeight,
         hapticEnabled = hapticEnabled,
@@ -738,11 +787,136 @@ private fun EnglishKeyboardLayout(
         actionIcon = actionIcon,
         onSwitchMode = onSwitchMode,
         onSwitchLanguage = onSwitchLanguage,
+        onLongPressLanguage = onLongPressLanguage,
         onSpace = onSpace,
         onEnter = onEnter,
         onMoveCursor = onMoveCursor,
         onTextInput = onTextInput
     )
+}
+
+@Composable
+private fun LanguagePickerModal(
+    currentLanguage: String,
+    colorScheme: KeyboardColorScheme,
+    onSelect: (String) -> Unit,
+    onOpenManager: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val langManager = KeyboardProApp.instance.languageManager
+    val prefs = KeyboardProApp.instance.preferences
+    val enabledLanguages = remember(prefs.enabledLanguages) {
+        langManager.repository.getEnabledLanguages(prefs.enabledLanguages)
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.55f))
+            .clickable(onClick = onDismiss),
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
+            modifier = Modifier
+                .widthIn(max = 320.dp)
+                .fillMaxWidth(0.9f)
+                .clickable(enabled = false) {},
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = colorScheme.background)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "🌐 اختر لغة الكتابة",
+                        color = colorScheme.keyText,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp
+                    )
+                    IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
+                        Icon(Icons.Default.Close, contentDescription = "إغلاق", tint = colorScheme.keyText)
+                    }
+                }
+
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 220.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    items(enabledLanguages, key = { it.id }) { lang ->
+                        val isSelected = lang.id == currentLanguage
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(if (isSelected) colorScheme.accent.copy(alpha = 0.2f) else colorScheme.keyBackground)
+                                .clickable { onSelect(lang.id) }
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Text(lang.flag, fontSize = 22.sp)
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    lang.nameArabic,
+                                    fontSize = 14.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isSelected) colorScheme.accent else colorScheme.keyText
+                                )
+                                Text(
+                                    lang.nativeName,
+                                    fontSize = 11.sp,
+                                    color = colorScheme.keyText.copy(alpha = 0.6f)
+                                )
+                            }
+                            if (isSelected) {
+                                Icon(
+                                    Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = colorScheme.accent,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                HorizontalDivider(color = colorScheme.specialKeyBackground)
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(colorScheme.specialKeyBackground)
+                        .clickable(onClick = onOpenManager)
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        Icons.Default.Language,
+                        contentDescription = null,
+                        tint = colorScheme.accent,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "إدارة اللغات وتنزيل الحزم (40+ لغة)",
+                        color = colorScheme.accent,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -945,6 +1119,8 @@ private fun Symbols2Layout(
 private fun BottomControlRow(
     modeLabel: String,
     langLabel: String,
+    spaceLabel: String = "مسافة",
+    commaLabel: String = "،",
     colorScheme: KeyboardColorScheme,
     keyHeight: androidx.compose.ui.unit.Dp,
     hapticEnabled: Boolean,
@@ -952,6 +1128,7 @@ private fun BottomControlRow(
     actionIcon: androidx.compose.ui.graphics.vector.ImageVector,
     onSwitchMode: () -> Unit,
     onSwitchLanguage: () -> Unit,
+    onLongPressLanguage: (() -> Unit)? = null,
     onSpace: () -> Unit,
     onEnter: () -> Unit,
     onMoveCursor: (Int) -> Unit,
@@ -984,14 +1161,15 @@ private fun BottomControlRow(
             colorScheme = colorScheme,
             hapticEnabled = hapticEnabled,
             soundEnabled = soundEnabled,
-            modifier = Modifier.weight(0.9f)
+            modifier = Modifier.weight(0.9f),
+            onLongClick = onLongPressLanguage
         ) {
             onSwitchLanguage()
         }
 
         // Comma
         KeyButton(
-            text = "،",
+            text = commaLabel,
             height = keyHeight,
             fontSize = 16.sp,
             colorScheme = colorScheme,
@@ -999,7 +1177,7 @@ private fun BottomControlRow(
             soundEnabled = soundEnabled,
             modifier = Modifier.weight(0.8f)
         ) {
-            onTextInput("،")
+            onTextInput(commaLabel)
         }
 
         // Spacebar (with swipe gesture to move cursor or switch language)
@@ -1031,9 +1209,10 @@ private fun BottomControlRow(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "مسافة",
+                text = spaceLabel,
                 color = colorScheme.keyText.copy(alpha = 0.5f),
-                fontSize = 12.sp
+                fontSize = 12.sp,
+                maxLines = 1
             )
         }
 

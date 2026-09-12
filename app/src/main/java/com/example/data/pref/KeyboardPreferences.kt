@@ -28,6 +28,12 @@ class KeyboardPreferences(context: Context) {
     private val _incognitoState = MutableStateFlow(isIncognito)
     val incognitoState: StateFlow<Boolean> = _incognitoState.asStateFlow()
 
+    private val _suggestionsState = MutableStateFlow(showSuggestions)
+    val suggestionsState: StateFlow<Boolean> = _suggestionsState.asStateFlow()
+
+    private val _arabicNumeralsState = MutableStateFlow(arabicNumerals)
+    val arabicNumeralsState: StateFlow<Boolean> = _arabicNumeralsState.asStateFlow()
+
     var theme: String
         get() = prefs.getString(KEY_THEME, "Midnight") ?: "Midnight"
         set(value) {
@@ -112,6 +118,20 @@ class KeyboardPreferences(context: Context) {
         get() = prefs.getLong(KEY_WORD_COUNT, 0L)
         set(value) = prefs.edit().putLong(KEY_WORD_COUNT, value).apply()
 
+    var showSuggestions: Boolean
+        get() = prefs.getBoolean(KEY_SHOW_SUGGESTIONS, true)
+        set(value) {
+            prefs.edit().putBoolean(KEY_SHOW_SUGGESTIONS, value).apply()
+            _suggestionsState.value = value
+        }
+
+    var arabicNumerals: Boolean
+        get() = prefs.getBoolean(KEY_ARABIC_NUMERALS, true)
+        set(value) {
+            prefs.edit().putBoolean(KEY_ARABIC_NUMERALS, value).apply()
+            _arabicNumeralsState.value = value
+        }
+
     fun incrementWordCount() {
         if (!isIncognito) {
             wordsTypedCount = wordsTypedCount + 1
@@ -136,5 +156,7 @@ class KeyboardPreferences(context: Context) {
         private const val KEY_GAMING = "is_gaming_mode"
         private const val KEY_ONE_HANDED = "one_handed_mode"
         private const val KEY_WORD_COUNT = "words_typed_count"
+        private const val KEY_SHOW_SUGGESTIONS = "show_suggestions"
+        private const val KEY_ARABIC_NUMERALS = "arabic_numerals"
     }
 }

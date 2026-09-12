@@ -55,7 +55,7 @@ class SuggestionEngine(
     )
 
     // Standard Arabic Common Words (offline dictionary)
-    private val arabicDictionary = listOf(
+    private val arabicDictionary = (listOf(
         "السلام", "عليكم", "ورحمة", "الله", "وبركاته", "شكراً", "جزيلاً",
         "مرحباً", "صباح", "الخير", "مساء", "النور", "كيف", "حالك", "حالكم",
         "الحمد", "لله", "سبحان", "استغفر", "جزاك", "خيراً", "بارك", "فيك",
@@ -69,7 +69,7 @@ class SuggestionEngine(
         "أحبك", "صديقي", "أخي", "أختي", "عزيزي", "أستاذ", "مهندس", "دكتور",
         "أرجو", "أتمنى", "يمكنك", "مساعدة", "خدمة", "سؤال", "استفسار",
         "عفواً", "معذرة", "آسف", "اعتذر", "حقك", "علي", "بسيطة", "ولا يهمك"
-    )
+    ) + com.example.language.pack.ArabicLanguagePack.richVocabulary).distinct()
 
     // Standard English Common Words
     private val englishDictionary = listOf(

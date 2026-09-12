@@ -1,6 +1,8 @@
 package com.example.ime
 
 import android.inputmethodservice.InputMethodService
+import android.os.Bundle
+import android.util.Log
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
@@ -25,25 +27,77 @@ abstract class ComposeInputMethodService : InputMethodService(),
 
     override fun onCreate() {
         super.onCreate()
-        savedStateRegistryController.performRestore(null)
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
+        try {
+            if (!savedStateRegistry.isRestored) {
+                savedStateRegistryController.performRestore(Bundle())
+            }
+        } catch (e: Throwable) {
+            Log.w("ComposeIME", "performRestore ignored: ${e.message}")
+        }
+        dispatchLifecycleEvent(Lifecycle.Event.ON_CREATE)
+    }
+
+    override fun onStartInput(attribute: android.view.inputmethod.EditorInfo?, restarting: Boolean) {
+        super.onStartInput(attribute, restarting)
+        if (lifecycleRegistry.currentState == Lifecycle.State.CREATED) {
+            dispatchLifecycleEvent(Lifecycle.Event.ON_START)
+        }
     }
 
     override fun onStartInputView(info: android.view.inputmethod.EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
+        if (lifecycleRegistry.currentState == Lifecycle.State.CREATED) {
+            dispatchLifecycleEvent(Lifecycle.Event.ON_START)
+        }
+        dispatchLifecycleEvent(Lifecycle.Event.ON_RESUME)
+    }
+
+    override fun onWindowShown() {
+        super.onWindowShown()
+        if (lifecycleRegistry.currentState == Lifecycle.State.CREATED) {
+            dispatchLifecycleEvent(Lifecycle.Event.ON_START)
+        }
+        if (lifecycleRegistry.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            dispatchLifecycleEvent(Lifecycle.Event.ON_RESUME)
+        }
+    }
+
+    override fun onWindowHidden() {
+        super.onWindowHidden()
+        if (lifecycleRegistry.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+            dispatchLifecycleEvent(Lifecycle.Event.ON_PAUSE)
+        }
     }
 
     override fun onFinishInputView(finishingInput: Boolean) {
         super.onFinishInputView(finishingInput)
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+        if (lifecycleRegistry.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+            dispatchLifecycleEvent(Lifecycle.Event.ON_PAUSE)
+        }
+        if (lifecycleRegistry.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            dispatchLifecycleEvent(Lifecycle.Event.ON_STOP)
+        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-        store.clear()
+        if (lifecycleRegistry.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            dispatchLifecycleEvent(Lifecycle.Event.ON_STOP)
+        }
+        dispatchLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+        try {
+            store.clear()
+        } catch (e: Throwable) {
+            Log.w("ComposeIME", "store clear error: ${e.message}")
+        }
+    }
+
+    private fun dispatchLifecycleEvent(event: Lifecycle.Event) {
+        try {
+            lifecycleRegistry.handleLifecycleEvent(event)
+        } catch (e: Throwable) {
+            Log.w("ComposeIME", "Lifecycle transition error on $event: ${e.message}")
+        }
     }
 }
+

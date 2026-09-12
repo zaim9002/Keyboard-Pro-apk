@@ -3,6 +3,7 @@ package com.example
 import android.app.Application
 import com.example.data.local.AppDatabase
 import com.example.data.pref.KeyboardPreferences
+import com.example.language.LanguageManager
 
 class KeyboardProApp : Application() {
 
@@ -20,11 +21,19 @@ class KeyboardProApp : Application() {
             _preferences ?: KeyboardPreferences(this).also { _preferences = it }
         }
 
+    @Volatile
+    private var _languageManager: LanguageManager? = null
+    val languageManager: LanguageManager
+        get() = _languageManager ?: synchronized(this) {
+            _languageManager ?: LanguageManager(this, preferences).also { _languageManager = it }
+        }
+
     override fun onCreate() {
         super.onCreate()
         instance = this
         _database = AppDatabase.getDatabase(this)
         _preferences = KeyboardPreferences(this)
+        _languageManager = LanguageManager(this, preferences)
     }
 
     companion object {

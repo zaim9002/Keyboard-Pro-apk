@@ -26,32 +26,32 @@ object KeyboardLayouts {
     val arabicTashkeel = listOf("َ", "ً", "ُ", "ٌ", "ِ", "ٍ", "ْ", "ّ", "ٰ", "ـ")
 
     val arabicRow1 = listOf(
-        KeyModel("ض", secondaryText = "1", popupOptions = listOf("1", "١")),
-        KeyModel("ص", secondaryText = "2", popupOptions = listOf("2", "٢")),
-        KeyModel("ث", secondaryText = "3", popupOptions = listOf("3", "٣")),
-        KeyModel("ق", secondaryText = "4", popupOptions = listOf("4", "٤")),
-        KeyModel("ف", secondaryText = "5", popupOptions = listOf("5", "٥")),
-        KeyModel("غ", secondaryText = "6", popupOptions = listOf("6", "٦")),
-        KeyModel("ع", secondaryText = "7", popupOptions = listOf("7", "٧")),
-        KeyModel("ه", secondaryText = "8", popupOptions = listOf("8", "٨", "ة")),
-        KeyModel("خ", secondaryText = "9", popupOptions = listOf("9", "٩")),
-        KeyModel("ح", secondaryText = "0", popupOptions = listOf("0", "٠")),
-        KeyModel("ج"),
-        KeyModel("د")
+        KeyModel("ض", secondaryText = "١", popupOptions = listOf("١", "1")),
+        KeyModel("ص", secondaryText = "٢", popupOptions = listOf("٢", "2", "ض")),
+        KeyModel("ث", secondaryText = "٣", popupOptions = listOf("٣", "3")),
+        KeyModel("ق", secondaryText = "٤", popupOptions = listOf("٤", "4")),
+        KeyModel("ف", secondaryText = "٥", popupOptions = listOf("٥", "5", "ڤ")),
+        KeyModel("غ", secondaryText = "٦", popupOptions = listOf("٦", "6")),
+        KeyModel("ع", secondaryText = "٧", popupOptions = listOf("٧", "7", "غ")),
+        KeyModel("ه", secondaryText = "٨", popupOptions = listOf("٨", "8", "ة", "هـ")),
+        KeyModel("خ", secondaryText = "٩", popupOptions = listOf("٩", "9")),
+        KeyModel("ح", secondaryText = "٠", popupOptions = listOf("٠", "0", "خ", "ج")),
+        KeyModel("ج", popupOptions = listOf("چ", "ح", "خ")),
+        KeyModel("د", popupOptions = listOf("ذ"))
     )
 
     val arabicRow2 = listOf(
-        KeyModel("ش"),
-        KeyModel("س"),
-        KeyModel("ي", popupOptions = listOf("ئ", "ى")),
-        KeyModel("ب"),
-        KeyModel("ل", popupOptions = listOf("لآ", "لأ", "لإ")),
-        KeyModel("ا", popupOptions = listOf("أ", "إ", "آ", "ٱ")),
-        KeyModel("ت"),
+        KeyModel("ش", popupOptions = listOf("س")),
+        KeyModel("س", popupOptions = listOf("ش")),
+        KeyModel("ي", popupOptions = listOf("ى", "ئ")),
+        KeyModel("ب", popupOptions = listOf("پ")),
+        KeyModel("ل", popupOptions = listOf("لا", "لأ", "لإ", "لآ")),
+        KeyModel("ا", popupOptions = listOf("أ", "إ", "آ", "ء", "ٱ")),
+        KeyModel("ت", popupOptions = listOf("ة", "ث")),
         KeyModel("ن"),
         KeyModel("م"),
-        KeyModel("ك"),
-        KeyModel("ط")
+        KeyModel("ك", popupOptions = listOf("گ", "ڨ")),
+        KeyModel("ط", popupOptions = listOf("ظ"))
     )
 
     val arabicRow3 = listOf(
@@ -59,12 +59,12 @@ object KeyboardLayouts {
         KeyModel("ئ"),
         KeyModel("ء"),
         KeyModel("ؤ"),
-        KeyModel("ر"),
-        KeyModel("ى"),
-        KeyModel("ة"),
+        KeyModel("ر", popupOptions = listOf("ز", "ژ")),
+        KeyModel("ى", popupOptions = listOf("ي")),
+        KeyModel("ة", popupOptions = listOf("ه")),
         KeyModel("و", popupOptions = listOf("ؤ")),
-        KeyModel("ز"),
-        KeyModel("ظ"),
+        KeyModel("ز", popupOptions = listOf("ژ")),
+        KeyModel("ظ", popupOptions = listOf("ط")),
         KeyModel("حذف", type = KeyType.BACKSPACE, weight = 1.3f)
     )
 

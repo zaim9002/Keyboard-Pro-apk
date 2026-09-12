@@ -21,8 +21,11 @@ import com.example.KeyboardProApp
 import kotlinx.coroutines.launch
 
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(
+    onNavigateToLanguages: () -> Unit = {}
+) {
     val prefs = KeyboardProApp.instance.preferences
+    val langManager = KeyboardProApp.instance.languageManager
     val coroutineScope = rememberCoroutineScope()
 
     var keyboardHeight by remember { mutableStateOf(prefs.keyboardHeight) }
@@ -31,6 +34,8 @@ fun SettingsScreen() {
     var showNumberRow by remember { mutableStateOf(prefs.showNumberRow) }
     var doubleSpacePeriod by remember { mutableStateOf(prefs.doubleSpacePeriod) }
     var autoCapitalization by remember { mutableStateOf(prefs.autoCapitalization) }
+    var showSuggestions by remember { mutableStateOf(prefs.showSuggestions) }
+    var arabicNumerals by remember { mutableStateOf(prefs.arabicNumerals) }
     var isIncognito by remember { mutableStateOf(prefs.isIncognito) }
     var isGamingMode by remember { mutableStateOf(prefs.isGamingMode) }
     var oneHandedMode by remember { mutableStateOf(prefs.oneHandedMode) }
@@ -77,6 +82,39 @@ fun SettingsScreen() {
                     fontSize = 11.sp,
                     lineHeight = 17.sp
                 )
+            }
+        }
+
+        // Languages Management Card
+        SettingsGroupTitle("اللغات وحزم الكتابة")
+        Card(
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+        ) {
+            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("مدير اللغات والحزم العالمية", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            "اللغة الحالية: ${langManager.getLanguageInfo(prefs.currentLanguage)?.nameArabic ?: "العربية"} (${prefs.enabledLanguages.size} لغات مفعلة)",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Button(
+                        onClick = onNavigateToLanguages,
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                    ) {
+                        Icon(Icons.Default.Language, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("إدارة اللغات", fontSize = 12.sp)
+                    }
+                }
             }
         }
 
@@ -239,6 +277,32 @@ fun SettingsScreen() {
                     onCheckedChange = {
                         autoCapitalization = it
                         prefs.autoCapitalization = it
+                    }
+                )
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                // Word Suggestions
+                SettingsSwitchRow(
+                    title = "إظهار اقتراحات الكلمات",
+                    subtitle = "عرض الكلمات المتوقعة والإكمال التلقائي أثناء الكتابة",
+                    checked = showSuggestions,
+                    onCheckedChange = {
+                        showSuggestions = it
+                        prefs.showSuggestions = it
+                    }
+                )
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                // Arabic Numerals
+                SettingsSwitchRow(
+                    title = "الأرقام المشرقية (٠١٢٣٤٥٦٧٨٩)",
+                    subtitle = "استخدام الأرقام العربية ٠-٩ في صف أرقام اللوحة العربية",
+                    checked = arabicNumerals,
+                    onCheckedChange = {
+                        arabicNumerals = it
+                        prefs.arabicNumerals = it
                     }
                 )
             }

@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -164,6 +165,15 @@ fun KeyboardToolbar(
         )
 
         // Language indicator button
+        val langLabel = remember(currentLanguage) {
+            try {
+                com.example.KeyboardProApp.instance.languageManager.getLanguageInfo(currentLanguage)?.let {
+                    "${it.flag} ${it.id.uppercase()}"
+                } ?: if (currentLanguage == "ar") "🇸🇦 AR" else "🌐 ${currentLanguage.uppercase()}"
+            } catch (e: Throwable) {
+                if (currentLanguage == "ar") "🇸🇦 AR" else "🌐 ${currentLanguage.uppercase()}"
+            }
+        }
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(8.dp))
@@ -173,7 +183,7 @@ fun KeyboardToolbar(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = if (currentLanguage == "ar") "🌐 عربي" else "🌐 EN",
+                text = langLabel,
                 color = colorScheme.keyText,
                 fontSize = 11.sp
             )

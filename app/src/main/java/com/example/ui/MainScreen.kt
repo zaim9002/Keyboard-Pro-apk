@@ -15,6 +15,7 @@ import com.example.ui.screens.*
 
 enum class AppDestination(val title: String, val icon: ImageVector) {
     DASHBOARD("الرئيسية", Icons.Default.Home),
+    LANGUAGES("اللغات", Icons.Default.Language),
     THEMES("الثيمات", Icons.Default.Palette),
     CLIPBOARD("الحافظة", Icons.Default.ContentPaste),
     SHORTCUTS("الاختصارات", Icons.Default.FlashOn),
@@ -86,13 +87,17 @@ fun MainScreen() {
                         onNavigateToThemes = { currentDestination = AppDestination.THEMES },
                         onNavigateToClipboard = { currentDestination = AppDestination.CLIPBOARD },
                         onNavigateToShortcuts = { currentDestination = AppDestination.SHORTCUTS },
-                        onNavigateToSettings = { currentDestination = AppDestination.SETTINGS }
+                        onNavigateToSettings = { currentDestination = AppDestination.SETTINGS },
+                        onNavigateToLanguages = { currentDestination = AppDestination.LANGUAGES }
                     )
+                    AppDestination.LANGUAGES -> LanguagesScreen()
                     AppDestination.THEMES -> ThemesScreen()
                     AppDestination.CLIPBOARD -> ClipboardScreen()
                     AppDestination.SHORTCUTS -> ShortcutsScreen()
                     AppDestination.DICTIONARY -> DictionaryScreen()
-                    AppDestination.SETTINGS -> SettingsScreen()
+                    AppDestination.SETTINGS -> SettingsScreen(
+                        onNavigateToLanguages = { currentDestination = AppDestination.LANGUAGES }
+                    )
                 }
             }
         }
