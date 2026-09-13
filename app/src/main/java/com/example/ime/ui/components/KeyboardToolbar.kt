@@ -1,5 +1,6 @@
 package com.example.ime.ui.components
 
+import android.view.SoundEffectConstants
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -17,10 +18,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ime.theme.KeyboardColorScheme
+import com.example.ime.util.HapticHelper
 
 enum class KeyboardPanel {
     NONE,
@@ -32,7 +36,8 @@ enum class KeyboardPanel {
     VOICE,
     TRANSLATE,
     DICTIONARY,
-    EDITING
+    EDITING,
+    RESIZE
 }
 
 @Composable
@@ -41,17 +46,20 @@ fun KeyboardToolbar(
     activePanel: KeyboardPanel,
     currentLanguage: String,
     isIncognito: Boolean,
+    autoTranslateOnEnter: Boolean = false,
     colorScheme: KeyboardColorScheme,
     onPanelSelect: (KeyboardPanel) -> Unit,
     onSwitchLanguage: () -> Unit,
     onOpenSettings: () -> Unit
 ) {
     val scrollState = rememberScrollState()
+    val context = LocalContext.current
+    val view = LocalView.current
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(40.dp)
+            .height(38.dp)
             .background(colorScheme.background)
             .horizontalScroll(scrollState)
             .padding(horizontal = 4.dp, vertical = 2.dp),
@@ -74,13 +82,16 @@ fun KeyboardToolbar(
             }
         }
 
-        // Settings Gear on far left (as in screenshot)
+        // Settings Gear on far left
         ToolbarIconButton(
             icon = Icons.Default.Settings,
             tooltip = "إعدادات",
             isSelected = false,
             colorScheme = colorScheme,
-            onClick = onOpenSettings
+            onClick = {
+                HapticHelper.performKeyHaptic(context, view)
+                onOpenSettings()
+            }
         )
 
         // Language indicator button (ع / EN)
@@ -88,28 +99,45 @@ fun KeyboardToolbar(
         val langShort = if (isArabic) "ع" else currentLanguage.uppercase()
         Box(
             modifier = Modifier
-                .height(34.dp)
+                .height(32.dp)
                 .clip(RoundedCornerShape(8.dp))
                 .background(colorScheme.keyBackground.copy(alpha = 0.5f))
-                .clickable { onSwitchLanguage() }
-                .padding(horizontal = 10.dp),
+                .clickable {
+                    HapticHelper.performKeyHaptic(context, view)
+                    onSwitchLanguage()
+                }
+                .padding(horizontal = 9.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = langShort,
                 color = colorScheme.keyText,
-                fontSize = 15.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Bold
             )
         }
+
+        // Resize Keyboard button (خيار وزر تغيير حجم الكيبورد)
+        ToolbarIconButton(
+            icon = Icons.Default.Height,
+            tooltip = "تغيير حجم الكيبورد",
+            isSelected = activePanel == KeyboardPanel.RESIZE,
+            colorScheme = colorScheme,
+            onClick = {
+                HapticHelper.performKeyHaptic(context, view)
+                onPanelSelect(if (activePanel == KeyboardPanel.RESIZE) KeyboardPanel.NONE else KeyboardPanel.RESIZE)
+            }
+        )
 
         // Translate
         ToolbarIconButton(
             icon = Icons.Default.Translate,
             tooltip = "ترجمة فورية",
             isSelected = activePanel == KeyboardPanel.TRANSLATE,
+            badge = if (autoTranslateOnEnter) "⚡" else null,
             colorScheme = colorScheme,
             onClick = {
+                HapticHelper.performKeyHaptic(context, view)
                 onPanelSelect(if (activePanel == KeyboardPanel.TRANSLATE) KeyboardPanel.NONE else KeyboardPanel.TRANSLATE)
             }
         )
@@ -121,6 +149,7 @@ fun KeyboardToolbar(
             isSelected = activePanel == KeyboardPanel.CLIPBOARD,
             colorScheme = colorScheme,
             onClick = {
+                HapticHelper.performKeyHaptic(context, view)
                 onPanelSelect(if (activePanel == KeyboardPanel.CLIPBOARD) KeyboardPanel.NONE else KeyboardPanel.CLIPBOARD)
             }
         )
@@ -132,6 +161,7 @@ fun KeyboardToolbar(
             isSelected = activePanel == KeyboardPanel.VOICE,
             colorScheme = colorScheme,
             onClick = {
+                HapticHelper.performKeyHaptic(context, view)
                 onPanelSelect(if (activePanel == KeyboardPanel.VOICE) KeyboardPanel.NONE else KeyboardPanel.VOICE)
             }
         )
@@ -143,6 +173,7 @@ fun KeyboardToolbar(
             isSelected = activePanel == KeyboardPanel.EMOJI,
             colorScheme = colorScheme,
             onClick = {
+                HapticHelper.performKeyHaptic(context, view)
                 onPanelSelect(if (activePanel == KeyboardPanel.EMOJI) KeyboardPanel.NONE else KeyboardPanel.EMOJI)
             }
         )
@@ -154,6 +185,7 @@ fun KeyboardToolbar(
             isSelected = activePanel == KeyboardPanel.DECORATIONS,
             colorScheme = colorScheme,
             onClick = {
+                HapticHelper.performKeyHaptic(context, view)
                 onPanelSelect(if (activePanel == KeyboardPanel.DECORATIONS) KeyboardPanel.NONE else KeyboardPanel.DECORATIONS)
             }
         )
@@ -165,6 +197,7 @@ fun KeyboardToolbar(
             isSelected = activePanel == KeyboardPanel.STICKERS,
             colorScheme = colorScheme,
             onClick = {
+                HapticHelper.performKeyHaptic(context, view)
                 onPanelSelect(if (activePanel == KeyboardPanel.STICKERS) KeyboardPanel.NONE else KeyboardPanel.STICKERS)
             }
         )
@@ -176,6 +209,7 @@ fun KeyboardToolbar(
             isSelected = activePanel == KeyboardPanel.GIFS,
             colorScheme = colorScheme,
             onClick = {
+                HapticHelper.performKeyHaptic(context, view)
                 onPanelSelect(if (activePanel == KeyboardPanel.GIFS) KeyboardPanel.NONE else KeyboardPanel.GIFS)
             }
         )
@@ -187,6 +221,7 @@ fun KeyboardToolbar(
             isSelected = activePanel == KeyboardPanel.EDITING,
             colorScheme = colorScheme,
             onClick = {
+                HapticHelper.performKeyHaptic(context, view)
                 onPanelSelect(if (activePanel == KeyboardPanel.EDITING) KeyboardPanel.NONE else KeyboardPanel.EDITING)
             }
         )
@@ -198,6 +233,7 @@ private fun ToolbarIconButton(
     icon: ImageVector,
     tooltip: String,
     isSelected: Boolean,
+    badge: String? = null,
     colorScheme: KeyboardColorScheme,
     onClick: () -> Unit
 ) {
@@ -206,7 +242,7 @@ private fun ToolbarIconButton(
 
     Box(
         modifier = Modifier
-            .size(34.dp)
+            .size(32.dp)
             .clip(CircleShape)
             .background(bg)
             .clickable(onClick = onClick),
@@ -216,7 +252,16 @@ private fun ToolbarIconButton(
             imageVector = icon,
             contentDescription = tooltip,
             tint = tint,
-            modifier = Modifier.size(18.dp)
+            modifier = Modifier.size(17.dp)
         )
+        if (badge != null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 2.dp, y = (-2).dp)
+            ) {
+                Text(text = badge, fontSize = 9.sp)
+            }
+        }
     }
 }

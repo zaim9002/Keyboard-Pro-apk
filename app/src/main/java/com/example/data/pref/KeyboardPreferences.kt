@@ -34,6 +34,10 @@ class KeyboardPreferences(context: Context) {
     private val _arabicNumeralsState = MutableStateFlow(arabicNumerals)
     val arabicNumeralsState: StateFlow<Boolean> = _arabicNumeralsState.asStateFlow()
 
+    private val _autoTranslateState = MutableStateFlow(autoTranslateOnEnter)
+    val autoTranslateState: StateFlow<Boolean> = _autoTranslateState.asStateFlow()
+    val autoTranslateOnEnterState: StateFlow<Boolean> = _autoTranslateState.asStateFlow()
+
     var theme: String
         get() = prefs.getString(KEY_THEME, "Midnight") ?: "Midnight"
         set(value) {
@@ -132,6 +136,29 @@ class KeyboardPreferences(context: Context) {
             _arabicNumeralsState.value = value
         }
 
+    var autoTranslateOnEnter: Boolean
+        get() = prefs.getBoolean(KEY_AUTO_TRANSLATE_ENTER, false)
+        set(value) {
+            prefs.edit().putBoolean(KEY_AUTO_TRANSLATE_ENTER, value).apply()
+            _autoTranslateState.value = value
+        }
+
+    var translateSourceLang: String
+        get() = prefs.getString(KEY_TRANSLATE_SOURCE, "ar") ?: "ar"
+        set(value) = prefs.edit().putString(KEY_TRANSLATE_SOURCE, value).apply()
+
+    var translateTargetLang: String
+        get() = prefs.getString(KEY_TRANSLATE_TARGET, "en") ?: "en"
+        set(value) = prefs.edit().putString(KEY_TRANSLATE_TARGET, value).apply()
+
+    var sourceTranslateLang: String
+        get() = translateSourceLang
+        set(value) { translateSourceLang = value }
+
+    var targetTranslateLang: String
+        get() = translateTargetLang
+        set(value) { translateTargetLang = value }
+
     fun incrementWordCount() {
         if (!isIncognito) {
             wordsTypedCount = wordsTypedCount + 1
@@ -158,5 +185,8 @@ class KeyboardPreferences(context: Context) {
         private const val KEY_WORD_COUNT = "words_typed_count"
         private const val KEY_SHOW_SUGGESTIONS = "show_suggestions"
         private const val KEY_ARABIC_NUMERALS = "arabic_numerals"
+        private const val KEY_AUTO_TRANSLATE_ENTER = "auto_translate_on_enter"
+        private const val KEY_TRANSLATE_SOURCE = "translate_source_lang"
+        private const val KEY_TRANSLATE_TARGET = "translate_target_lang"
     }
 }

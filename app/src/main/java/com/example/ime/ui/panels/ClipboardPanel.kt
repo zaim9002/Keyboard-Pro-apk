@@ -17,12 +17,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.local.entity.ClipboardEntity
 import com.example.ime.theme.KeyboardColorScheme
+import com.example.ime.util.HapticHelper
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -37,6 +40,8 @@ fun ClipboardPanel(
     onClearUnpinned: () -> Unit,
     onClose: () -> Unit
 ) {
+    val context = LocalContext.current
+    val view = LocalView.current
     var searchQuery by remember { mutableStateOf("") }
     var selectedFolder by remember { mutableStateOf("الكل") }
     val folders = listOf("الكل", "مهم", "عام", "أذكار", "روابط", "ملاحظات")
@@ -100,7 +105,10 @@ fun ClipboardPanel(
 
             // Clear unpinned
             IconButton(
-                onClick = onClearUnpinned,
+                onClick = {
+                    HapticHelper.performKeyHaptic(context, view)
+                    onClearUnpinned()
+                },
                 modifier = Modifier.size(30.dp)
             ) {
                 Icon(
@@ -113,7 +121,10 @@ fun ClipboardPanel(
 
             // Close button
             IconButton(
-                onClick = onClose,
+                onClick = {
+                    HapticHelper.performKeyHaptic(context, view)
+                    onClose()
+                },
                 modifier = Modifier.size(30.dp)
             ) {
                 Icon(
@@ -141,7 +152,10 @@ fun ClipboardPanel(
                         .background(
                             if (isSelected) colorScheme.accent else colorScheme.keyBackground
                         )
-                        .clickable { selectedFolder = folder }
+                        .clickable {
+                            HapticHelper.performKeyHaptic(context, view)
+                            selectedFolder = folder
+                        }
                         .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
                     Text(
@@ -180,7 +194,10 @@ fun ClipboardPanel(
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(8.dp))
                             .background(colorScheme.keyBackground)
-                            .clickable { onClipClick(clip.text) }
+                            .clickable {
+                                HapticHelper.performKeyHaptic(context, view)
+                                onClipClick(clip.text)
+                            }
                             .padding(horizontal = 10.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -212,7 +229,10 @@ fun ClipboardPanel(
 
                         // Toggle Pin
                         IconButton(
-                            onClick = { onTogglePin(clip.id, !clip.isPinned) },
+                            onClick = {
+                                HapticHelper.performKeyHaptic(context, view)
+                                onTogglePin(clip.id, !clip.isPinned)
+                            },
                             modifier = Modifier.size(28.dp)
                         ) {
                             Icon(
@@ -225,7 +245,10 @@ fun ClipboardPanel(
 
                         // Delete
                         IconButton(
-                            onClick = { onDeleteClip(clip.id) },
+                            onClick = {
+                                HapticHelper.performKeyHaptic(context, view)
+                                onDeleteClip(clip.id)
+                            },
                             modifier = Modifier.size(28.dp)
                         ) {
                             Icon(

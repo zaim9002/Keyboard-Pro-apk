@@ -30,13 +30,17 @@ import com.example.data.repository.ClipboardRepository
 import com.example.data.repository.ShortcutRepository
 import com.example.data.repository.UserWordRepository
 import com.example.engine.SuggestionEngine
+import com.example.engine.TranslationEngine
 import com.example.ime.ComposeInputMethodService
 import com.example.ime.theme.KeyboardThemes
 import com.example.ime.ui.KeyboardScreen
 import com.example.ime.ui.SafeFallbackKeyboardView
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Locale
 
 open class KeyboardInputMethodService : ComposeInputMethodService() {
@@ -184,6 +188,7 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
             val showSuggestions by prefs.suggestionsState.collectAsState()
             val arabicNumerals by prefs.arabicNumeralsState.collectAsState()
             val isIncognitoPref by prefs.incognitoState.collectAsState()
+            val autoTranslateOnEnter by prefs.autoTranslateOnEnterState.collectAsState()
             val langManager = (applicationContext as? KeyboardProApp)?.languageManager
 
             val effectiveIncognito = isIncognitoPref || isPasswordField
@@ -208,6 +213,13 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
                 voicePartialText = voicePartialText,
                 showSuggestions = showSuggestions,
                 arabicNumerals = arabicNumerals,
+                autoTranslateOnEnter = autoTranslateOnEnter,
+                onToggleAutoTranslate = { enabled ->
+                    prefs.autoTranslateOnEnter = enabled
+                },
+                onChangeKeyboardHeight = { newHeight ->
+                    prefs.keyboardHeight = newHeight
+                },
                 onTextInput = { text -> handleTextInput(text) },
                 onDelete = { handleDelete() },
                 onDeleteAll = { handleDeleteAll() },
@@ -395,6 +407,44 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
     private fun handleEnter() {
         try {
             val ic = currentInputConnection ?: return
+
+            // If Auto-Translate on Enter is enabled, translate current typed text before sending/entering
+            if (prefs.autoTranslateOnEnter) {
+                val textBefore = ic.getTextBeforeCursor(500, 0)?.toString() ?: ""
+                val lastLine = textBefore.substringAfterLast('\n').trim()
+                if (lastLine.isNotEmpty()) {
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        val translated = TranslationEngine.translateAsync(
+                            text = lastLine,
+                            sourceLang = prefs.translateSourceLang,
+                            targetLang = prefs.translateTargetLang
+                        )
+                        withContext(Dispatchers.Main) {
+                            try {
+                                val currentIc = currentInputConnection ?: return@withContext
+                                val currentTextBefore = currentIc.getTextBeforeCursor(500, 0)?.toString() ?: ""
+                                val currentLastLine = currentTextBefore.substringAfterLast('\n')
+                                currentIc.deleteSurroundingText(currentLastLine.length, 0)
+                                currentIc.commitText(translated, 1)
+                                executeStandardEnter(currentIc)
+                            } catch (e: Throwable) {
+                                Log.e("KeyboardIME", "Error replacing text with translation", e)
+                                executeStandardEnter(currentInputConnection ?: return@withContext)
+                            }
+                        }
+                    }
+                    return
+                }
+            }
+
+            executeStandardEnter(ic)
+        } catch (e: Throwable) {
+            Log.e("KeyboardIME", "Error in handleEnter", e)
+        }
+    }
+
+    private fun executeStandardEnter(ic: android.view.inputmethod.InputConnection) {
+        try {
             val info = currentEditorInfo
             val imeOptions = info?.imeOptions ?: 0
             val action = imeOptions and EditorInfo.IME_MASK_ACTION
@@ -438,7 +488,7 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
             currentWordBuffer.clear()
             updateSuggestions()
         } catch (e: Throwable) {
-            Log.e("KeyboardIME", "Error in handleEnter", e)
+            Log.e("KeyboardIME", "Error in executeStandardEnter", e)
         }
     }
 
@@ -504,6 +554,8 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
         }
     }
 
+    private var suggestionJob: Job? = null
+
     private fun updateSuggestions() {
         try {
             if (isPasswordField || prefs.isIncognito) {
@@ -512,8 +564,8 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
             }
 
             val engine = suggestionEngine ?: return
-
-            lifecycleScope.launch {
+            suggestionJob?.cancel()
+            suggestionJob = lifecycleScope.launch(kotlinx.coroutines.Dispatchers.Default) {
                 try {
                     val fullText = currentWordBuffer.toString()
                     val words = fullText.split("\\s+".toRegex()).filter { it.isNotBlank() }
@@ -524,8 +576,9 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
                     val results = engine.getSuggestions(currentWord, prevWord, isArabic)
                     _suggestions.value = results
                 } catch (e: Throwable) {
-                    // Fallback to empty on error
-                    _suggestions.value = emptyList()
+                    if (e !is kotlinx.coroutines.CancellationException) {
+                        _suggestions.value = emptyList()
+                    }
                 }
             }
         } catch (e: Throwable) {

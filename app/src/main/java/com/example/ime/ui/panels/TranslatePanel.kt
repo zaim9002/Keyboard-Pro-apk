@@ -1,101 +1,161 @@
 package com.example.ime.ui.panels
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.engine.TranslationEngine
 import com.example.ime.theme.KeyboardColorScheme
+import com.example.ime.util.HapticHelper
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun TranslatePanel(
     modifier: Modifier = Modifier,
     initialText: String,
+    autoTranslateOnEnter: Boolean = false,
     colorScheme: KeyboardColorScheme,
+    onToggleAutoTranslate: (Boolean) -> Unit = {},
     onCommitTranslation: (String) -> Unit,
     onClose: () -> Unit
 ) {
+    val context = LocalContext.current
+    val view = LocalView.current
+    val scope = rememberCoroutineScope()
+
     var sourceLang by remember { mutableStateOf("ar") }
     var targetLang by remember { mutableStateOf("en") }
-    var inputText by remember { mutableStateOf(if (initialText.isNotBlank()) initialText else "مرحبا") }
+    var inputText by remember { mutableStateOf(if (initialText.isNotBlank()) initialText else "") }
+    var translatedText by remember { mutableStateOf("") }
+    var isTranslating by remember { mutableStateOf(false) }
+    var translationJob by remember { mutableStateOf<Job?>(null) }
+    var showSourceSelector by remember { mutableStateOf(false) }
+    var showTargetSelector by remember { mutableStateOf(false) }
 
-    val translatedText = remember(inputText, sourceLang, targetLang) {
-        TranslationEngine.translate(inputText, sourceLang, targetLang)
+    // Trigger translation whenever input or languages change
+    LaunchedEffect(inputText, sourceLang, targetLang) {
+        if (inputText.isBlank()) {
+            translatedText = ""
+            isTranslating = false
+            return@LaunchedEffect
+        }
+        isTranslating = true
+        translationJob?.cancel()
+        translationJob = scope.launch {
+            delay(150) // Small debounce for fast typing
+            val res = TranslationEngine.translateAsync(inputText, sourceLang, targetLang)
+            translatedText = res
+            isTranslating = false
+        }
     }
+
+    val sourceObj = TranslationEngine.supportedLanguages.find { it.code == sourceLang }
+        ?: TranslationEngine.supportedLanguages.first()
+    val targetObj = TranslationEngine.supportedLanguages.find { it.code == targetLang }
+        ?: TranslationEngine.supportedLanguages[1]
 
     Column(
         modifier = modifier
             .fillMaxWidth()
             .fillMaxHeight()
             .background(colorScheme.background)
-            .padding(8.dp),
+            .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // Header & Language selector
+        // Header & Language selector & Auto-Translate Switch
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Text(
-                text = "🌐 ترجمة فورية",
-                color = colorScheme.accent,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            // Language swap bar
-            Row(
+            // Source Language Selector Button
+            Box(
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(8.dp))
                     .background(colorScheme.keyBackground)
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceEvenly
+                    .clickable {
+                        HapticHelper.performKeyHaptic(context, view)
+                        showSourceSelector = !showSourceSelector
+                        showTargetSelector = false
+                    }
+                    .padding(horizontal = 6.dp, vertical = 5.dp),
+                contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = if (sourceLang == "ar") "العربية" else "English",
+                    text = "${sourceObj.flag} ${sourceObj.nameAr}",
                     color = colorScheme.keyText,
                     fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium
-                )
-                IconButton(
-                    onClick = {
-                        val temp = sourceLang
-                        sourceLang = targetLang
-                        targetLang = temp
-                    },
-                    modifier = Modifier.size(24.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.SwapHoriz,
-                        contentDescription = "تبديل اللغات",
-                        tint = colorScheme.accent,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-                Text(
-                    text = if (targetLang == "ar") "العربية" else "English",
-                    color = colorScheme.keyText,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1
                 )
             }
 
+            // Swap Button
             IconButton(
-                onClick = onClose,
+                onClick = {
+                    HapticHelper.performKeyHaptic(context, view)
+                    val temp = sourceLang
+                    sourceLang = targetLang
+                    targetLang = temp
+                },
+                modifier = Modifier.size(30.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.SwapHoriz,
+                    contentDescription = "تبديل اللغات",
+                    tint = colorScheme.accent,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            // Target Language Selector Button
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(colorScheme.keyBackground)
+                    .clickable {
+                        HapticHelper.performKeyHaptic(context, view)
+                        showTargetSelector = !showTargetSelector
+                        showSourceSelector = false
+                    }
+                    .padding(horizontal = 6.dp, vertical = 5.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "${targetObj.flag} ${targetObj.nameAr}",
+                    color = colorScheme.keyText,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1
+                )
+            }
+
+            // Close button
+            IconButton(
+                onClick = {
+                    HapticHelper.performKeyHaptic(context, view)
+                    onClose()
+                },
                 modifier = Modifier.size(28.dp)
             ) {
                 Icon(
@@ -107,13 +167,50 @@ fun TranslatePanel(
             }
         }
 
-        // Input and Result
+        // Language Quick Picker Row if open
+        if (showSourceSelector || showTargetSelector) {
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                items(TranslationEngine.supportedLanguages) { lang ->
+                    val isSelected = if (showSourceSelector) lang.code == sourceLang else lang.code == targetLang
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(if (isSelected) colorScheme.accent else colorScheme.keyBackground)
+                            .clickable {
+                                HapticHelper.performKeyHaptic(context, view)
+                                if (showSourceSelector) {
+                                    sourceLang = lang.code
+                                    showSourceSelector = false
+                                } else {
+                                    targetLang = lang.code
+                                    showTargetSelector = false
+                                }
+                            }
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = "${lang.flag} ${lang.nameAr}",
+                            color = if (isSelected) Color.White else colorScheme.keyText,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+        }
+
+        // Input and Result Box
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .padding(vertical = 6.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             // Source text input
             Box(
@@ -124,6 +221,13 @@ fun TranslatePanel(
                     .background(colorScheme.keyBackground)
                     .padding(8.dp)
             ) {
+                if (inputText.isEmpty()) {
+                    Text(
+                        text = "اكتب النص المراد ترجمته هنا...",
+                        color = colorScheme.keyText.copy(alpha = 0.4f),
+                        fontSize = 12.sp
+                    )
+                }
                 androidx.compose.foundation.text.BasicTextField(
                     value = inputText,
                     onValueChange = { inputText = it },
@@ -141,38 +245,92 @@ fun TranslatePanel(
                     .fillMaxWidth()
                     .weight(1f)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(colorScheme.accent.copy(alpha = 0.12f))
+                    .background(colorScheme.accent.copy(alpha = 0.14f))
                     .padding(8.dp),
                 contentAlignment = Alignment.TopStart
             ) {
-                Text(
-                    text = if (translatedText.isNotEmpty()) translatedText else "الترجمة ستظهر هنا...",
-                    color = colorScheme.keyText,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                if (isTranslating) {
+                    Text(
+                        text = "جاري الترجمة الفورية...",
+                        color = colorScheme.accent,
+                        fontSize = 12.sp
+                    )
+                } else {
+                    Text(
+                        text = if (translatedText.isNotEmpty()) translatedText else "الترجمة الفورية ستظهر هنا فورياً...",
+                        color = if (translatedText.isNotEmpty()) colorScheme.keyText else colorScheme.keyText.copy(alpha = 0.5f),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
 
-        // Actions
+        // Actions & Auto-Translate toggle
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
+            // Auto Translate On Enter toggle button
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(
+                        if (autoTranslateOnEnter) colorScheme.accent.copy(alpha = 0.25f)
+                        else colorScheme.keyBackground
+                    )
+                    .border(
+                        width = if (autoTranslateOnEnter) 1.5.dp else 0.5.dp,
+                        color = if (autoTranslateOnEnter) colorScheme.accent else colorScheme.keyText.copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    .clickable {
+                        HapticHelper.performKeyHaptic(context, view)
+                        onToggleAutoTranslate(!autoTranslateOnEnter)
+                    }
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        imageVector = if (autoTranslateOnEnter) Icons.Default.Bolt else Icons.Default.FlashOff,
+                        contentDescription = "ترجمة بضغط إنتر",
+                        tint = if (autoTranslateOnEnter) colorScheme.accent else colorScheme.keyText.copy(alpha = 0.6f),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = if (autoTranslateOnEnter) "الترجمة بـ Enter: مفعّلة ✓" else "ترجمة تلقائية بـ Enter",
+                        color = if (autoTranslateOnEnter) colorScheme.accent else colorScheme.keyText,
+                        fontSize = 10.5.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
+            // Commit Translation Button
             Button(
                 onClick = {
+                    HapticHelper.performKeyHaptic(context, view)
                     if (translatedText.isNotEmpty()) {
                         onCommitTranslation(translatedText)
                     }
                 },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(36.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = colorScheme.accent),
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(8.dp),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
             ) {
                 Text(
-                    text = "إدخال الترجمة في النص ↵",
+                    text = "إدخال في النص ↵",
                     fontSize = 12.sp,
-                    color = androidx.compose.ui.graphics.Color.White
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
                 )
             }
         }

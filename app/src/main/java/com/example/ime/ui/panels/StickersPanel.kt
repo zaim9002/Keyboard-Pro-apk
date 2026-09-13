@@ -18,12 +18,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.engine.StickerData
 import com.example.ime.theme.KeyboardColorScheme
+import com.example.ime.util.HapticHelper
 
 @Composable
 fun StickersPanel(
@@ -32,6 +35,8 @@ fun StickersPanel(
     onStickerClick: (String) -> Unit,
     onClose: () -> Unit
 ) {
+    val context = LocalContext.current
+    val view = LocalView.current
     var selectedPackName by remember { mutableStateOf(StickerData.packs.first().name) }
     val currentPack = remember(selectedPackName) {
         StickerData.packs.find { it.name == selectedPackName } ?: StickerData.packs.first()
@@ -57,7 +62,10 @@ fun StickersPanel(
                 modifier = Modifier.weight(1f)
             )
             IconButton(
-                onClick = onClose,
+                onClick = {
+                    HapticHelper.performKeyHaptic(context, view)
+                    onClose()
+                },
                 modifier = Modifier.size(30.dp)
             ) {
                 Icon(
@@ -85,7 +93,10 @@ fun StickersPanel(
                         .background(
                             if (isSelected) colorScheme.accent else colorScheme.keyBackground
                         )
-                        .clickable { selectedPackName = pack.name }
+                        .clickable {
+                            HapticHelper.performKeyHaptic(context, view)
+                            selectedPackName = pack.name
+                        }
                         .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
                     Text(
@@ -98,20 +109,23 @@ fun StickersPanel(
             }
         }
 
-        // Stickers Grid
+        // Stickers Grid with stable item keys
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(6.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            items(currentPack.stickers) { sticker ->
+            items(currentPack.stickers, key = { it.text }) { sticker ->
                 Box(
                     modifier = Modifier
                         .height(54.dp)
                         .clip(RoundedCornerShape(10.dp))
                         .background(colorScheme.keyBackground)
-                        .clickable { onStickerClick(sticker.text) }
+                        .clickable {
+                            HapticHelper.performKeyHaptic(context, view)
+                            onStickerClick(sticker.text)
+                        }
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                     contentAlignment = Alignment.Center
                 ) {

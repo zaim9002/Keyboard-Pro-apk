@@ -2,9 +2,7 @@ package com.example.ime.ui.components
 
 import android.view.HapticFeedbackConstants
 import android.view.SoundEffectConstants
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,20 +19,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
-import com.example.ime.util.HapticHelper
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import com.example.ime.theme.KeyboardColorScheme
+import com.example.ime.util.HapticHelper
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun KeyButton(
     modifier: Modifier = Modifier,
@@ -46,38 +46,58 @@ fun KeyButton(
     colorScheme: KeyboardColorScheme,
     hapticEnabled: Boolean = true,
     soundEnabled: Boolean = false,
+    showPreview: Boolean = !isSpecial,
     onLongClick: (() -> Unit)? = null,
     onClick: () -> Unit
 ) {
     val view = LocalView.current
     val context = LocalContext.current
-    val bgColor = if (isSpecial) colorScheme.specialKeyBackground else colorScheme.keyBackground
+    var isPressed by remember { mutableStateOf(false) }
+
+    val currentOnClick by rememberUpdatedState(onClick)
+    val currentOnLongClick by rememberUpdatedState(onLongClick)
+
+    val bgColor = if (isSpecial) {
+        if (isPressed) colorScheme.specialKeyBackground.copy(alpha = 0.8f) else colorScheme.specialKeyBackground
+    } else {
+        if (isPressed) colorScheme.keyBackground.copy(alpha = 0.85f) else colorScheme.keyBackground
+    }
     val textColor = if (isSpecial) colorScheme.specialKeyText else colorScheme.keyText
 
     Box(
         modifier = modifier
-            .padding(horizontal = 2.dp, vertical = 2.5.dp)
+            .padding(horizontal = 1.5.dp, vertical = 2.dp)
             .height(height)
             .shadow(
-                elevation = 1.dp,
-                shape = RoundedCornerShape(8.dp),
-                ambientColor = Color.Black.copy(alpha = 0.35f),
-                spotColor = Color.Black.copy(alpha = 0.35f)
+                elevation = if (isPressed) 0.5.dp else 1.dp,
+                shape = RoundedCornerShape(6.dp),
+                ambientColor = Color.Black.copy(alpha = 0.3f),
+                spotColor = Color.Black.copy(alpha = 0.3f)
             )
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(6.dp))
             .background(bgColor)
-            .combinedClickable(
-                onClick = {
-                    if (hapticEnabled) {
-                        HapticHelper.performKeyHaptic(context, view)
+            .pointerInput(text, hapticEnabled, soundEnabled, isSpecial) {
+                detectTapGestures(
+                    onPress = {
+                        isPressed = true
+                        if (hapticEnabled) {
+                            HapticHelper.performKeyHaptic(context, view)
+                        }
+                        if (soundEnabled) {
+                            view.playSoundEffect(SoundEffectConstants.CLICK)
+                        }
+                        val released = tryAwaitRelease()
+                        isPressed = false
+                        if (released) {
+                            currentOnClick()
+                        }
+                    },
+                    onLongPress = {
+                        isPressed = false
+                        currentOnLongClick?.invoke()
                     }
-                    if (soundEnabled) {
-                        view.playSoundEffect(SoundEffectConstants.CLICK)
-                    }
-                    onClick()
-                },
-                onLongClick = onLongClick
-            ),
+                )
+            },
         contentAlignment = Alignment.Center
     ) {
         // Main Key Text
@@ -100,6 +120,56 @@ fun KeyButton(
                     .align(Alignment.TopEnd)
                     .padding(top = 1.5.dp, end = 3.dp)
             )
+        }
+
+        // Floating Key Preview Popup (like Gboard / iOS keyboard)
+        if (isPressed && showPreview && text.isNotBlank()) {
+            Popup(
+                alignment = Alignment.TopCenter,
+                offset = IntOffset(x = 0, y = -140),
+                properties = PopupProperties(
+                    focusable = false,
+                    dismissOnBackPress = false,
+                    dismissOnClickOutside = false
+                )
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(58.dp)
+                        .height(66.dp)
+                        .shadow(
+                            elevation = 8.dp,
+                            shape = RoundedCornerShape(12.dp),
+                            ambientColor = Color.Black.copy(alpha = 0.45f),
+                            spotColor = Color.Black.copy(alpha = 0.5f)
+                        )
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(colorScheme.keyBackground)
+                        .padding(4.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        if (!secondaryText.isNullOrEmpty()) {
+                            Text(
+                                text = secondaryText,
+                                color = textColor.copy(alpha = 0.55f),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                        Text(
+                            text = text,
+                            color = textColor,
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -127,15 +197,15 @@ fun RepeatingDeleteKeyButton(
 
     Box(
         modifier = modifier
-            .padding(horizontal = 2.dp, vertical = 2.5.dp)
+            .padding(horizontal = 1.5.dp, vertical = 2.dp)
             .height(height)
             .shadow(
                 elevation = 1.dp,
-                shape = RoundedCornerShape(8.dp),
-                ambientColor = Color.Black.copy(alpha = 0.35f),
-                spotColor = Color.Black.copy(alpha = 0.35f)
+                shape = RoundedCornerShape(6.dp),
+                ambientColor = Color.Black.copy(alpha = 0.3f),
+                spotColor = Color.Black.copy(alpha = 0.3f)
             )
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(6.dp))
             .background(bgColor)
             .pointerInput(Unit) {
                 detectTapGestures(

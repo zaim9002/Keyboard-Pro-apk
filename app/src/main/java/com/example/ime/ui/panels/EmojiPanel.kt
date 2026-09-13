@@ -20,11 +20,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.engine.EmojiData
 import com.example.ime.theme.KeyboardColorScheme
+import com.example.ime.util.HapticHelper
 
 @Composable
 fun EmojiPanel(
@@ -34,6 +37,8 @@ fun EmojiPanel(
     onBackspace: () -> Unit,
     onClose: () -> Unit
 ) {
+    val context = LocalContext.current
+    val view = LocalView.current
     var selectedCategoryId by remember { mutableStateOf(EmojiData.categories.first().id) }
     var searchQuery by remember { mutableStateOf("") }
 
@@ -88,7 +93,10 @@ fun EmojiPanel(
 
             // Quick Backspace in emoji panel
             IconButton(
-                onClick = onBackspace,
+                onClick = {
+                    HapticHelper.performKeyHaptic(context, view)
+                    onBackspace()
+                },
                 modifier = Modifier.size(32.dp)
             ) {
                 Icon(
@@ -101,7 +109,10 @@ fun EmojiPanel(
 
             // Back to Keyboard button
             IconButton(
-                onClick = onClose,
+                onClick = {
+                    HapticHelper.performKeyHaptic(context, view)
+                    onClose()
+                },
                 modifier = Modifier.size(32.dp)
             ) {
                 Icon(
@@ -131,7 +142,10 @@ fun EmojiPanel(
                             .background(
                                 if (isSelected) colorScheme.accent.copy(alpha = 0.25f) else colorScheme.keyBackground.copy(alpha = 0.4f)
                             )
-                            .clickable { selectedCategoryId = category.id },
+                            .clickable {
+                                HapticHelper.performKeyHaptic(context, view)
+                                selectedCategoryId = category.id
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -143,19 +157,22 @@ fun EmojiPanel(
             }
         }
 
-        // Emoji Grid
+        // Emoji Grid with stable item keys
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 40.dp),
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(4.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            items(currentEmojis) { emoji ->
+            items(currentEmojis, key = { it }) { emoji ->
                 Box(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .clickable { onEmojiClick(emoji) },
+                        .clickable {
+                            HapticHelper.performKeyHaptic(context, view)
+                            onEmojiClick(emoji)
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     Text(

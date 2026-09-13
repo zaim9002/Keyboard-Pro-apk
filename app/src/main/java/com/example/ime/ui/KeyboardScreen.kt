@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -66,7 +67,7 @@ fun KeyboardScreen(
     currentLanguage: String, // "ar" or "en" or any 40+ supported language
     imeOptions: Int,
     isIncognito: Boolean,
-    keyboardHeight: String, // "Small", "Medium", "Large"
+    keyboardHeight: String, // "Small", "Medium", "Large", "ExtraLarge"
     showNumberRow: Boolean,
     hapticEnabled: Boolean,
     soundEnabled: Boolean,
@@ -78,6 +79,9 @@ fun KeyboardScreen(
     voicePartialText: String,
     showSuggestions: Boolean = true,
     arabicNumerals: Boolean = true,
+    autoTranslateOnEnter: Boolean = false,
+    onToggleAutoTranslate: (Boolean) -> Unit = {},
+    onChangeKeyboardHeight: (String) -> Unit = {},
     onTextInput: (String) -> Unit,
     onDelete: () -> Unit,
     onDeleteAll: () -> Unit = {},
@@ -109,8 +113,9 @@ fun KeyboardScreen(
     var activePopupKey by remember { mutableStateOf<KeyModel?>(null) }
 
     val keyHeight = when (keyboardHeight) {
-        "Small" -> 44.dp
+        "Small" -> 42.dp
         "Large" -> 54.dp
+        "ExtraLarge" -> 60.dp
         else -> 48.dp
     }
 
@@ -131,11 +136,12 @@ fun KeyboardScreen(
             .fillMaxWidth()
             .background(colorScheme.background)
     ) {
-        // 1. Toolbar ( всегда сверху )
+        // 1. Toolbar (always on top)
         KeyboardToolbar(
             activePanel = activePanel,
             currentLanguage = currentLanguage,
             isIncognito = isIncognito,
+            autoTranslateOnEnter = autoTranslateOnEnter,
             colorScheme = colorScheme,
             onPanelSelect = { panel ->
                 activePanel = panel
@@ -157,9 +163,19 @@ fun KeyboardScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 230.dp, max = 290.dp)
+                .wrapContentHeight()
         ) {
             when (activePanel) {
+                KeyboardPanel.RESIZE -> {
+                    ResizePanel(
+                        currentHeight = keyboardHeight,
+                        colorScheme = colorScheme,
+                        onSelectHeight = { newH ->
+                            onChangeKeyboardHeight(newH)
+                        },
+                        onClose = { activePanel = KeyboardPanel.NONE }
+                    )
+                }
                 KeyboardPanel.CLIPBOARD -> {
                     ClipboardPanel(
                         clips = clipboardList,
@@ -227,7 +243,9 @@ fun KeyboardScreen(
                 KeyboardPanel.TRANSLATE -> {
                     TranslatePanel(
                         initialText = suggestions.firstOrNull() ?: "",
+                        autoTranslateOnEnter = autoTranslateOnEnter,
                         colorScheme = colorScheme,
+                        onToggleAutoTranslate = onToggleAutoTranslate,
                         onCommitTranslation = { translated ->
                             onTextInput(translated)
                             activePanel = KeyboardPanel.NONE
@@ -331,7 +349,7 @@ fun KeyboardScreen(
                                     }
                                 }
 
-                                // Dynamic Layout Rows based on Language & Mode
+                                 // Dynamic Layout Rows based on Language & Mode
                                 when (layoutMode) {
                                     LayoutMode.ALPHA -> {
                                         if (currentLanguage == "ar") {
@@ -341,6 +359,8 @@ fun KeyboardScreen(
                                                 hapticEnabled = hapticEnabled,
                                                 soundEnabled = soundEnabled,
                                                 actionIcon = actionIcon,
+                                                autoTranslateOnEnter = autoTranslateOnEnter,
+                                                onToggleAutoTranslate = onToggleAutoTranslate,
                                                 onTextInput = onTextInput,
                                                 onDelete = onDelete,
                                                 onDeleteAll = onDeleteAll,
@@ -371,6 +391,8 @@ fun KeyboardScreen(
                                                 hapticEnabled = hapticEnabled,
                                                 soundEnabled = soundEnabled,
                                                 actionIcon = actionIcon,
+                                                autoTranslateOnEnter = autoTranslateOnEnter,
+                                                onToggleAutoTranslate = onToggleAutoTranslate,
                                                 onTextInput = { char ->
                                                     val text = if (shiftState != ShiftState.OFF) char.uppercase() else char.lowercase()
                                                     onTextInput(text)
@@ -405,6 +427,8 @@ fun KeyboardScreen(
                                             hapticEnabled = hapticEnabled,
                                             soundEnabled = soundEnabled,
                                             actionIcon = actionIcon,
+                                            autoTranslateOnEnter = autoTranslateOnEnter,
+                                            onToggleAutoTranslate = onToggleAutoTranslate,
                                             onTextInput = onTextInput,
                                             onDelete = onDelete,
                                             onSpace = onSpace,
@@ -422,6 +446,8 @@ fun KeyboardScreen(
                                             hapticEnabled = hapticEnabled,
                                             soundEnabled = soundEnabled,
                                             actionIcon = actionIcon,
+                                            autoTranslateOnEnter = autoTranslateOnEnter,
+                                            onToggleAutoTranslate = onToggleAutoTranslate,
                                             onTextInput = onTextInput,
                                             onDelete = onDelete,
                                             onSpace = onSpace,
@@ -566,6 +592,8 @@ private fun ArabicKeyboardLayout(
     hapticEnabled: Boolean,
     soundEnabled: Boolean,
     actionIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    autoTranslateOnEnter: Boolean = false,
+    onToggleAutoTranslate: ((Boolean) -> Unit)? = null,
     onTextInput: (String) -> Unit,
     onDelete: () -> Unit,
     onDeleteAll: () -> Unit,
@@ -578,7 +606,8 @@ private fun ArabicKeyboardLayout(
     onOpenEmoji: () -> Unit,
     onToggleTashkeel: () -> Unit,
     onMoveCursor: (Int) -> Unit,
-    onLongPressKey: (KeyModel) -> Unit
+    onLongPressKey: (KeyModel) -> Unit,
+    onOpenTranslate: (() -> Unit)? = null
 ) {
     // Row 1 (ض ص ث ق ف غ ع ه خ ح ج)
     Row(modifier = Modifier.fillMaxWidth()) {
@@ -659,6 +688,8 @@ private fun ArabicKeyboardLayout(
         hapticEnabled = hapticEnabled,
         soundEnabled = soundEnabled,
         actionIcon = actionIcon,
+        autoTranslateOnEnter = autoTranslateOnEnter,
+        onToggleAutoTranslate = onToggleAutoTranslate,
         onSwitchMode = onSwitchMode,
         onSwitchLanguage = onSwitchLanguage,
         onLongPressLanguage = onLongPressLanguage,
@@ -679,6 +710,8 @@ private fun DynamicKeyboardLayout(
     hapticEnabled: Boolean,
     soundEnabled: Boolean,
     actionIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    autoTranslateOnEnter: Boolean = false,
+    onToggleAutoTranslate: ((Boolean) -> Unit)? = null,
     onTextInput: (String) -> Unit,
     onDelete: () -> Unit,
     onDeleteAll: (() -> Unit)? = null,
@@ -690,7 +723,8 @@ private fun DynamicKeyboardLayout(
     onSwitchLanguage: () -> Unit,
     onLongPressLanguage: (() -> Unit)? = null,
     onMoveCursor: (Int) -> Unit,
-    onLongPressKey: (KeyModel) -> Unit
+    onLongPressKey: (KeyModel) -> Unit,
+    onOpenTranslate: (() -> Unit)? = null
 ) {
     val isUpper = shiftState != ShiftState.OFF
 
@@ -793,6 +827,8 @@ private fun DynamicKeyboardLayout(
         hapticEnabled = hapticEnabled,
         soundEnabled = soundEnabled,
         actionIcon = actionIcon,
+        autoTranslateOnEnter = autoTranslateOnEnter,
+        onToggleAutoTranslate = onToggleAutoTranslate,
         onSwitchMode = onSwitchMode,
         onSwitchLanguage = onSwitchLanguage,
         onLongPressLanguage = onLongPressLanguage,
@@ -935,6 +971,8 @@ private fun Symbols1Layout(
     hapticEnabled: Boolean,
     soundEnabled: Boolean,
     actionIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    autoTranslateOnEnter: Boolean = false,
+    onToggleAutoTranslate: ((Boolean) -> Unit)? = null,
     onTextInput: (String) -> Unit,
     onDelete: () -> Unit,
     onSpace: () -> Unit,
@@ -1017,6 +1055,8 @@ private fun Symbols1Layout(
         hapticEnabled = hapticEnabled,
         soundEnabled = soundEnabled,
         actionIcon = actionIcon,
+        autoTranslateOnEnter = autoTranslateOnEnter,
+        onToggleAutoTranslate = onToggleAutoTranslate,
         onSwitchMode = onSwitchToAlpha,
         onSwitchLanguage = onSwitchLanguage,
         onSpace = onSpace,
@@ -1033,6 +1073,8 @@ private fun Symbols2Layout(
     hapticEnabled: Boolean,
     soundEnabled: Boolean,
     actionIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    autoTranslateOnEnter: Boolean = false,
+    onToggleAutoTranslate: ((Boolean) -> Unit)? = null,
     onTextInput: (String) -> Unit,
     onDelete: () -> Unit,
     onSpace: () -> Unit,
@@ -1115,6 +1157,8 @@ private fun Symbols2Layout(
         hapticEnabled = hapticEnabled,
         soundEnabled = soundEnabled,
         actionIcon = actionIcon,
+        autoTranslateOnEnter = autoTranslateOnEnter,
+        onToggleAutoTranslate = onToggleAutoTranslate,
         onSwitchMode = onSwitchToAlpha,
         onSwitchLanguage = onSwitchLanguage,
         onSpace = onSpace,
@@ -1135,6 +1179,8 @@ private fun BottomControlRow(
     hapticEnabled: Boolean,
     soundEnabled: Boolean,
     actionIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    autoTranslateOnEnter: Boolean = false,
+    onToggleAutoTranslate: ((Boolean) -> Unit)? = null,
     onSwitchMode: () -> Unit,
     onSwitchLanguage: () -> Unit,
     onLongPressLanguage: (() -> Unit)? = null,
@@ -1199,14 +1245,14 @@ private fun BottomControlRow(
             modifier = Modifier
                 .weight(3.6f)
                 .height(keyHeight)
-                .padding(horizontal = 2.dp, vertical = 2.5.dp)
+                .padding(horizontal = 1.5.dp, vertical = 2.dp)
                 .shadow(
                     elevation = 1.dp,
-                    shape = RoundedCornerShape(8.dp),
-                    ambientColor = Color.Black.copy(alpha = 0.35f),
-                    spotColor = Color.Black.copy(alpha = 0.35f)
+                    shape = RoundedCornerShape(6.dp),
+                    ambientColor = Color.Black.copy(alpha = 0.3f),
+                    spotColor = Color.Black.copy(alpha = 0.3f)
                 )
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(6.dp))
                 .background(colorScheme.keyBackground)
                 .pointerInput(Unit) {
                     detectDragGestures(
@@ -1271,24 +1317,32 @@ private fun BottomControlRow(
             }
         }
 
-        // Enter / Action Key with accent color
+        // Enter / Action Key with accent color, tap to execute and long-press for auto-translate toggle
         Box(
             modifier = Modifier
                 .weight(1.35f)
                 .height(keyHeight)
-                .padding(horizontal = 2.dp, vertical = 2.5.dp)
+                .padding(horizontal = 1.5.dp, vertical = 2.dp)
                 .shadow(
                     elevation = 1.dp,
-                    shape = RoundedCornerShape(8.dp),
-                    ambientColor = Color.Black.copy(alpha = 0.35f),
-                    spotColor = Color.Black.copy(alpha = 0.35f)
+                    shape = RoundedCornerShape(6.dp),
+                    ambientColor = Color.Black.copy(alpha = 0.3f),
+                    spotColor = Color.Black.copy(alpha = 0.3f)
                 )
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(6.dp))
                 .background(colorScheme.accent)
-                .clickable {
-                    if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
-                    if (soundEnabled) view.playSoundEffect(SoundEffectConstants.CLICK)
-                    onEnter()
+                .pointerInput(autoTranslateOnEnter) {
+                    detectTapGestures(
+                        onTap = {
+                            if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
+                            if (soundEnabled) view.playSoundEffect(SoundEffectConstants.CLICK)
+                            onEnter()
+                        },
+                        onLongPress = {
+                            if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
+                            onToggleAutoTranslate?.invoke(!autoTranslateOnEnter)
+                        }
+                    )
                 },
             contentAlignment = Alignment.Center
         ) {
@@ -1298,6 +1352,15 @@ private fun BottomControlRow(
                 tint = Color.White,
                 modifier = Modifier.size(20.dp)
             )
+            if (autoTranslateOnEnter) {
+                Text(
+                    text = "⚡",
+                    fontSize = 9.sp,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 1.dp, end = 2.dp)
+                )
+            }
         }
     }
 }
