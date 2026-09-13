@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ime.util.HapticHelper
+import com.example.ime.util.KeyboardLayoutController
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
@@ -112,11 +113,9 @@ fun KeyboardScreen(
     var showLanguagePicker by remember { mutableStateOf(false) }
     var activePopupKey by remember { mutableStateOf<KeyModel?>(null) }
 
-    val keyHeight = when (keyboardHeight) {
-        "Small" -> 42.dp
-        "Large" -> 54.dp
-        "ExtraLarge" -> 60.dp
-        else -> 48.dp
+    val keyHeight = KeyboardLayoutController.getKeyHeight(keyboardHeight)
+    val panelHeight = remember(keyboardHeight, showNumberRow) {
+        KeyboardLayoutController.getPanelHeight(keyboardHeight, showNumberRow)
     }
 
     val actionIcon = remember(imeOptions) {
@@ -134,6 +133,7 @@ fun KeyboardScreen(
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .wrapContentHeight(align = Alignment.Bottom)
             .background(colorScheme.background)
     ) {
         // 1. Toolbar (always on top)
@@ -168,6 +168,7 @@ fun KeyboardScreen(
             when (activePanel) {
                 KeyboardPanel.RESIZE -> {
                     ResizePanel(
+                        modifier = Modifier.fillMaxWidth().height(panelHeight),
                         currentHeight = keyboardHeight,
                         colorScheme = colorScheme,
                         onSelectHeight = { newH ->
@@ -178,6 +179,7 @@ fun KeyboardScreen(
                 }
                 KeyboardPanel.CLIPBOARD -> {
                     ClipboardPanel(
+                        modifier = Modifier.fillMaxWidth().height(panelHeight),
                         clips = clipboardList,
                         colorScheme = colorScheme,
                         onClipClick = { text ->
@@ -192,6 +194,7 @@ fun KeyboardScreen(
                 }
                 KeyboardPanel.EMOJI -> {
                     EmojiPanel(
+                        modifier = Modifier.fillMaxWidth().height(panelHeight),
                         colorScheme = colorScheme,
                         onEmojiClick = { emoji -> onTextInput(emoji) },
                         onBackspace = onDelete,
@@ -200,6 +203,7 @@ fun KeyboardScreen(
                 }
                 KeyboardPanel.STICKERS -> {
                     StickersPanel(
+                        modifier = Modifier.fillMaxWidth().height(panelHeight),
                         colorScheme = colorScheme,
                         onStickerClick = { text ->
                             onTextInput(text)
@@ -210,6 +214,7 @@ fun KeyboardScreen(
                 }
                 KeyboardPanel.GIFS -> {
                     GifsPanel(
+                        modifier = Modifier.fillMaxWidth().height(panelHeight),
                         colorScheme = colorScheme,
                         onGifSelect = { gifText ->
                             onTextInput(gifText)
@@ -220,6 +225,7 @@ fun KeyboardScreen(
                 }
                 KeyboardPanel.DECORATIONS -> {
                     DecorationsPanel(
+                        modifier = Modifier.fillMaxWidth().height(panelHeight),
                         initialText = suggestions.firstOrNull() ?: "",
                         colorScheme = colorScheme,
                         onInsertText = { decorated ->
@@ -231,6 +237,7 @@ fun KeyboardScreen(
                 }
                 KeyboardPanel.VOICE -> {
                     VoicePanel(
+                        modifier = Modifier.fillMaxWidth().height(panelHeight),
                         isListening = isVoiceListening,
                         statusText = voiceStatusText,
                         partialResult = voicePartialText,
@@ -242,6 +249,7 @@ fun KeyboardScreen(
                 }
                 KeyboardPanel.TRANSLATE -> {
                     TranslatePanel(
+                        modifier = Modifier.fillMaxWidth().height(panelHeight),
                         initialText = suggestions.firstOrNull() ?: "",
                         autoTranslateOnEnter = autoTranslateOnEnter,
                         colorScheme = colorScheme,
@@ -255,6 +263,7 @@ fun KeyboardScreen(
                 }
                 KeyboardPanel.DICTIONARY -> {
                     DictionaryPanel(
+                        modifier = Modifier.fillMaxWidth().height(panelHeight),
                         initialWord = suggestions.firstOrNull() ?: "",
                         colorScheme = colorScheme,
                         onReplaceWord = { word ->
@@ -266,6 +275,7 @@ fun KeyboardScreen(
                 }
                 KeyboardPanel.EDITING -> {
                     TextEditingPanel(
+                        modifier = Modifier.fillMaxWidth().height(panelHeight),
                         colorScheme = colorScheme,
                         onMoveCursor = onMoveCursor,
                         onSelectAll = onSelectAll,
@@ -281,7 +291,7 @@ fun KeyboardScreen(
                 }
                 KeyboardPanel.NONE -> {
                     // Actual Keyboard layout with One-Handed Mode support
-                    Row(modifier = Modifier.fillMaxSize()) {
+                    Row(modifier = Modifier.fillMaxWidth().wrapContentHeight()) {
                         // Left sidebar if one handed right
                         if (oneHandedMode == "RIGHT") {
                             OneHandedSidebar(

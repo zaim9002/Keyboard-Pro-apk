@@ -57,7 +57,6 @@ fun ClipboardPanel(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .fillMaxHeight()
             .background(colorScheme.background)
             .padding(8.dp)
     ) {

@@ -75,7 +75,6 @@ fun TranslatePanel(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .fillMaxHeight()
             .background(colorScheme.background)
             .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalArrangement = Arrangement.SpaceBetween

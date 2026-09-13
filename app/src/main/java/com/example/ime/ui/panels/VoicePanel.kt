@@ -46,7 +46,6 @@ fun VoicePanel(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .fillMaxHeight()
             .background(colorScheme.background)
             .padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,

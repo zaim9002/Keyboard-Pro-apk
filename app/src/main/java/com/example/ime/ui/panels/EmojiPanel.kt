@@ -53,7 +53,6 @@ fun EmojiPanel(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .fillMaxHeight()
             .background(colorScheme.background)
             .padding(top = 4.dp, bottom = 4.dp, start = 6.dp, end = 6.dp)
     ) {

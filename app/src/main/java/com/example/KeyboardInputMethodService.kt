@@ -169,10 +169,12 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
         }
 
         val composeView = ComposeView(this).apply {
-            layoutParams = android.view.ViewGroup.LayoutParams(
+            layoutParams = android.widget.FrameLayout.LayoutParams(
                 android.view.ViewGroup.LayoutParams.MATCH_PARENT,
                 android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-            )
+            ).apply {
+                gravity = android.view.Gravity.BOTTOM
+            }
             setViewTreeLifecycleOwner(this@KeyboardInputMethodService)
             setViewTreeViewModelStoreOwner(this@KeyboardInputMethodService)
             setViewTreeSavedStateRegistryOwner(this@KeyboardInputMethodService)
@@ -324,6 +326,14 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
         isPasswordField = isPassword
         currentWordBuffer.clear()
         updateSuggestions()
+    }
+
+    override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
+        super.onStartInputView(info, restarting)
+        window?.window?.let { win ->
+            win.setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
+            win.setGravity(android.view.Gravity.BOTTOM)
+        }
     }
 
     private fun handleTextInput(text: String) {
