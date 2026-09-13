@@ -152,10 +152,15 @@ fun KeyboardScreen(
 
         // 2. Suggestion Bar (عندما لا تكون اللوحات المخصصة مفتوحة وتكون مفعلة في الإعدادات)
         if (activePanel == KeyboardPanel.NONE && showSuggestions) {
+            val latestClipText = remember(clipboardList) { clipboardList.firstOrNull()?.text }
             SuggestionBar(
                 suggestions = suggestions,
+                latestClip = latestClipText,
                 colorScheme = colorScheme,
-                onSelectSuggestion = onSelectSuggestion
+                onSelectSuggestion = onSelectSuggestion,
+                onPasteClip = { clipText ->
+                    onTextInput(clipText)
+                }
             )
         }
 

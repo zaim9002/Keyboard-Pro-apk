@@ -20,10 +20,12 @@ import com.example.ime.theme.KeyboardColorScheme
 fun SuggestionBar(
     modifier: Modifier = Modifier,
     suggestions: List<String>,
+    latestClip: String? = null,
     colorScheme: KeyboardColorScheme,
-    onSelectSuggestion: (String) -> Unit
+    onSelectSuggestion: (String) -> Unit,
+    onPasteClip: (String) -> Unit = {}
 ) {
-    if (suggestions.isEmpty()) return
+    if (suggestions.isEmpty() && latestClip.isNullOrBlank()) return
 
     Row(
         modifier = modifier
@@ -34,9 +36,34 @@ fun SuggestionBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        val displaySuggestions = suggestions.take(3)
+        // Show Latest Clipboard item as first chip if available
+        if (!latestClip.isNullOrBlank()) {
+            val clipPreview = latestClip.replace("\n", " ").trim()
+            Box(
+                modifier = Modifier
+                    .weight(1.1f)
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(colorScheme.accent.copy(alpha = 0.22f))
+                    .clickable { onPasteClip(latestClip) }
+                    .padding(horizontal = 6.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "📋 $clipPreview",
+                    color = colorScheme.accent,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+
+        val displaySuggestions = if (!latestClip.isNullOrBlank()) suggestions.take(2) else suggestions.take(3)
         for ((index, suggestion) in displaySuggestions.withIndex()) {
-            val isPrimary = index == 0
+            val isPrimary = index == 0 && latestClip.isNullOrBlank()
             Box(
                 modifier = Modifier
                     .weight(1f)

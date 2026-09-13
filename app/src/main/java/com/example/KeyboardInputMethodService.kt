@@ -330,9 +330,26 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
-        window?.window?.let { win ->
-            win.setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
-            win.setGravity(android.view.Gravity.BOTTOM)
+        syncPrimaryClip()
+    }
+
+    private fun syncPrimaryClip() {
+        try {
+            val clip = clipManager?.primaryClip
+            if (clip != null && clip.itemCount > 0) {
+                val text = clip.getItemAt(0).text?.toString()
+                if (!text.isNullOrBlank()) {
+                    lifecycleScope.launch {
+                        try {
+                            clipboardRepo?.insertOrUpdate(text)
+                        } catch (e: Throwable) {
+                            // Ignore
+                        }
+                    }
+                }
+            }
+        } catch (e: Throwable) {
+            // Handled
         }
     }
 

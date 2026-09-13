@@ -45,52 +45,7 @@ abstract class ComposeInputMethodService : InputMethodService(),
         dispatchLifecycleEvent(Lifecycle.Event.ON_CREATE)
     }
 
-    override fun onConfigureWindow(win: Window, isFullscreen: Boolean, isCandidatesOnly: Boolean) {
-        super.onConfigureWindow(win, isFullscreen, isCandidatesOnly)
-        try {
-            win.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            win.setGravity(Gravity.BOTTOM)
-            win.decorView.let { decorView ->
-                decorView.setViewTreeLifecycleOwner(this)
-                decorView.setViewTreeViewModelStoreOwner(this)
-                decorView.setViewTreeSavedStateRegistryOwner(this)
-
-                decorView.findViewById<View>(android.R.id.inputArea)?.let { inputArea ->
-                    val lp = inputArea.layoutParams as? FrameLayout.LayoutParams
-                    if (lp != null) {
-                        lp.gravity = Gravity.BOTTOM
-                        lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
-                        inputArea.layoutParams = lp
-                    }
-                }
-            }
-        } catch (e: Throwable) {
-            Log.w("ComposeIME", "onConfigureWindow decorView setup error: ${e.message}")
-        }
-    }
-
     override fun onEvaluateFullscreenMode(): Boolean = false
-
-    override fun updateFullscreenMode() {
-        super.updateFullscreenMode()
-    }
-
-    override fun onComputeInsets(outInsets: Insets) {
-        super.onComputeInsets(outInsets)
-        try {
-            val decor = window?.window?.decorView ?: return
-            val inputArea = decor.findViewById<View>(android.R.id.inputArea) ?: decor
-            val loc = IntArray(2)
-            inputArea.getLocationInWindow(loc)
-            val top = loc[1]
-            outInsets.contentTopInsets = top
-            outInsets.visibleTopInsets = top
-            outInsets.touchableInsets = Insets.TOUCHABLE_INSETS_CONTENT
-            outInsets.touchableRegion.set(loc[0], top, loc[0] + inputArea.width, top + inputArea.height)
-        } catch (e: Throwable) {
-            Log.w("ComposeIME", "onComputeInsets calculation fallback: ${e.message}")
-        }
-    }
 
     override fun onStartInput(attribute: android.view.inputmethod.EditorInfo?, restarting: Boolean) {
         super.onStartInput(attribute, restarting)
