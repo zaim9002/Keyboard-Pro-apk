@@ -135,6 +135,7 @@ fun KeyboardScreen(
             .fillMaxWidth()
             .wrapContentHeight(align = Alignment.Bottom)
             .background(colorScheme.background)
+            .navigationBarsPadding()
     ) {
         // 1. Toolbar (always on top)
         KeyboardToolbar(

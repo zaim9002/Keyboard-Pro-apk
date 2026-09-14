@@ -1,7 +1,7 @@
 <resources>
-    <string name="app_name">كيبورد محمد v3</string>
-    <string name="ime_name">كيبورد محمد v3</string>
-    <string name="ime_settings">إعدادات كيبورد محمد v3</string>
+    <string name="app_name">كيبورد محمد v1</string>
+    <string name="ime_name">كيبورد محمد v1</string>
+    <string name="ime_settings">إعدادات كيبورد محمد v1</string>
     <string name="keyboard_arabic">العربية</string>
     <string name="keyboard_english">English</string>
 </resources>

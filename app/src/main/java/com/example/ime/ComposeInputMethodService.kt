@@ -47,6 +47,79 @@ abstract class ComposeInputMethodService : InputMethodService(),
 
     override fun onEvaluateFullscreenMode(): Boolean = false
 
+    override fun onConfigureWindow(win: Window, isFullscreen: Boolean, isCandidatesOnly: Boolean) {
+        super.onConfigureWindow(win, isFullscreen, isCandidatesOnly)
+        try {
+            win.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            win.setGravity(Gravity.BOTTOM)
+            win.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+
+            win.decorView.let { decorView ->
+                decorView.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                decorView.setViewTreeLifecycleOwner(this)
+                decorView.setViewTreeViewModelStoreOwner(this)
+                decorView.setViewTreeSavedStateRegistryOwner(this)
+
+                (decorView as? ViewGroup)?.let { group ->
+                    for (i in 0 until group.childCount) {
+                        val child = group.getChildAt(i)
+                        (child as? android.widget.LinearLayout)?.let { linear ->
+                            linear.gravity = Gravity.BOTTOM
+                            linear.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                        }
+                    }
+                }
+
+                decorView.findViewById<View>(android.R.id.inputArea)?.let { inputArea ->
+                    inputArea.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                    (inputArea.parent as? android.widget.LinearLayout)?.let { parentLinear ->
+                        parentLinear.gravity = Gravity.BOTTOM
+                        parentLinear.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                    }
+                    val lp = inputArea.layoutParams
+                    if (lp is android.widget.LinearLayout.LayoutParams) {
+                        lp.gravity = Gravity.BOTTOM
+                        lp.weight = 0f
+                        lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                        inputArea.layoutParams = lp
+                    } else if (lp is FrameLayout.LayoutParams) {
+                        lp.gravity = Gravity.BOTTOM
+                        lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                        inputArea.layoutParams = lp
+                    }
+                }
+            }
+        } catch (e: Throwable) {
+            Log.w("ComposeIME", "onConfigureWindow error: ${e.message}")
+        }
+    }
+
+    override fun onComputeInsets(outInsets: Insets) {
+        super.onComputeInsets(outInsets)
+        try {
+            val decor = window?.window?.decorView ?: return
+            val inputArea = decor.findViewById<View>(android.R.id.inputArea) ?: decor
+            val loc = IntArray(2)
+            inputArea.getLocationInWindow(loc)
+            val decorHeight = decor.height
+            val inputHeight = inputArea.height
+            
+            val top = when {
+                loc[1] > 0 -> loc[1]
+                decorHeight > 0 && inputHeight > 0 && decorHeight > inputHeight -> decorHeight - inputHeight
+                else -> loc[1]
+            }
+
+            outInsets.contentTopInsets = top
+            outInsets.visibleTopInsets = top
+            outInsets.touchableInsets = Insets.TOUCHABLE_INSETS_CONTENT
+            val targetHeight = if (inputHeight > 0) inputHeight else (decorHeight - top).coerceAtLeast(0)
+            outInsets.touchableRegion.set(loc[0], top, loc[0] + inputArea.width, top + targetHeight)
+        } catch (e: Throwable) {
+            Log.w("ComposeIME", "onComputeInsets error: ${e.message}")
+        }
+    }
+
     override fun onStartInput(attribute: android.view.inputmethod.EditorInfo?, restarting: Boolean) {
         super.onStartInput(attribute, restarting)
         ensureStarted()

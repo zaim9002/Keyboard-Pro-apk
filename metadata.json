@@ -1,5 +1,5 @@
 {
-  "name": "كيبورد محمد v3",
+  "name": "كيبورد محمد v1",
   "description": "تطبيق لوحة مفاتيح حقيقي لنظام Android يدعم العربية والإنجليزية، الحافظة الدائمة، التنبؤ، الإيموجي، الزخرفة، والكتابة بالصوت.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
