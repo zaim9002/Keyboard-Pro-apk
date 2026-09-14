@@ -94,27 +94,34 @@ abstract class ComposeInputMethodService : InputMethodService(),
         }
     }
 
+    protected var keyboardRootView: View? = null
+
     override fun onComputeInsets(outInsets: Insets) {
         super.onComputeInsets(outInsets)
         try {
             val decor = window?.window?.decorView ?: return
-            val inputArea = decor.findViewById<View>(android.R.id.inputArea) ?: decor
+            val targetView = keyboardRootView
+                ?: decor.findViewById<View>(android.R.id.inputArea)
+                ?: decor
+
             val loc = IntArray(2)
-            inputArea.getLocationInWindow(loc)
+            targetView.getLocationInWindow(loc)
             val decorHeight = decor.height
-            val inputHeight = inputArea.height
-            
+            val viewHeight = targetView.height
+
             val top = when {
                 loc[1] > 0 -> loc[1]
-                decorHeight > 0 && inputHeight > 0 && decorHeight > inputHeight -> decorHeight - inputHeight
+                decorHeight > 0 && viewHeight > 0 -> (decorHeight - viewHeight).coerceAtLeast(0)
                 else -> loc[1]
             }
 
             outInsets.contentTopInsets = top
             outInsets.visibleTopInsets = top
             outInsets.touchableInsets = Insets.TOUCHABLE_INSETS_CONTENT
-            val targetHeight = if (inputHeight > 0) inputHeight else (decorHeight - top).coerceAtLeast(0)
-            outInsets.touchableRegion.set(loc[0], top, loc[0] + inputArea.width, top + targetHeight)
+
+            val targetWidth = if (targetView.width > 0) targetView.width else decor.width
+            val targetH = if (viewHeight > 0) viewHeight else (decorHeight - top).coerceAtLeast(0)
+            outInsets.touchableRegion.set(loc[0], top, loc[0] + targetWidth, top + targetH)
         } catch (e: Throwable) {
             Log.w("ComposeIME", "onComputeInsets error: ${e.message}")
         }

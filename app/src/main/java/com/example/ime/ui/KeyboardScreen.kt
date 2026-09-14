@@ -494,38 +494,63 @@ fun KeyboardScreen(
             // Long Press Popup Overlay
             if (activePopupKey != null && activePopupKey!!.popupOptions.isNotEmpty()) {
                 val key = activePopupKey!!
+                val context = LocalContext.current
+                val view = LocalView.current
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.35f))
+                        .matchParentSize()
+                        .background(Color.Black.copy(alpha = 0.5f))
                         .clickable { activePopupKey = null },
                     contentAlignment = Alignment.Center
                 ) {
-                    Row(
+                    Card(
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(containerColor = colorScheme.background),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                         modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(colorScheme.background)
-                            .padding(8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            .padding(8.dp)
+                            .clickable(enabled = false) {}
                     ) {
-                        for (option in key.popupOptions) {
-                            Box(
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(colorScheme.keyBackground)
-                                    .clickable {
-                                        onTextInput(option)
-                                        activePopupKey = null
-                                    },
-                                contentAlignment = Alignment.Center
+                        Column(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "حروف بديلة لـ (${key.primaryText})",
+                                color = colorScheme.keyText.copy(alpha = 0.7f),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = option,
-                                    color = colorScheme.keyText,
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+                                for (option in key.popupOptions) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(width = 48.dp, height = 54.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(colorScheme.keyBackground)
+                                            .clickable(
+                                                role = androidx.compose.ui.semantics.Role.Button,
+                                                onClick = {
+                                                    HapticHelper.performKeyHaptic(context, view)
+                                                    onTextInput(option)
+                                                    activePopupKey = null
+                                                }
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = option,
+                                            color = colorScheme.keyText,
+                                            fontSize = 22.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
                             }
                         }
                     }

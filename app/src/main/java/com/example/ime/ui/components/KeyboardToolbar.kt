@@ -59,25 +59,26 @@ fun KeyboardToolbar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(38.dp)
+            .height(44.dp)
             .background(colorScheme.background)
             .horizontalScroll(scrollState)
-            .padding(horizontal = 4.dp, vertical = 2.dp),
+            .padding(horizontal = 6.dp, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         // Incognito indicator
         if (isIncognito) {
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(6.dp))
-                    .background(colorScheme.accent.copy(alpha = 0.2f))
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                    .background(colorScheme.accent.copy(alpha = 0.25f))
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 Text(
                     text = "🕵️ خفي",
                     color = colorScheme.accent,
-                    fontSize = 11.sp
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
@@ -89,7 +90,6 @@ fun KeyboardToolbar(
             isSelected = false,
             colorScheme = colorScheme,
             onClick = {
-                HapticHelper.performKeyHaptic(context, view)
                 onOpenSettings()
             }
         )
@@ -99,14 +99,14 @@ fun KeyboardToolbar(
         val langShort = if (isArabic) "ع" else currentLanguage.uppercase()
         Box(
             modifier = Modifier
-                .height(32.dp)
+                .height(36.dp)
                 .clip(RoundedCornerShape(8.dp))
-                .background(colorScheme.keyBackground.copy(alpha = 0.5f))
-                .clickable {
+                .background(colorScheme.keyBackground.copy(alpha = 0.7f))
+                .clickable(role = androidx.compose.ui.semantics.Role.Button) {
                     HapticHelper.performKeyHaptic(context, view)
                     onSwitchLanguage()
                 }
-                .padding(horizontal = 9.dp),
+                .padding(horizontal = 10.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -124,7 +124,6 @@ fun KeyboardToolbar(
             isSelected = activePanel == KeyboardPanel.RESIZE,
             colorScheme = colorScheme,
             onClick = {
-                HapticHelper.performKeyHaptic(context, view)
                 onPanelSelect(if (activePanel == KeyboardPanel.RESIZE) KeyboardPanel.NONE else KeyboardPanel.RESIZE)
             }
         )
@@ -137,7 +136,6 @@ fun KeyboardToolbar(
             badge = if (autoTranslateOnEnter) "⚡" else null,
             colorScheme = colorScheme,
             onClick = {
-                HapticHelper.performKeyHaptic(context, view)
                 onPanelSelect(if (activePanel == KeyboardPanel.TRANSLATE) KeyboardPanel.NONE else KeyboardPanel.TRANSLATE)
             }
         )
@@ -149,7 +147,6 @@ fun KeyboardToolbar(
             isSelected = activePanel == KeyboardPanel.CLIPBOARD,
             colorScheme = colorScheme,
             onClick = {
-                HapticHelper.performKeyHaptic(context, view)
                 onPanelSelect(if (activePanel == KeyboardPanel.CLIPBOARD) KeyboardPanel.NONE else KeyboardPanel.CLIPBOARD)
             }
         )
@@ -161,7 +158,6 @@ fun KeyboardToolbar(
             isSelected = activePanel == KeyboardPanel.VOICE,
             colorScheme = colorScheme,
             onClick = {
-                HapticHelper.performKeyHaptic(context, view)
                 onPanelSelect(if (activePanel == KeyboardPanel.VOICE) KeyboardPanel.NONE else KeyboardPanel.VOICE)
             }
         )
@@ -173,7 +169,6 @@ fun KeyboardToolbar(
             isSelected = activePanel == KeyboardPanel.EMOJI,
             colorScheme = colorScheme,
             onClick = {
-                HapticHelper.performKeyHaptic(context, view)
                 onPanelSelect(if (activePanel == KeyboardPanel.EMOJI) KeyboardPanel.NONE else KeyboardPanel.EMOJI)
             }
         )
@@ -185,7 +180,6 @@ fun KeyboardToolbar(
             isSelected = activePanel == KeyboardPanel.DECORATIONS,
             colorScheme = colorScheme,
             onClick = {
-                HapticHelper.performKeyHaptic(context, view)
                 onPanelSelect(if (activePanel == KeyboardPanel.DECORATIONS) KeyboardPanel.NONE else KeyboardPanel.DECORATIONS)
             }
         )
@@ -197,7 +191,6 @@ fun KeyboardToolbar(
             isSelected = activePanel == KeyboardPanel.STICKERS,
             colorScheme = colorScheme,
             onClick = {
-                HapticHelper.performKeyHaptic(context, view)
                 onPanelSelect(if (activePanel == KeyboardPanel.STICKERS) KeyboardPanel.NONE else KeyboardPanel.STICKERS)
             }
         )
@@ -209,7 +202,6 @@ fun KeyboardToolbar(
             isSelected = activePanel == KeyboardPanel.GIFS,
             colorScheme = colorScheme,
             onClick = {
-                HapticHelper.performKeyHaptic(context, view)
                 onPanelSelect(if (activePanel == KeyboardPanel.GIFS) KeyboardPanel.NONE else KeyboardPanel.GIFS)
             }
         )
@@ -221,7 +213,6 @@ fun KeyboardToolbar(
             isSelected = activePanel == KeyboardPanel.EDITING,
             colorScheme = colorScheme,
             onClick = {
-                HapticHelper.performKeyHaptic(context, view)
                 onPanelSelect(if (activePanel == KeyboardPanel.EDITING) KeyboardPanel.NONE else KeyboardPanel.EDITING)
             }
         )
@@ -237,22 +228,30 @@ private fun ToolbarIconButton(
     colorScheme: KeyboardColorScheme,
     onClick: () -> Unit
 ) {
-    val bg = if (isSelected) colorScheme.accent.copy(alpha = 0.25f) else colorScheme.keyBackground.copy(alpha = 0.6f)
-    val tint = if (isSelected) colorScheme.accent else colorScheme.keyText.copy(alpha = 0.85f)
+    val context = LocalContext.current
+    val view = LocalView.current
+    val bg = if (isSelected) colorScheme.accent.copy(alpha = 0.35f) else colorScheme.keyBackground.copy(alpha = 0.7f)
+    val tint = if (isSelected) colorScheme.accent else colorScheme.keyText
 
     Box(
         modifier = Modifier
-            .size(32.dp)
+            .size(38.dp)
             .clip(CircleShape)
             .background(bg)
-            .clickable(onClick = onClick),
+            .clickable(
+                role = androidx.compose.ui.semantics.Role.Button,
+                onClick = {
+                    HapticHelper.performKeyHaptic(context, view)
+                    onClick()
+                }
+            ),
         contentAlignment = Alignment.Center
     ) {
         Icon(
             imageVector = icon,
             contentDescription = tooltip,
             tint = tint,
-            modifier = Modifier.size(17.dp)
+            modifier = Modifier.size(20.dp)
         )
         if (badge != null) {
             Box(

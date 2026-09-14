@@ -60,7 +60,7 @@ fun KeyButton(
     val bgColor = if (isSpecial) {
         if (isPressed) colorScheme.specialKeyBackground.copy(alpha = 0.8f) else colorScheme.specialKeyBackground
     } else {
-        if (isPressed) colorScheme.keyBackground.copy(alpha = 0.85f) else colorScheme.keyBackground
+        if (isPressed) colorScheme.accent.copy(alpha = 0.35f) else colorScheme.keyBackground
     }
     val textColor = if (isSpecial) colorScheme.specialKeyText else colorScheme.keyText
 
@@ -69,16 +69,18 @@ fun KeyButton(
             .padding(horizontal = 1.5.dp, vertical = 2.dp)
             .height(height)
             .shadow(
-                elevation = if (isPressed) 0.5.dp else 1.dp,
+                elevation = 1.dp,
                 shape = RoundedCornerShape(6.dp),
-                ambientColor = Color.Black.copy(alpha = 0.3f),
-                spotColor = Color.Black.copy(alpha = 0.3f)
+                ambientColor = Color.Black.copy(alpha = 0.2f),
+                spotColor = Color.Black.copy(alpha = 0.2f)
             )
             .clip(RoundedCornerShape(6.dp))
             .background(bgColor)
             .pointerInput(text, hapticEnabled, soundEnabled, isSpecial) {
+                var isLongPressHandled = false
                 detectTapGestures(
                     onPress = {
+                        isLongPressHandled = false
                         isPressed = true
                         if (hapticEnabled) {
                             HapticHelper.performKeyHaptic(context, view)
@@ -88,12 +90,16 @@ fun KeyButton(
                         }
                         val released = tryAwaitRelease()
                         isPressed = false
-                        if (released) {
+                        if (released && !isLongPressHandled) {
                             currentOnClick()
                         }
                     },
                     onLongPress = {
+                        isLongPressHandled = true
                         isPressed = false
+                        if (hapticEnabled) {
+                            HapticHelper.performKeyHaptic(context, view)
+                        }
                         currentOnLongClick?.invoke()
                     }
                 )
@@ -113,63 +119,13 @@ fun KeyButton(
         if (!secondaryText.isNullOrEmpty()) {
             Text(
                 text = secondaryText,
-                color = textColor.copy(alpha = 0.5f),
-                fontSize = 8.5.sp,
-                fontWeight = FontWeight.Light,
+                color = textColor.copy(alpha = 0.55f),
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Medium,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(top = 1.5.dp, end = 3.dp)
             )
-        }
-
-        // Floating Key Preview Popup (like Gboard / iOS keyboard)
-        if (isPressed && showPreview && text.isNotBlank()) {
-            Popup(
-                alignment = Alignment.TopCenter,
-                offset = IntOffset(x = 0, y = -140),
-                properties = PopupProperties(
-                    focusable = false,
-                    dismissOnBackPress = false,
-                    dismissOnClickOutside = false
-                )
-            ) {
-                Box(
-                    modifier = Modifier
-                        .width(58.dp)
-                        .height(66.dp)
-                        .shadow(
-                            elevation = 8.dp,
-                            shape = RoundedCornerShape(12.dp),
-                            ambientColor = Color.Black.copy(alpha = 0.45f),
-                            spotColor = Color.Black.copy(alpha = 0.5f)
-                        )
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(colorScheme.keyBackground)
-                        .padding(4.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        if (!secondaryText.isNullOrEmpty()) {
-                            Text(
-                                text = secondaryText,
-                                color = textColor.copy(alpha = 0.55f),
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                        Text(
-                            text = text,
-                            color = textColor,
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
-            }
         }
     }
 }

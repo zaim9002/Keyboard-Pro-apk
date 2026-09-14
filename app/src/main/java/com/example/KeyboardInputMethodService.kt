@@ -179,7 +179,15 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
             setViewTreeViewModelStoreOwner(this@KeyboardInputMethodService)
             setViewTreeSavedStateRegistryOwner(this@KeyboardInputMethodService)
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            viewTreeObserver.addOnGlobalLayoutListener {
+                try {
+                    window?.window?.decorView?.requestLayout()
+                } catch (e: Throwable) {
+                    // Ignore layout request errors
+                }
+            }
         }
+        keyboardRootView = composeView
 
         composeView.setContent {
             val currentThemeName by prefs.themeState.collectAsState()
