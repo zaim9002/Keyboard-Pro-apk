@@ -34,7 +34,8 @@ enum class KeyboardPanel {
     TRANSLATE,
     DICTIONARY,
     EDITING,
-    RESIZE
+    RESIZE,
+    AI_ASSISTANT
 }
 
 @Composable
@@ -108,6 +109,20 @@ fun KeyboardToolbar(
                 colorScheme = colorScheme,
                 onClick = {
                     onPanelSelect(if (activePanel == KeyboardPanel.RESIZE) KeyboardPanel.NONE else KeyboardPanel.RESIZE)
+                }
+            )
+        }
+
+        // AI Assistant (الذكاء الاصطناعي، تغيير نبرة الكتابة وتدقيق النصوص)
+        item(key = "ai_assistant") {
+            ToolbarIconButton(
+                icon = Icons.Default.AutoAwesome,
+                tooltip = "الذكاء الاصطناعي وتغيير النبرة",
+                isSelected = activePanel == KeyboardPanel.AI_ASSISTANT,
+                badge = "AI",
+                colorScheme = colorScheme,
+                onClick = {
+                    onPanelSelect(if (activePanel == KeyboardPanel.AI_ASSISTANT) KeyboardPanel.NONE else KeyboardPanel.AI_ASSISTANT)
                 }
             )
         }

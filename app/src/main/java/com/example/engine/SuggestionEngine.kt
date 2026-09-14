@@ -86,6 +86,106 @@ class SuggestionEngine(
         "hello", "thanks", "welcome", "please", "sorry", "meeting", "message", "today"
     )
 
+    // Comprehensive Arabic Typo & Orthographic Correction Dictionary
+    private val arabicTypoMap = mapOf(
+        // Hamzas
+        "الي" to "إلى", "اليكم" to "إليكم", "اليهم" to "إليهم", "اذا" to "إذا",
+        "اكثر" to "أكثر", "اكبر" to "أكبر", "اصغر" to "أصغر", "افضل" to "أفضل",
+        "احسن" to "أحسن", "اول" to "أول", "اخر" to "آخر", "الان" to "الآن",
+        "اصبح" to "أصبح", "امس" to "أمس", "ابدا" to "أبداً", "ايضا" to "أيضاً",
+        "شكرا" to "شكراً", "عفوا" to "عفواً", "جدا" to "جداً", "حقا" to "حقاً",
+        "تقريبا" to "تقريباً", "دائما" to "دائماً", "طبعا" to "طبعاً", "اهلا" to "أهلاً",
+        "سهلا" to "سهلاً", "مرحبا" to "مرحباً", "ايمان" to "إيمان", "اسلام" to "إسلام",
+        "انسان" to "إنسان", "اريد" to "أريد", "ارجو" to "أرجو", "اتمنى" to "أتمنى",
+        "اعتقد" to "أعتقد", "احبك" to "أحبك", "اخي" to "أخي", "اختي" to "أختي",
+        "ابي" to "أبي", "امي" to "أمي", "استاذ" to "أستاذ", "ايام" to "أيام",
+        "اشياء" to "أشياء", "اهم" to "أهم", "انك" to "أنك", "انكم" to "أنكم",
+        // Taa Marbuta & Haa
+        "مدرسه" to "مدرسة", "سياره" to "سيارة", "صوره" to "صورة", "حياه" to "حياة",
+        "رساله" to "رسالة", "مكالمه" to "مكالمة", "طبيعه" to "طبيعة", "جميله" to "جميلة",
+        "رائعه" to "رائعة", "طريقه" to "طريقة", "لغه" to "لغة", "خدمه" to "خدمة",
+        "شركه" to "شركة", "فكره" to "فكرة", "قدره" to "قدرة", "ساعه" to "ساعة",
+        "دقيقه" to "دقيقة", "قوه" to "قوة", "جامعه" to "جامعة", "مدينه" to "مدينة",
+        "قصه" to "قصة", "نقطه" to "نقطة", "فرصه" to "فرصة", "صفحه" to "صفحة",
+        "صحه" to "صحة", "عافيه" to "عافية", "فتره" to "فترة",
+        // Yaa & Alef Maqsura
+        "متي" to "متى", "حتي" to "حتى", "لدي" to "لدى", "سوي" to "سوى",
+        "أخري" to "أخرى", "كبري" to "كبرى", "صغري" to "صغرى", "مستشفي" to "مستشفى",
+        "معني" to "معنى", "فتي" to "فتى", "دعوي" to "دعوى", "موسي" to "موسى",
+        "عيسي" to "عيسى", "يحيا" to "يحيى",
+        // Common Spelling blunders & joined words
+        "انشاءالله" to "إن شاء الله", "انشاء الله" to "إن شاء الله", "إنشاء الله" to "إن شاء الله",
+        "ماشاءالله" to "ما شاء الله", "ماشاء الله" to "ما شاء الله",
+        "باذن الله" to "بإذن الله", "بأذن الله" to "بإذن الله",
+        "لاكن" to "لكن", "هاذا" to "هذا", "هاذه" to "هذه", "هكدا" to "هكذا", "ذالك" to "ذلك",
+        "مسؤل" to "مسؤول", "شؤن" to "شؤون", "هيئه" to "هيئة", "بيئه" to "بيئة",
+        "خطاء" to "خطأ", "جزاكالله" to "جزاك الله خيراً", "يعطيكالعافيه" to "يعطيك العافية"
+    )
+
+    // English Typo Dictionary
+    private val englishTypoMap = mapOf(
+        "teh" to "the", "recieve" to "receive", "seperate" to "separate", "definately" to "definitely",
+        "dont" to "don't", "cant" to "can't", "wont" to "won't", "im" to "I'm", "youre" to "you're",
+        "theyre" to "they're", "alot" to "a lot", "untill" to "until", "occured" to "occurred",
+        "goverment" to "government", "tommorow" to "tomorrow", "truely" to "truly", "wierd" to "weird",
+        "thier" to "their", "becuase" to "because", "beleive" to "believe", "acheive" to "achieve"
+    )
+
+    /**
+     * Check if a word is a known typo and get its accurate correction.
+     */
+    fun getAutoCorrection(word: String, isArabic: Boolean): String? {
+        val clean = word.trim()
+        if (clean.isEmpty()) return null
+
+        if (isArabic) {
+            arabicTypoMap[clean]?.let { return it }
+        } else {
+            englishTypoMap[clean.lowercase()]?.let { return it }
+        }
+
+        // Fuzzy 1-character edit distance check if word is long enough and not in dictionary
+        val dict = if (isArabic) arabicDictionary else englishDictionary
+        if (clean.length >= 4 && !dict.contains(clean)) {
+            val candidate = dict.firstOrNull { editDistance(it, clean) == 1 }
+            if (candidate != null) return candidate
+        }
+
+        return null
+    }
+
+    /**
+     * Simple Levenshtein distance for fuzzy matching
+     */
+    private fun editDistance(s1: String, s2: String): Int {
+        val dp = Array(s1.length + 1) { IntArray(s2.length + 1) }
+        for (i in 0..s1.length) dp[i][0] = i
+        for (j in 0..s2.length) dp[0][j] = j
+        for (i in 1..s1.length) {
+            for (j in 1..s2.length) {
+                val cost = if (s1[i - 1] == s2[j - 1]) 0 else 1
+                dp[i][j] = minOf(
+                    dp[i - 1][j] + 1,
+                    dp[i][j - 1] + 1,
+                    dp[i - 1][j - 1] + cost
+                )
+            }
+        }
+        return dp[s1.length][s2.length]
+    }
+
+    /**
+     * Check if word is known in personal dictionary or standard vocabulary
+     */
+    suspend fun isWordKnown(word: String, isArabic: Boolean): Boolean {
+        val clean = word.trim()
+        if (clean.isEmpty()) return true
+        val dict = if (isArabic) arabicDictionary else englishDictionary
+        if (dict.contains(clean)) return true
+        val userMatches = userWordRepository.getMatchingWords(clean)
+        return userMatches.any { it.equals(clean, ignoreCase = true) }
+    }
+
     suspend fun getSuggestions(
         currentWord: String,
         previousWord: String?,
@@ -102,7 +202,15 @@ class SuggestionEngine(
             }
         }
 
-        // 2. If current word is empty, predict next word based on previous word
+        // 2. Immediate Typo Auto-Correction check (Put correction first!)
+        if (cleanCurrent.isNotEmpty()) {
+            val correction = getAutoCorrection(cleanCurrent, isArabic)
+            if (correction != null && !correction.equals(cleanCurrent, ignoreCase = true)) {
+                suggestions.add(correction)
+            }
+        }
+
+        // 3. If current word is empty, predict next word based on previous word
         if (cleanCurrent.isEmpty()) {
             val prev = previousWord?.trim()?.lowercase() ?: ""
             if (prev.isNotEmpty()) {
@@ -122,18 +230,18 @@ class SuggestionEngine(
             return@withContext suggestions.distinct().take(4)
         }
 
-        // 3. User personalized words matching current prefix
+        // 4. User personalized words matching current prefix (High Priority!)
         val userMatches = userWordRepository.getMatchingWords(cleanCurrent)
         suggestions.addAll(userMatches)
 
-        // 4. Word completion from dictionary matching prefix
+        // 5. Word completion from dictionary matching prefix
         val dict = if (isArabic) arabicDictionary else englishDictionary
         val prefixMatches = dict.filter {
             it.startsWith(cleanCurrent, ignoreCase = true) && !it.equals(cleanCurrent, ignoreCase = true)
         }
         suggestions.addAll(prefixMatches.take(4))
 
-        // 5. If still few suggestions, find words containing the substring or close matches
+        // 6. If still few suggestions, find words containing the substring or close matches
         if (suggestions.size < 3) {
             val containsMatches = dict.filter {
                 it.contains(cleanCurrent, ignoreCase = true) && !it.equals(cleanCurrent, ignoreCase = true)
@@ -141,7 +249,7 @@ class SuggestionEngine(
             suggestions.addAll(containsMatches.take(3))
         }
 
-        // Ensure current typed word is not blank and add proper formatting
+        // Ensure current typed word is available if no direct exact match
         if (suggestions.isEmpty()) {
             suggestions.add(cleanCurrent)
         }

@@ -64,6 +64,18 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
     private val _clipboardItems = MutableStateFlow<List<ClipboardEntity>>(emptyList())
     private val clipboardItems = _clipboardItems.asStateFlow()
 
+    private val _userWords = MutableStateFlow<List<com.example.data.local.entity.UserWordEntity>>(emptyList())
+    private val userWords = _userWords.asStateFlow()
+
+    private val _currentTypedWord = MutableStateFlow("")
+    private val currentTypedWord = _currentTypedWord.asStateFlow()
+
+    private val _isCurrentWordKnown = MutableStateFlow(true)
+    private val isCurrentWordKnown = _isCurrentWordKnown.asStateFlow()
+
+    private val _currentDraftText = MutableStateFlow("")
+    private val currentDraftText = _currentDraftText.asStateFlow()
+
     private var speechRecognizer: SpeechRecognizer? = null
     private var isVoiceListening by mutableStateOf(false)
     private var voiceStatusText by mutableStateOf("اضغط على الميكروفون للبدء")
@@ -120,6 +132,16 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
                     }
                 } catch (e: Throwable) {
                     Log.w("KeyboardIME", "Clips collector error: ${e.message}")
+                }
+            }
+
+            lifecycleScope.launch {
+                try {
+                    userWordRepo?.allWords?.collect { list ->
+                        _userWords.value = list
+                    }
+                } catch (e: Throwable) {
+                    Log.w("KeyboardIME", "UserWords collector error: ${e.message}")
                 }
             }
         } catch (e: Throwable) {
@@ -213,6 +235,10 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
             val currentTheme = KeyboardThemes.getTheme(currentThemeName)
             val currentSuggestions by suggestions.collectAsState()
             val clips by clipboardItems.collectAsState()
+            val currentWord by currentTypedWord.collectAsState()
+            val isKnown by isCurrentWordKnown.collectAsState()
+            val wordsList by userWords.collectAsState()
+            val draftText by currentDraftText.collectAsState()
 
             KeyboardScreen(
                 colorScheme = currentTheme,
@@ -232,6 +258,14 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
                 showSuggestions = showSuggestions,
                 arabicNumerals = arabicNumerals,
                 autoTranslateOnEnter = autoTranslateOnEnter,
+                currentTypedWord = currentWord,
+                isCurrentWordKnown = isKnown,
+                userWords = wordsList,
+                geminiApiKey = prefs.geminiApiKey,
+                currentDraftText = draftText,
+                onApplyAiText = { text -> handleApplyAiText(text) },
+                onAddWordToDictionary = { word -> handleAddWordToDictionary(word) },
+                onDeleteUserWord = { id -> handleDeleteUserWord(id) },
                 onToggleAutoTranslate = { enabled ->
                     prefs.autoTranslateOnEnter = enabled
                 },
@@ -347,6 +381,11 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         syncPrimaryClip()
+        try {
+            val ic = currentInputConnection
+            val before = ic?.getTextBeforeCursor(500, 0)?.toString() ?: ""
+            _currentDraftText.value = before.substringAfterLast('\n').trim()
+        } catch (e: Throwable) {}
     }
 
     private fun syncPrimaryClip() {
@@ -435,6 +474,19 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
                         }
                     } catch (e: Throwable) {
                         // Ignore shortcut lookup error
+                    }
+                }
+
+                // 2. Real-time auto-correction on space
+                if (prefs.autoCorrectEnabled) {
+                    val isArabic = prefs.currentLanguage == "ar"
+                    val autoCorrection = suggestionEngine?.getAutoCorrection(word, isArabic)
+                    if (autoCorrection != null && autoCorrection != word) {
+                        ic.deleteSurroundingText(word.length, 0)
+                        ic.commitText(autoCorrection + " ", 1)
+                        currentWordBuffer.clear()
+                        updateSuggestions()
+                        return
                     }
                 }
             }
@@ -618,6 +670,8 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
                     val isArabic = prefs.currentLanguage == "ar"
                     val results = engine.getSuggestions(currentWord, prevWord, isArabic)
                     _suggestions.value = results
+                    _currentTypedWord.value = currentWord
+                    _isCurrentWordKnown.value = if (currentWord.length >= 2) engine.isWordKnown(currentWord, isArabic) else true
                 } catch (e: Throwable) {
                     if (e !is kotlinx.coroutines.CancellationException) {
                         _suggestions.value = emptyList()
@@ -626,6 +680,51 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
             }
         } catch (e: Throwable) {
             _suggestions.value = emptyList()
+        }
+    }
+
+    private fun handleApplyAiText(newText: String) {
+        try {
+            val ic = currentInputConnection ?: return
+            val selected = ic.getSelectedText(0)?.toString()
+            if (!selected.isNullOrEmpty()) {
+                ic.commitText(newText, 1)
+            } else {
+                val textBefore = ic.getTextBeforeCursor(1000, 0)?.toString() ?: ""
+                val lastLine = textBefore.substringAfterLast('\n')
+                if (lastLine.isNotEmpty()) {
+                    ic.deleteSurroundingText(lastLine.length, 0)
+                }
+                ic.commitText(newText, 1)
+            }
+            currentWordBuffer.clear()
+            updateSuggestions()
+        } catch (e: Throwable) {
+            Log.e("KeyboardIME", "Error in handleApplyAiText", e)
+        }
+    }
+
+    private fun handleAddWordToDictionary(word: String) {
+        if (word.isBlank()) return
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                userWordRepo?.learnWord(word.trim())
+                _isCurrentWordKnown.value = true
+                updateSuggestions()
+            } catch (e: Throwable) {
+                Log.e("KeyboardIME", "Error in handleAddWordToDictionary", e)
+            }
+        }
+    }
+
+    private fun handleDeleteUserWord(id: Long) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                userWordRepo?.deleteById(id)
+                updateSuggestions()
+            } catch (e: Throwable) {
+                Log.e("KeyboardIME", "Error in handleDeleteUserWord", e)
+            }
         }
     }
 

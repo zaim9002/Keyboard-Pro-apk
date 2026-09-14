@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,8 +40,12 @@ fun SettingsScreen(
     var isIncognito by remember { mutableStateOf(prefs.isIncognito) }
     var isGamingMode by remember { mutableStateOf(prefs.isGamingMode) }
     var oneHandedMode by remember { mutableStateOf(prefs.oneHandedMode) }
+    var autoCorrectEnabled by remember { mutableStateOf(prefs.autoCorrectEnabled) }
+    var aiTone by remember { mutableStateOf(prefs.aiTone) }
+    var geminiApiKey by remember { mutableStateOf(prefs.geminiApiKey) }
 
     var showResetDialog by remember { mutableStateOf(false) }
+    var showApiKeyDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -308,6 +313,83 @@ fun SettingsScreen(
             }
         }
 
+        // AI & Smart Correction
+        SettingsGroupTitle("الذكاء الاصطناعي والتصحيح الذكي")
+        Card(
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+        ) {
+            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                // Auto Correct Switch
+                SettingsSwitchRow(
+                    title = "التصحيح التلقائي للأخطاء (Auto-Correct)",
+                    subtitle = "تصحيح الأخطاء الإملائية الشائعة والهمزات والتاء المربوطة تلقائياً عند الضغط على المسافة",
+                    checked = autoCorrectEnabled,
+                    onCheckedChange = {
+                        autoCorrectEnabled = it
+                        prefs.autoCorrectEnabled = it
+                    }
+                )
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                // Default Tone
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("نبرة الكتابة الافتراضية", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    Text("اختر النبرة المفضلة لإعادة صياغة النصوص في المساعد الذكي", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        listOf(
+                            "FORMAL" to "🎩 رسمي",
+                            "PROFESSIONAL" to "💼 احترافي",
+                            "FRIENDLY" to "🌸 ودود",
+                            "CONCISE" to "⚡ موجز",
+                            "POETIC" to "📜 أدبي",
+                            "CASUAL_EMOJI" to "🎉 مرح",
+                            "PERSUASIVE" to "🤝 مقنع"
+                        ).forEach { (toneKey, toneLabel) ->
+                            FilterChip(
+                                selected = aiTone == toneKey,
+                                onClick = {
+                                    aiTone = toneKey
+                                    prefs.aiTone = toneKey
+                                },
+                                label = { Text(toneLabel, fontSize = 11.sp) }
+                            )
+                        }
+                    }
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                // Gemini API Key
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("مفتاح Google Gemini API", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                        val status = if (geminiApiKey.isNotBlank()) "تم تعيين مفتاح خاص ✓" else "يعمل بنموذج الذكاء المحلي فائق السرعة"
+                        Text(status, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+
+                    OutlinedButton(
+                        onClick = { showApiKeyDialog = true },
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Text("تعديل", fontSize = 11.sp)
+                    }
+                }
+            }
+        }
+
         // Modes & Management
         SettingsGroupTitle("الأوضاع الخاصة وإدارة البيانات")
         Card(
@@ -400,6 +482,46 @@ fun SettingsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showResetDialog = false }) {
+                    Text("إلغاء")
+                }
+            }
+        )
+    }
+
+    if (showApiKeyDialog) {
+        var tempKey by remember { mutableStateOf(geminiApiKey) }
+        AlertDialog(
+            onDismissRequest = { showApiKeyDialog = false },
+            title = { Text("مفتاح Google Gemini API") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "أدخل مفتاح Gemini API الخاص بك لتفعيل معالجة الصياغة والنبرة المتقدمة عبر أحدث نماذج Gemini. اتركه فارغاً للاعتماد على الذكاء المحلي فائق السرعة وبدون إنترنت.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    OutlinedTextField(
+                        value = tempKey,
+                        onValueChange = { tempKey = it },
+                        placeholder = { Text("AIzaSy...") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        geminiApiKey = tempKey.trim()
+                        prefs.geminiApiKey = tempKey.trim()
+                        showApiKeyDialog = false
+                    }
+                ) {
+                    Text("حفظ")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showApiKeyDialog = false }) {
                     Text("إلغاء")
                 }
             }

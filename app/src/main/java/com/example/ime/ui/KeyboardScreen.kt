@@ -40,6 +40,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import com.example.KeyboardProApp
 import com.example.data.local.entity.ClipboardEntity
+import com.example.data.local.entity.UserWordEntity
+import com.example.ime.ui.panels.AiAssistantPanel
 import com.example.ime.layout.KeyboardLayouts
 import com.example.ime.layout.KeyModel
 import com.example.ime.layout.KeyType
@@ -104,7 +106,15 @@ fun KeyboardScreen(
     onUndo: () -> Unit,
     onRedo: () -> Unit,
     onOpenSettings: () -> Unit,
-    onToggleOneHanded: (String) -> Unit
+    onToggleOneHanded: (String) -> Unit,
+    currentTypedWord: String? = null,
+    isCurrentWordKnown: Boolean = true,
+    userWords: List<UserWordEntity> = emptyList(),
+    geminiApiKey: String? = null,
+    currentDraftText: String = "",
+    onApplyAiText: (String) -> Unit = {},
+    onAddWordToDictionary: (String) -> Unit = {},
+    onDeleteUserWord: (Long) -> Unit = {}
 ) {
     var layoutMode by remember { mutableStateOf(LayoutMode.ALPHA) }
     var shiftState by remember { mutableStateOf(ShiftState.OFF) }
@@ -157,11 +167,14 @@ fun KeyboardScreen(
             SuggestionBar(
                 suggestions = suggestions,
                 latestClip = latestClipText,
+                currentTypedWord = currentTypedWord,
+                isCurrentWordKnown = isCurrentWordKnown,
                 colorScheme = colorScheme,
                 onSelectSuggestion = onSelectSuggestion,
                 onPasteClip = { clipText ->
                     onTextInput(clipText)
-                }
+                },
+                onAddWordToDictionary = onAddWordToDictionary
             )
         }
 
@@ -292,6 +305,22 @@ fun KeyboardScreen(
                         onRedo = onRedo,
                         onHome = { onMoveCursor(-999) },
                         onEnd = { onMoveCursor(999) },
+                        onClose = { activePanel = KeyboardPanel.NONE }
+                    )
+                }
+                KeyboardPanel.AI_ASSISTANT -> {
+                    AiAssistantPanel(
+                        modifier = Modifier.fillMaxWidth().height(panelHeight),
+                        initialText = currentDraftText.ifBlank { suggestions.firstOrNull() ?: "" },
+                        apiKey = geminiApiKey,
+                        userWords = userWords,
+                        colorScheme = colorScheme,
+                        onApplyText = { text ->
+                            onApplyAiText(text)
+                            activePanel = KeyboardPanel.NONE
+                        },
+                        onAddWordToDictionary = onAddWordToDictionary,
+                        onDeleteUserWord = onDeleteUserWord,
                         onClose = { activePanel = KeyboardPanel.NONE }
                     )
                 }

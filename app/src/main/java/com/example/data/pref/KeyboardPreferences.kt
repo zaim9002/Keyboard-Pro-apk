@@ -31,6 +31,9 @@ class KeyboardPreferences(context: Context) {
     private val _suggestionsState = MutableStateFlow(showSuggestions)
     val suggestionsState: StateFlow<Boolean> = _suggestionsState.asStateFlow()
 
+    private val _autoCorrectState = MutableStateFlow(autoCorrectEnabled)
+    val autoCorrectState: StateFlow<Boolean> = _autoCorrectState.asStateFlow()
+
     private val _arabicNumeralsState = MutableStateFlow(arabicNumerals)
     val arabicNumeralsState: StateFlow<Boolean> = _arabicNumeralsState.asStateFlow()
 
@@ -95,9 +98,24 @@ class KeyboardPreferences(context: Context) {
         get() = prefs.getBoolean(KEY_AUTO_CAPS, true)
         set(value) = prefs.edit().putBoolean(KEY_AUTO_CAPS, value).apply()
 
+    var autoCorrectEnabled: Boolean
+        get() = prefs.getBoolean(KEY_AUTOCORRECT_ENABLED, true)
+        set(value) {
+            prefs.edit().putBoolean(KEY_AUTOCORRECT_ENABLED, value).apply()
+            _autoCorrectState.value = value
+        }
+
     var autoCorrectStrength: String
         get() = prefs.getString(KEY_AUTOCORRECT, "Medium") ?: "Medium"
         set(value) = prefs.edit().putString(KEY_AUTOCORRECT, value).apply()
+
+    var aiTone: String
+        get() = prefs.getString(KEY_AI_TONE, "Formal") ?: "Formal"
+        set(value) = prefs.edit().putString(KEY_AI_TONE, value).apply()
+
+    var geminiApiKey: String
+        get() = prefs.getString(KEY_GEMINI_KEY, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_GEMINI_KEY, value).apply()
 
     var spacebarSwipe: String
         get() = prefs.getString(KEY_SPACE_SWIPE, "SWITCH_LANG") ?: "SWITCH_LANG"
@@ -178,6 +196,9 @@ class KeyboardPreferences(context: Context) {
         private const val KEY_DOUBLE_SPACE = "double_space_period"
         private const val KEY_AUTO_CAPS = "auto_capitalization"
         private const val KEY_AUTOCORRECT = "autocorrect_strength"
+        private const val KEY_AUTOCORRECT_ENABLED = "autocorrect_enabled"
+        private const val KEY_AI_TONE = "ai_tone_selected"
+        private const val KEY_GEMINI_KEY = "gemini_api_key_custom"
         private const val KEY_SPACE_SWIPE = "spacebar_swipe"
         private const val KEY_INCOGNITO = "is_incognito"
         private const val KEY_GAMING = "is_gaming_mode"

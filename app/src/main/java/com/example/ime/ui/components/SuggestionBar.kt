@@ -1,7 +1,9 @@
 package com.example.ime.ui.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -16,16 +18,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ime.theme.KeyboardColorScheme
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SuggestionBar(
     modifier: Modifier = Modifier,
     suggestions: List<String>,
     latestClip: String? = null,
+    currentTypedWord: String? = null,
+    isCurrentWordKnown: Boolean = true,
     colorScheme: KeyboardColorScheme,
     onSelectSuggestion: (String) -> Unit,
-    onPasteClip: (String) -> Unit = {}
+    onPasteClip: (String) -> Unit = {},
+    onAddWordToDictionary: (String) -> Unit = {}
 ) {
-    if (suggestions.isEmpty() && latestClip.isNullOrBlank()) return
+    if (suggestions.isEmpty() && latestClip.isNullOrBlank() && (isCurrentWordKnown || currentTypedWord.isNullOrBlank())) return
 
     Row(
         modifier = modifier
@@ -36,7 +42,29 @@ fun SuggestionBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        // Show Latest Clipboard item as first chip if available
+        // 1. Show Quick Save Chip if user typed an unknown/new custom word
+        if (!isCurrentWordKnown && !currentTypedWord.isNullOrBlank() && currentTypedWord.length >= 2) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(colorScheme.accent.copy(alpha = 0.25f))
+                    .clickable { onAddWordToDictionary(currentTypedWord) }
+                    .padding(horizontal = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "+ حفظ '$currentTypedWord'",
+                    color = colorScheme.accent,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+
+        // 2. Show Latest Clipboard item as first chip if available
         if (!latestClip.isNullOrBlank()) {
             val clipPreview = latestClip.replace("\n", " ").trim()
             Box(
@@ -73,7 +101,10 @@ fun SuggestionBar(
                         if (isPrimary) colorScheme.accent.copy(alpha = 0.15f)
                         else colorScheme.keyBackground.copy(alpha = 0.5f)
                     )
-                    .clickable { onSelectSuggestion(suggestion) }
+                    .combinedClickable(
+                        onClick = { onSelectSuggestion(suggestion) },
+                        onLongClick = { onAddWordToDictionary(suggestion) }
+                    )
                     .padding(horizontal = 6.dp),
                 contentAlignment = Alignment.Center
             ) {
