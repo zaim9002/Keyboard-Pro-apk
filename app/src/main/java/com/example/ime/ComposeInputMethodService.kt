@@ -50,7 +50,9 @@ abstract class ComposeInputMethodService : InputMethodService(),
     override fun onConfigureWindow(win: Window, isFullscreen: Boolean, isCandidatesOnly: Boolean) {
         super.onConfigureWindow(win, isFullscreen, isCandidatesOnly)
         try {
-            win.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            // Keep window full screen (standard AOSP IME behavior) so WindowManager correctly computes
+            // contentTopInsets and visibleTopInsets, moving client apps (e.g. WhatsApp) above the keyboard.
+            win.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
             win.setGravity(Gravity.BOTTOM)
             win.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
 
@@ -109,19 +111,18 @@ abstract class ComposeInputMethodService : InputMethodService(),
             val decorHeight = decor.height
             val viewHeight = targetView.height
 
+            // Calculate the exact Y coordinate in the window where the keyboard begins.
+            // When using full-screen window, loc[1] is the exact top Y of the keyboard.
             val top = when {
                 loc[1] > 0 -> loc[1]
                 decorHeight > 0 && viewHeight > 0 -> (decorHeight - viewHeight).coerceAtLeast(0)
-                else -> loc[1]
+                decorHeight > 0 -> decorHeight
+                else -> 0
             }
 
             outInsets.contentTopInsets = top
             outInsets.visibleTopInsets = top
             outInsets.touchableInsets = Insets.TOUCHABLE_INSETS_CONTENT
-
-            val targetWidth = if (targetView.width > 0) targetView.width else decor.width
-            val targetH = if (viewHeight > 0) viewHeight else (decorHeight - top).coerceAtLeast(0)
-            outInsets.touchableRegion.set(loc[0], top, loc[0] + targetWidth, top + targetH)
         } catch (e: Throwable) {
             Log.w("ComposeIME", "onComputeInsets error: ${e.message}")
         }

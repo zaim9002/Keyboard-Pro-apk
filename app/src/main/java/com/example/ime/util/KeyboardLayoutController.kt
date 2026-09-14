@@ -17,7 +17,7 @@ object KeyboardLayoutController {
     fun getPanelHeight(heightPref: String, showNumberRow: Boolean): Dp {
         val keyHeight = getKeyHeight(heightPref)
         val numberRowHeight = if (showNumberRow) keyHeight * 0.85f else 0.dp
-        // Standard height matching the 4 letter rows + bottom control row + optional number row
-        return (keyHeight * 4) + numberRowHeight + 8.dp
+        // Standard height matching the 4 letter rows + suggestion bar + bottom control row + optional number row
+        return (keyHeight * 4) + numberRowHeight + 46.dp
     }
 }

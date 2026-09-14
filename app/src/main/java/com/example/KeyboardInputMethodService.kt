@@ -179,11 +179,19 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
             setViewTreeViewModelStoreOwner(this@KeyboardInputMethodService)
             setViewTreeSavedStateRegistryOwner(this@KeyboardInputMethodService)
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-            viewTreeObserver.addOnGlobalLayoutListener {
-                try {
-                    window?.window?.decorView?.requestLayout()
-                } catch (e: Throwable) {
-                    // Ignore layout request errors
+            addOnLayoutChangeListener { _, _, top, _, bottom, _, oldTop, _, oldBottom ->
+                val oldH = oldBottom - oldTop
+                val newH = bottom - top
+                if (oldH != newH && newH > 0) {
+                    window?.window?.decorView?.let { decor ->
+                        decor.post {
+                            try {
+                                decor.requestLayout()
+                            } catch (e: Throwable) {
+                                // Ignore layout request errors
+                            }
+                        }
+                    }
                 }
             }
         }

@@ -1,11 +1,9 @@
 package com.example.ime.ui.components
 
-import android.view.SoundEffectConstants
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -13,7 +11,6 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,170 +49,192 @@ fun KeyboardToolbar(
     onSwitchLanguage: () -> Unit,
     onOpenSettings: () -> Unit
 ) {
-    val scrollState = rememberScrollState()
     val context = LocalContext.current
     val view = LocalView.current
 
-    Row(
+    LazyRow(
         modifier = modifier
             .fillMaxWidth()
             .height(44.dp)
-            .background(colorScheme.background)
-            .horizontalScroll(scrollState)
-            .padding(horizontal = 6.dp, vertical = 2.dp),
+            .background(colorScheme.background),
+        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        // Incognito indicator
-        if (isIncognito) {
+        // Settings Gear
+        item(key = "settings") {
+            ToolbarIconButton(
+                icon = Icons.Default.Settings,
+                tooltip = "إعدادات",
+                isSelected = false,
+                colorScheme = colorScheme,
+                onClick = {
+                    onOpenSettings()
+                }
+            )
+        }
+
+        // Language indicator button (ع / EN)
+        val isArabic = currentLanguage == "ar"
+        val langShort = if (isArabic) "ع" else currentLanguage.uppercase()
+        item(key = "lang") {
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(colorScheme.accent.copy(alpha = 0.25f))
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                    .height(36.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(colorScheme.keyBackground.copy(alpha = 0.85f))
+                    .clickable(role = androidx.compose.ui.semantics.Role.Button) {
+                        HapticHelper.performKeyHaptic(context, view)
+                        onSwitchLanguage()
+                    }
+                    .padding(horizontal = 10.dp),
+                contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "🕵️ خفي",
-                    color = colorScheme.accent,
-                    fontSize = 12.sp,
+                    text = langShort,
+                    color = colorScheme.keyText,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
         }
 
-        // Settings Gear on far left
-        ToolbarIconButton(
-            icon = Icons.Default.Settings,
-            tooltip = "إعدادات",
-            isSelected = false,
-            colorScheme = colorScheme,
-            onClick = {
-                onOpenSettings()
-            }
-        )
-
-        // Language indicator button (ع / EN)
-        val isArabic = currentLanguage == "ar"
-        val langShort = if (isArabic) "ع" else currentLanguage.uppercase()
-        Box(
-            modifier = Modifier
-                .height(36.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(colorScheme.keyBackground.copy(alpha = 0.7f))
-                .clickable(role = androidx.compose.ui.semantics.Role.Button) {
-                    HapticHelper.performKeyHaptic(context, view)
-                    onSwitchLanguage()
+        // Resize Keyboard button (خيار وزر تغيير حجم الكيبورد)
+        item(key = "resize") {
+            ToolbarIconButton(
+                icon = Icons.Default.Height,
+                tooltip = "تغيير حجم الكيبورد",
+                isSelected = activePanel == KeyboardPanel.RESIZE,
+                colorScheme = colorScheme,
+                onClick = {
+                    onPanelSelect(if (activePanel == KeyboardPanel.RESIZE) KeyboardPanel.NONE else KeyboardPanel.RESIZE)
                 }
-                .padding(horizontal = 10.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = langShort,
-                color = colorScheme.keyText,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
             )
         }
 
-        // Resize Keyboard button (خيار وزر تغيير حجم الكيبورد)
-        ToolbarIconButton(
-            icon = Icons.Default.Height,
-            tooltip = "تغيير حجم الكيبورد",
-            isSelected = activePanel == KeyboardPanel.RESIZE,
-            colorScheme = colorScheme,
-            onClick = {
-                onPanelSelect(if (activePanel == KeyboardPanel.RESIZE) KeyboardPanel.NONE else KeyboardPanel.RESIZE)
-            }
-        )
-
         // Translate
-        ToolbarIconButton(
-            icon = Icons.Default.Translate,
-            tooltip = "ترجمة فورية",
-            isSelected = activePanel == KeyboardPanel.TRANSLATE,
-            badge = if (autoTranslateOnEnter) "⚡" else null,
-            colorScheme = colorScheme,
-            onClick = {
-                onPanelSelect(if (activePanel == KeyboardPanel.TRANSLATE) KeyboardPanel.NONE else KeyboardPanel.TRANSLATE)
-            }
-        )
+        item(key = "translate") {
+            ToolbarIconButton(
+                icon = Icons.Default.Translate,
+                tooltip = "ترجمة فورية",
+                isSelected = activePanel == KeyboardPanel.TRANSLATE,
+                badge = if (autoTranslateOnEnter) "⚡" else null,
+                colorScheme = colorScheme,
+                onClick = {
+                    onPanelSelect(if (activePanel == KeyboardPanel.TRANSLATE) KeyboardPanel.NONE else KeyboardPanel.TRANSLATE)
+                }
+            )
+        }
 
         // Clipboard
-        ToolbarIconButton(
-            icon = Icons.Default.ContentPaste,
-            tooltip = "الحافظة",
-            isSelected = activePanel == KeyboardPanel.CLIPBOARD,
-            colorScheme = colorScheme,
-            onClick = {
-                onPanelSelect(if (activePanel == KeyboardPanel.CLIPBOARD) KeyboardPanel.NONE else KeyboardPanel.CLIPBOARD)
-            }
-        )
+        item(key = "clipboard") {
+            ToolbarIconButton(
+                icon = Icons.Default.ContentPaste,
+                tooltip = "الحافظة",
+                isSelected = activePanel == KeyboardPanel.CLIPBOARD,
+                colorScheme = colorScheme,
+                onClick = {
+                    onPanelSelect(if (activePanel == KeyboardPanel.CLIPBOARD) KeyboardPanel.NONE else KeyboardPanel.CLIPBOARD)
+                }
+            )
+        }
 
         // Voice
-        ToolbarIconButton(
-            icon = Icons.Default.Mic,
-            tooltip = "كتابة بالصوت",
-            isSelected = activePanel == KeyboardPanel.VOICE,
-            colorScheme = colorScheme,
-            onClick = {
-                onPanelSelect(if (activePanel == KeyboardPanel.VOICE) KeyboardPanel.NONE else KeyboardPanel.VOICE)
-            }
-        )
+        item(key = "voice") {
+            ToolbarIconButton(
+                icon = Icons.Default.Mic,
+                tooltip = "كتابة بالصوت",
+                isSelected = activePanel == KeyboardPanel.VOICE,
+                colorScheme = colorScheme,
+                onClick = {
+                    onPanelSelect(if (activePanel == KeyboardPanel.VOICE) KeyboardPanel.NONE else KeyboardPanel.VOICE)
+                }
+            )
+        }
 
         // Emoji
-        ToolbarIconButton(
-            icon = Icons.Default.Mood,
-            tooltip = "إيموجي",
-            isSelected = activePanel == KeyboardPanel.EMOJI,
-            colorScheme = colorScheme,
-            onClick = {
-                onPanelSelect(if (activePanel == KeyboardPanel.EMOJI) KeyboardPanel.NONE else KeyboardPanel.EMOJI)
-            }
-        )
+        item(key = "emoji") {
+            ToolbarIconButton(
+                icon = Icons.Default.Mood,
+                tooltip = "إيموجي",
+                isSelected = activePanel == KeyboardPanel.EMOJI,
+                colorScheme = colorScheme,
+                onClick = {
+                    onPanelSelect(if (activePanel == KeyboardPanel.EMOJI) KeyboardPanel.NONE else KeyboardPanel.EMOJI)
+                }
+            )
+        }
 
         // Decorations / AI
-        ToolbarIconButton(
-            icon = Icons.Default.AutoAwesome,
-            tooltip = "زخرفة وذكاء اصطناعي",
-            isSelected = activePanel == KeyboardPanel.DECORATIONS,
-            colorScheme = colorScheme,
-            onClick = {
-                onPanelSelect(if (activePanel == KeyboardPanel.DECORATIONS) KeyboardPanel.NONE else KeyboardPanel.DECORATIONS)
-            }
-        )
+        item(key = "decorations") {
+            ToolbarIconButton(
+                icon = Icons.Default.AutoAwesome,
+                tooltip = "زخرفة وذكاء اصطناعي",
+                isSelected = activePanel == KeyboardPanel.DECORATIONS,
+                colorScheme = colorScheme,
+                onClick = {
+                    onPanelSelect(if (activePanel == KeyboardPanel.DECORATIONS) KeyboardPanel.NONE else KeyboardPanel.DECORATIONS)
+                }
+            )
+        }
 
         // Stickers
-        ToolbarIconButton(
-            icon = Icons.Default.Palette,
-            tooltip = "ملصقات",
-            isSelected = activePanel == KeyboardPanel.STICKERS,
-            colorScheme = colorScheme,
-            onClick = {
-                onPanelSelect(if (activePanel == KeyboardPanel.STICKERS) KeyboardPanel.NONE else KeyboardPanel.STICKERS)
-            }
-        )
+        item(key = "stickers") {
+            ToolbarIconButton(
+                icon = Icons.Default.Palette,
+                tooltip = "ملصقات",
+                isSelected = activePanel == KeyboardPanel.STICKERS,
+                colorScheme = colorScheme,
+                onClick = {
+                    onPanelSelect(if (activePanel == KeyboardPanel.STICKERS) KeyboardPanel.NONE else KeyboardPanel.STICKERS)
+                }
+            )
+        }
 
         // GIF
-        ToolbarIconButton(
-            icon = Icons.Default.Gif,
-            tooltip = "GIF",
-            isSelected = activePanel == KeyboardPanel.GIFS,
-            colorScheme = colorScheme,
-            onClick = {
-                onPanelSelect(if (activePanel == KeyboardPanel.GIFS) KeyboardPanel.NONE else KeyboardPanel.GIFS)
-            }
-        )
+        item(key = "gifs") {
+            ToolbarIconButton(
+                icon = Icons.Default.Gif,
+                tooltip = "GIF",
+                isSelected = activePanel == KeyboardPanel.GIFS,
+                colorScheme = colorScheme,
+                onClick = {
+                    onPanelSelect(if (activePanel == KeyboardPanel.GIFS) KeyboardPanel.NONE else KeyboardPanel.GIFS)
+                }
+            )
+        }
 
         // Edit
-        ToolbarIconButton(
-            icon = Icons.Default.Edit,
-            tooltip = "تحديد ومؤشر",
-            isSelected = activePanel == KeyboardPanel.EDITING,
-            colorScheme = colorScheme,
-            onClick = {
-                onPanelSelect(if (activePanel == KeyboardPanel.EDITING) KeyboardPanel.NONE else KeyboardPanel.EDITING)
+        item(key = "editing") {
+            ToolbarIconButton(
+                icon = Icons.Default.Edit,
+                tooltip = "تحديد ومؤشر",
+                isSelected = activePanel == KeyboardPanel.EDITING,
+                colorScheme = colorScheme,
+                onClick = {
+                    onPanelSelect(if (activePanel == KeyboardPanel.EDITING) KeyboardPanel.NONE else KeyboardPanel.EDITING)
+                }
+            )
+        }
+
+        // Incognito indicator
+        if (isIncognito) {
+            item(key = "incognito") {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(colorScheme.accent.copy(alpha = 0.25f))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "🕵️ خفي",
+                        color = colorScheme.accent,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
-        )
+        }
     }
 }
 
