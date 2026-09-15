@@ -199,10 +199,25 @@ object KeyboardThemes {
         borderColor = Color(0x1E000000)
     )
 
+    val Transparent = KeyboardColorScheme(
+        name = "Transparent",
+        isDark = true,
+        background = Color(0x55000000),
+        keyBackground = Color(0x44FFFFFF),
+        keyText = Color(0xFFFFFFFF),
+        specialKeyBackground = Color(0x33000000),
+        specialKeyText = Color(0xFF38BDF8),
+        accent = Color(0xFF38BDF8),
+        suggestionBar = Color(0x55000000),
+        suggestionText = Color(0xFFF1F5F9),
+        borderColor = Color(0x44FFFFFF)
+    )
+
     val allThemes = listOf(
         GboardDark,
         SwiftKeyDark,
         GboardLight,
+        Transparent,
         ProSlateDark,
         Midnight,
         Dark,
@@ -215,7 +230,16 @@ object KeyboardThemes {
         CleanLight
     )
 
-    fun getTheme(name: String): KeyboardColorScheme {
-        return allThemes.find { it.name.equals(name, ignoreCase = true) } ?: Midnight
+    fun getTheme(name: String, customKeyColor: String? = null): KeyboardColorScheme {
+        val base = allThemes.find { it.name.equals(name, ignoreCase = true) } ?: Midnight
+        if (!customKeyColor.isNullOrEmpty() && customKeyColor != "default") {
+            try {
+                val parsed = Color(android.graphics.Color.parseColor(customKeyColor))
+                return base.copy(keyBackground = parsed)
+            } catch (e: Throwable) {
+                // Fallback
+            }
+        }
+        return base
     }
 }

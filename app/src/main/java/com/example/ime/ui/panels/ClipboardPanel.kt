@@ -4,8 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -28,6 +31,10 @@ import com.example.ime.theme.KeyboardColorScheme
 import com.example.ime.util.HapticHelper
 import java.text.SimpleDateFormat
 import java.util.*
+
+// Remembered scroll position across openings so user returns to exact spot
+private var lastSavedClipScrollIndex = 0
+private var lastSavedClipScrollOffset = 0
 
 @Composable
 fun ClipboardPanel(
@@ -46,6 +53,18 @@ fun ClipboardPanel(
     var selectedFolder by remember { mutableStateOf("الكل") }
     val folders = listOf("الكل", "مهم", "عام", "أذكار", "روابط", "ملاحظات")
 
+    val gridState = rememberLazyGridState(
+        initialFirstVisibleItemIndex = lastSavedClipScrollIndex.coerceIn(0, (clips.size - 1).coerceAtLeast(0)),
+        initialFirstVisibleItemScrollOffset = lastSavedClipScrollOffset
+    )
+
+    DisposableEffect(gridState) {
+        onDispose {
+            lastSavedClipScrollIndex = gridState.firstVisibleItemIndex
+            lastSavedClipScrollOffset = gridState.firstVisibleItemScrollOffset
+        }
+    }
+
     val filteredClips = remember(clips, searchQuery, selectedFolder) {
         clips.filter { clip ->
             val matchesSearch = searchQuery.isEmpty() || clip.text.contains(searchQuery, ignoreCase = true)
@@ -58,26 +77,89 @@ fun ClipboardPanel(
         modifier = modifier
             .fillMaxWidth()
             .background(colorScheme.background)
-            .padding(8.dp)
+            .padding(horizontal = 8.dp, vertical = 6.dp)
     ) {
-        // Header with Search and Clear
+        // Top Action Bar styled precisely like Image 5
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                text = "📋 الحافظة الدائمة",
-                color = colorScheme.accent,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Settings icon
+                IconButton(
+                    onClick = {
+                        HapticHelper.performKeyHaptic(context, view)
+                    },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "إعدادات الحافظة",
+                        tint = colorScheme.keyText.copy(alpha = 0.8f),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
 
-            // Search box
+                // Delete all unpinned
+                IconButton(
+                    onClick = {
+                        HapticHelper.performKeyHaptic(context, view)
+                        onClearUnpinned()
+                    },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DeleteSweep,
+                        contentDescription = "مسح غير المثبت",
+                        tint = colorScheme.keyText.copy(alpha = 0.8f),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+
+                Text(
+                    text = "الحافظة (${filteredClips.size})",
+                    color = colorScheme.accent,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            // Close button
+            IconButton(
+                onClick = {
+                    HapticHelper.performKeyHaptic(context, view)
+                    onClose()
+                },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "إغلاق",
+                    tint = colorScheme.keyText,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+
+        // Search Bar & Filter Row
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            // Search field
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .height(34.dp)
+                    .height(32.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(colorScheme.keyBackground)
                     .padding(horizontal = 8.dp),
@@ -85,9 +167,9 @@ fun ClipboardPanel(
             ) {
                 if (searchQuery.isEmpty()) {
                     Text(
-                        text = "🔍 بحث في الحافظة...",
+                        text = "🔍 بحث في النصوص المنسوخة...",
                         color = colorScheme.keyText.copy(alpha = 0.5f),
-                        fontSize = 12.sp
+                        fontSize = 11.sp
                     )
                 }
                 androidx.compose.foundation.text.BasicTextField(
@@ -102,72 +184,35 @@ fun ClipboardPanel(
                 )
             }
 
-            // Clear unpinned
-            IconButton(
-                onClick = {
-                    HapticHelper.performKeyHaptic(context, view)
-                    onClearUnpinned()
-                },
-                modifier = Modifier.size(30.dp)
+            // Quick Folder Chips
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.DeleteSweep,
-                    contentDescription = "مسح غير المثبت",
-                    tint = colorScheme.keyText.copy(alpha = 0.7f),
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-
-            // Close button
-            IconButton(
-                onClick = {
-                    HapticHelper.performKeyHaptic(context, view)
-                    onClose()
-                },
-                modifier = Modifier.size(30.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "إغلاق",
-                    tint = colorScheme.keyText,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-        }
-
-        // Folder Chips
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            for (folder in folders) {
-                val isSelected = selectedFolder == folder
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(
-                            if (isSelected) colorScheme.accent else colorScheme.keyBackground
+                for (folder in folders.take(3)) {
+                    val isSelected = selectedFolder == folder
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(if (isSelected) colorScheme.accent else colorScheme.keyBackground.copy(alpha = 0.7f))
+                            .clickable {
+                                HapticHelper.performKeyHaptic(context, view)
+                                selectedFolder = folder
+                            }
+                            .padding(horizontal = 8.dp, vertical = 5.dp)
+                    ) {
+                        Text(
+                            text = folder,
+                            color = if (isSelected) Color.White else colorScheme.keyText,
+                            fontSize = 10.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                         )
-                        .clickable {
-                            HapticHelper.performKeyHaptic(context, view)
-                            selectedFolder = folder
-                        }
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = folder,
-                        color = if (isSelected) Color.White else colorScheme.keyText,
-                        fontSize = 11.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                    )
+                    }
                 }
             }
         }
 
-        // List of clips
+        // 2-Column Grid of Clips (Matching Image 5)
         if (filteredClips.isEmpty()) {
             Box(
                 modifier = Modifier
@@ -183,79 +228,95 @@ fun ClipboardPanel(
             }
         } else {
             val dateFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
-            LazyColumn(
+
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                state = gridState,
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                contentPadding = PaddingValues(bottom = 6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 items(filteredClips, key = { it.id }) { clip ->
-                    Row(
+                    Card(
+                        shape = RoundedCornerShape(10.dp),
+                        colors = CardDefaults.cardColors(containerColor = colorScheme.keyBackground),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(colorScheme.keyBackground)
                             .clickable {
                                 HapticHelper.performKeyHaptic(context, view)
                                 onClipClick(clip.text)
+                                // Close clipboard after paste as requested by user
+                                onClose()
                             }
-                            .padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp),
+                            verticalArrangement = Arrangement.SpaceBetween
+                        ) {
                             Text(
                                 text = clip.text,
                                 color = colorScheme.keyText,
-                                fontSize = 13.sp,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis
+                                fontSize = 12.sp,
+                                maxLines = 4,
+                                overflow = TextOverflow.Ellipsis,
+                                lineHeight = 16.sp
                             )
+
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            // Bottom actions inside card (Pin, Time, Delete)
                             Row(
+                                modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                modifier = Modifier.padding(top = 2.dp)
+                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(
                                     text = dateFormat.format(Date(clip.timestamp)),
-                                    color = colorScheme.keyText.copy(alpha = 0.4f),
+                                    color = colorScheme.keyText.copy(alpha = 0.45f),
                                     fontSize = 10.sp
                                 )
-                                Text(
-                                    text = "• ${clip.folder}",
-                                    color = colorScheme.accent.copy(alpha = 0.8f),
-                                    fontSize = 10.sp
-                                )
+
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    // Pin toggle
+                                    IconButton(
+                                        onClick = {
+                                            HapticHelper.performKeyHaptic(context, view)
+                                            onTogglePin(clip.id, !clip.isPinned)
+                                        },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.PushPin,
+                                            contentDescription = if (clip.isPinned) "إلغاء التثبيت" else "تثبيت",
+                                            tint = if (clip.isPinned) colorScheme.accent else colorScheme.keyText.copy(alpha = 0.35f),
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
+
+                                    // Delete single
+                                    IconButton(
+                                        onClick = {
+                                            HapticHelper.performKeyHaptic(context, view)
+                                            onDeleteClip(clip.id)
+                                        },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "حذف",
+                                            tint = colorScheme.keyText.copy(alpha = 0.35f),
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
+                                }
                             }
-                        }
-
-                        // Toggle Pin
-                        IconButton(
-                            onClick = {
-                                HapticHelper.performKeyHaptic(context, view)
-                                onTogglePin(clip.id, !clip.isPinned)
-                            },
-                            modifier = Modifier.size(28.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (clip.isPinned) Icons.Default.PushPin else Icons.Default.PushPin,
-                                contentDescription = if (clip.isPinned) "إلغاء التثبيت" else "تثبيت",
-                                tint = if (clip.isPinned) colorScheme.accent else colorScheme.keyText.copy(alpha = 0.35f),
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-
-                        // Delete
-                        IconButton(
-                            onClick = {
-                                HapticHelper.performKeyHaptic(context, view)
-                                onDeleteClip(clip.id)
-                            },
-                            modifier = Modifier.size(28.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "حذف",
-                                tint = colorScheme.keyText.copy(alpha = 0.35f),
-                                modifier = Modifier.size(16.dp)
-                            )
                         }
                     }
                 }

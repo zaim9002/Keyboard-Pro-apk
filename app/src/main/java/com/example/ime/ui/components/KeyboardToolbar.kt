@@ -45,10 +45,12 @@ fun KeyboardToolbar(
     currentLanguage: String,
     isIncognito: Boolean,
     autoTranslateOnEnter: Boolean = false,
+    oneHandedMode: String = "OFF",
     colorScheme: KeyboardColorScheme,
     onPanelSelect: (KeyboardPanel) -> Unit,
     onSwitchLanguage: () -> Unit,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    onToggleOneHanded: ((String) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val view = LocalView.current
@@ -111,6 +113,27 @@ fun KeyboardToolbar(
                     onPanelSelect(if (activePanel == KeyboardPanel.RESIZE) KeyboardPanel.NONE else KeyboardPanel.RESIZE)
                 }
             )
+        }
+
+        // One-Handed Mode toggle button (وضع اليد الواحدة)
+        if (onToggleOneHanded != null) {
+            item(key = "one_handed") {
+                ToolbarIconButton(
+                    icon = Icons.Default.PanTool,
+                    tooltip = "وضع اليد الواحدة",
+                    isSelected = oneHandedMode != "OFF",
+                    badge = if (oneHandedMode == "RIGHT") "يمين" else if (oneHandedMode == "LEFT") "يسار" else null,
+                    colorScheme = colorScheme,
+                    onClick = {
+                        val nextMode = when (oneHandedMode) {
+                            "OFF" -> "RIGHT"
+                            "RIGHT" -> "LEFT"
+                            else -> "OFF"
+                        }
+                        onToggleOneHanded(nextMode)
+                    }
+                )
+            }
         }
 
         // AI Assistant (الذكاء الاصطناعي، تغيير نبرة الكتابة وتدقيق النصوص)

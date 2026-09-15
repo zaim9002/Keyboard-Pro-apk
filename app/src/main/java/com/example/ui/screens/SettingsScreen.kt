@@ -41,6 +41,7 @@ fun SettingsScreen(
     var isGamingMode by remember { mutableStateOf(prefs.isGamingMode) }
     var oneHandedMode by remember { mutableStateOf(prefs.oneHandedMode) }
     var autoCorrectEnabled by remember { mutableStateOf(prefs.autoCorrectEnabled) }
+    var spacebarLanguageSwitch by remember { mutableStateOf(prefs.spacebarLanguageSwitchEnabled) }
     var aiTone by remember { mutableStateOf(prefs.aiTone) }
     var geminiApiKey by remember { mutableStateOf(prefs.geminiApiKey) }
 
@@ -119,6 +120,30 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.width(6.dp))
                         Text("إدارة اللغات", fontSize = 12.sp)
                     }
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("تبديل اللغة من المسطرة (Spacebar)", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                        Text(
+                            "الضغط على اسم اللغة داخل المسطرة (العربية) أو سحبها أفقياً لتبديل اللغة فوراً (مع بقاء زر 🌐)",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = spacebarLanguageSwitch,
+                        onCheckedChange = {
+                            spacebarLanguageSwitch = it
+                            prefs.spacebarLanguageSwitchEnabled = it
+                        }
+                    )
                 }
             }
         }

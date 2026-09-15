@@ -3,6 +3,9 @@ package com.example.ime.ui.components
 import android.view.HapticFeedbackConstants
 import android.view.SoundEffectConstants
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -127,6 +130,33 @@ fun KeyButton(
                     .padding(top = 1.5.dp, end = 3.dp)
             )
         }
+
+        // Floating character preview bubble on key press (GBoard / iOS style)
+        if (isPressed && showPreview && !isSpecial && text.length == 1) {
+            Popup(
+                alignment = Alignment.TopCenter,
+                offset = IntOffset(0, -115),
+                properties = PopupProperties(focusable = false, dismissOnBackPress = false, dismissOnClickOutside = false)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(width = 50.dp, height = 58.dp)
+                        .shadow(elevation = 6.dp, shape = RoundedCornerShape(10.dp))
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(colorScheme.keyBackground)
+                        .border(1.dp, colorScheme.accent.copy(alpha = 0.4f), RoundedCornerShape(10.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = text,
+                        color = colorScheme.keyText,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -138,6 +168,7 @@ fun RepeatingDeleteKeyButton(
     hapticEnabled: Boolean = true,
     soundEnabled: Boolean = false,
     onDelete: () -> Unit,
+    onDeleteWord: (() -> Unit)? = null,
     onDeleteAll: (() -> Unit)? = null
 ) {
     val view = LocalView.current
@@ -146,6 +177,7 @@ fun RepeatingDeleteKeyButton(
     var isPressed by remember { mutableStateOf(false) }
 
     val currentOnDelete by rememberUpdatedState(onDelete)
+    val currentOnDeleteWord by rememberUpdatedState(onDeleteWord)
     val currentOnDeleteAll by rememberUpdatedState(onDeleteAll)
 
     val bgColor = if (isPressed) colorScheme.specialKeyBackground.copy(alpha = 0.7f) else colorScheme.specialKeyBackground
@@ -164,41 +196,60 @@ fun RepeatingDeleteKeyButton(
             .clip(RoundedCornerShape(6.dp))
             .background(bgColor)
             .pointerInput(Unit) {
-                detectTapGestures(
-                    onPress = {
-                        isPressed = true
-                        if (hapticEnabled) {
-                            HapticHelper.performKeyHaptic(context, view)
-                        }
-                        if (soundEnabled) {
-                            view.playSoundEffect(SoundEffectConstants.CLICK)
-                        }
-                        // 1. Initial delete
-                        currentOnDelete()
-
-                        val repeatJob: Job = coroutineScope.launch {
-                            delay(280L)
-                            var repeatCount = 0
-                            while (isActive) {
-                                repeatCount++
-                                if (repeatCount > 25 && currentOnDeleteAll != null) {
-                                    currentOnDeleteAll?.invoke()
-                                } else {
-                                    currentOnDelete()
-                                }
-                                if (hapticEnabled && repeatCount % 3 == 0) {
-                                    HapticHelper.performKeyHaptic(context, view)
-                                }
-                                val delayTime = if (repeatCount > 18) 30L else if (repeatCount > 8) 50L else 75L
-                                delay(delayTime)
-                            }
-                        }
-
-                        tryAwaitRelease()
-                        repeatJob.cancel()
-                        isPressed = false
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    var isWordDeleted = false
+                    isPressed = true
+                    if (hapticEnabled) {
+                        HapticHelper.performKeyHaptic(context, view)
                     }
-                )
+                    if (soundEnabled) {
+                        view.playSoundEffect(SoundEffectConstants.CLICK)
+                    }
+                    // 1. Initial delete
+                    currentOnDelete()
+
+                    // Steady, medium-paced repetition (balanced, harmonious)
+                    val repeatJob: Job = coroutineScope.launch {
+                        delay(350L) // Balanced initial delay before repeat
+                        var repeatCount = 0
+                        while (isActive) {
+                            if (isWordDeleted) break
+                            repeatCount++
+                            if (repeatCount > 35 && currentOnDeleteAll != null) {
+                                currentOnDeleteAll?.invoke()
+                            } else {
+                                currentOnDelete()
+                            }
+                            if (hapticEnabled && repeatCount % 2 == 0) {
+                                HapticHelper.performKeyHaptic(context, view)
+                            }
+                            delay(70L) // Consistent, harmonious medium speed
+                        }
+                    }
+
+                    // Listen for release or left-swipe to delete full word
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                        if (!change.pressed) {
+                            break
+                        }
+                        val dragX = change.position.x - down.position.x
+                        // Swipe to the left by 40+ pixels: delete whole word!
+                        if (dragX < -40f && !isWordDeleted) {
+                            isWordDeleted = true
+                            repeatJob.cancel()
+                            if (hapticEnabled) {
+                                HapticHelper.performKeyHaptic(context, view)
+                            }
+                            currentOnDeleteWord?.invoke()
+                        }
+                    }
+
+                    repeatJob.cancel()
+                    isPressed = false
+                }
             },
         contentAlignment = Alignment.Center
     ) {

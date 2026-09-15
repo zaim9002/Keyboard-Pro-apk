@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,6 +40,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import com.example.KeyboardProApp
+import com.example.engine.DecorationEngine
 import com.example.data.local.entity.ClipboardEntity
 import com.example.data.local.entity.UserWordEntity
 import com.example.ime.ui.panels.AiAssistantPanel
@@ -55,7 +57,8 @@ import com.example.language.model.LayoutFamily
 enum class LayoutMode {
     ALPHA,
     SYMBOLS_1,
-    SYMBOLS_2
+    SYMBOLS_2,
+    NUMPAD
 }
 
 enum class ShiftState {
@@ -83,10 +86,12 @@ fun KeyboardScreen(
     showSuggestions: Boolean = true,
     arabicNumerals: Boolean = true,
     autoTranslateOnEnter: Boolean = false,
+    spacebarLanguageSwitch: Boolean = true,
     onToggleAutoTranslate: (Boolean) -> Unit = {},
     onChangeKeyboardHeight: (String) -> Unit = {},
     onTextInput: (String) -> Unit,
     onDelete: () -> Unit,
+    onDeleteWord: () -> Unit = {},
     onDeleteAll: () -> Unit = {},
     onEnter: () -> Unit,
     onSpace: () -> Unit,
@@ -122,6 +127,10 @@ fun KeyboardScreen(
     var showTashkeelRow by remember { mutableStateOf(false) }
     var showLanguagePicker by remember { mutableStateOf(false) }
     var activePopupKey by remember { mutableStateOf<KeyModel?>(null) }
+    var isInlineTranslateOpen by remember { mutableStateOf(false) }
+    var translateSourceLang by remember { mutableStateOf("ar") }
+    var translateTargetLang by remember { mutableStateOf("en") }
+    val coroutineScope = rememberCoroutineScope()
 
     val keyHeight = KeyboardLayoutController.getKeyHeight(keyboardHeight)
     val panelHeight = remember(keyboardHeight, showNumberRow) {
@@ -153,13 +162,53 @@ fun KeyboardScreen(
             currentLanguage = currentLanguage,
             isIncognito = isIncognito,
             autoTranslateOnEnter = autoTranslateOnEnter,
+            oneHandedMode = oneHandedMode,
             colorScheme = colorScheme,
             onPanelSelect = { panel ->
-                activePanel = panel
+                if (panel == KeyboardPanel.TRANSLATE) {
+                    isInlineTranslateOpen = !isInlineTranslateOpen
+                    activePanel = KeyboardPanel.NONE
+                } else {
+                    activePanel = panel
+                }
             },
             onSwitchLanguage = onSwitchLanguage,
-            onOpenSettings = onOpenSettings
+            onOpenSettings = onOpenSettings,
+            onToggleOneHanded = onToggleOneHanded
         )
+
+        // 1.5 Inline GBoard-style Translation Bar (Google GBoard style, Image 8)
+        if (isInlineTranslateOpen && activePanel == KeyboardPanel.NONE) {
+            InlineTranslateBar(
+                sourceLang = translateSourceLang,
+                targetLang = translateTargetLang,
+                colorScheme = colorScheme,
+                onSourceLangChange = { translateSourceLang = it },
+                onTargetLangChange = { translateTargetLang = it },
+                onSwapLanguages = {
+                    val temp = translateSourceLang
+                    translateSourceLang = translateTargetLang
+                    translateTargetLang = temp
+                },
+                onTranslateNow = {
+                    val textToTranslate = currentDraftText.ifBlank { currentTypedWord ?: "" }
+                    if (textToTranslate.isNotBlank()) {
+                        coroutineScope.launch {
+                            val translated = com.example.engine.TranslationEngine.translate(
+                                textToTranslate,
+                                translateSourceLang,
+                                translateTargetLang
+                            )
+                            for (i in 0 until textToTranslate.length) {
+                                onDelete()
+                            }
+                            onTextInput(translated)
+                        }
+                    }
+                },
+                onClose = { isInlineTranslateOpen = false }
+            )
+        }
 
         // 2. Suggestion Bar (عندما لا تكون اللوحات المخصصة مفتوحة وتكون مفعلة في الإعدادات)
         if (activePanel == KeyboardPanel.NONE && showSuggestions) {
@@ -406,8 +455,10 @@ fun KeyboardScreen(
                                                 actionIcon = actionIcon,
                                                 autoTranslateOnEnter = autoTranslateOnEnter,
                                                 onToggleAutoTranslate = onToggleAutoTranslate,
+                                                spacebarLanguageSwitch = spacebarLanguageSwitch,
                                                 onTextInput = onTextInput,
                                                 onDelete = onDelete,
+                                                onDeleteWord = onDeleteWord,
                                                 onDeleteAll = onDeleteAll,
                                                 onSpace = onSpace,
                                                 onEnter = onEnter,
@@ -416,6 +467,7 @@ fun KeyboardScreen(
                                                 onLongPressLanguage = { showLanguagePicker = true },
                                                 onOpenClipboard = { activePanel = KeyboardPanel.CLIPBOARD },
                                                 onOpenEmoji = { activePanel = KeyboardPanel.EMOJI },
+                                                onOpenTranslate = { isInlineTranslateOpen = !isInlineTranslateOpen },
                                                 onToggleTashkeel = { showTashkeelRow = !showTashkeelRow },
                                                 onMoveCursor = onMoveCursor,
                                                 onLongPressKey = { activePopupKey = it }
@@ -438,6 +490,7 @@ fun KeyboardScreen(
                                                 actionIcon = actionIcon,
                                                 autoTranslateOnEnter = autoTranslateOnEnter,
                                                 onToggleAutoTranslate = onToggleAutoTranslate,
+                                                spacebarLanguageSwitch = spacebarLanguageSwitch,
                                                 onTextInput = { char ->
                                                     val text = if (shiftState != ShiftState.OFF) char.uppercase() else char.lowercase()
                                                     onTextInput(text)
@@ -446,9 +499,12 @@ fun KeyboardScreen(
                                                     }
                                                 },
                                                 onDelete = onDelete,
+                                                onDeleteWord = onDeleteWord,
                                                 onDeleteAll = onDeleteAll,
                                                 onSpace = onSpace,
                                                 onEnter = onEnter,
+                                                onOpenClipboard = { activePanel = KeyboardPanel.CLIPBOARD },
+                                                onOpenTranslate = { isInlineTranslateOpen = !isInlineTranslateOpen },
                                                 onOpenEmoji = { activePanel = KeyboardPanel.EMOJI },
                                                 onShiftClick = {
                                                     shiftState = when (shiftState) {
@@ -474,12 +530,17 @@ fun KeyboardScreen(
                                             actionIcon = actionIcon,
                                             autoTranslateOnEnter = autoTranslateOnEnter,
                                             onToggleAutoTranslate = onToggleAutoTranslate,
+                                            spacebarLanguageSwitch = spacebarLanguageSwitch,
                                             onTextInput = onTextInput,
                                             onDelete = onDelete,
+                                            onDeleteWord = onDeleteWord,
                                             onSpace = onSpace,
                                             onEnter = onEnter,
                                             onSwitchToAlpha = { layoutMode = LayoutMode.ALPHA },
                                             onSwitchToSymbols2 = { layoutMode = LayoutMode.SYMBOLS_2 },
+                                            onSwitchToNumpad = { layoutMode = LayoutMode.NUMPAD },
+                                            onOpenClipboard = { activePanel = KeyboardPanel.CLIPBOARD },
+                                            onOpenTranslate = { isInlineTranslateOpen = !isInlineTranslateOpen },
                                             onSwitchLanguage = onSwitchLanguage,
                                             onMoveCursor = onMoveCursor
                                         )
@@ -493,14 +554,33 @@ fun KeyboardScreen(
                                             actionIcon = actionIcon,
                                             autoTranslateOnEnter = autoTranslateOnEnter,
                                             onToggleAutoTranslate = onToggleAutoTranslate,
+                                            spacebarLanguageSwitch = spacebarLanguageSwitch,
                                             onTextInput = onTextInput,
                                             onDelete = onDelete,
+                                            onDeleteWord = onDeleteWord,
                                             onSpace = onSpace,
                                             onEnter = onEnter,
                                             onSwitchToAlpha = { layoutMode = LayoutMode.ALPHA },
                                             onSwitchToSymbols1 = { layoutMode = LayoutMode.SYMBOLS_1 },
+                                            onOpenClipboard = { activePanel = KeyboardPanel.CLIPBOARD },
+                                            onOpenTranslate = { isInlineTranslateOpen = !isInlineTranslateOpen },
                                             onSwitchLanguage = onSwitchLanguage,
                                             onMoveCursor = onMoveCursor
+                                        )
+                                    }
+                                    LayoutMode.NUMPAD -> {
+                                        NumpadKeyboardLayout(
+                                            colorScheme = colorScheme,
+                                            keyHeight = keyHeight,
+                                            hapticEnabled = hapticEnabled,
+                                            soundEnabled = soundEnabled,
+                                            actionIcon = actionIcon,
+                                            onTextInput = onTextInput,
+                                            onDelete = onDelete,
+                                            onDeleteWord = onDeleteWord,
+                                            onEnter = onEnter,
+                                            onSwitchToAlpha = { layoutMode = LayoutMode.ALPHA },
+                                            onSwitchToSymbols = { layoutMode = LayoutMode.SYMBOLS_1 }
                                         )
                                     }
                                 }
@@ -520,64 +600,68 @@ fun KeyboardScreen(
                 }
             }
 
-            // Long Press Popup Overlay
-            if (activePopupKey != null && activePopupKey!!.popupOptions.isNotEmpty()) {
+            // Long Press Popup Overlay with alternative letters and decorative variants
+            if (activePopupKey != null) {
                 val key = activePopupKey!!
-                val context = LocalContext.current
-                val view = LocalView.current
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .background(Color.Black.copy(alpha = 0.5f))
-                        .clickable { activePopupKey = null },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Card(
-                        shape = RoundedCornerShape(14.dp),
-                        colors = CardDefaults.cardColors(containerColor = colorScheme.background),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                val decorations = DecorationEngine.getLetterDecorations(key.primaryText)
+                val allOptions = (key.popupOptions + decorations).distinct()
+                if (allOptions.isNotEmpty()) {
+                    val context = LocalContext.current
+                    val view = LocalView.current
+                    Box(
                         modifier = Modifier
-                            .padding(8.dp)
-                            .clickable(enabled = false) {}
+                            .matchParentSize()
+                            .background(Color.Black.copy(alpha = 0.5f))
+                            .clickable { activePopupKey = null },
+                        contentAlignment = Alignment.Center
                     ) {
-                        Column(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        Card(
+                            shape = RoundedCornerShape(14.dp),
+                            colors = CardDefaults.cardColors(containerColor = colorScheme.background),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                            modifier = Modifier
+                                .padding(12.dp)
+                                .clickable(enabled = false) {}
                         ) {
-                            Text(
-                                text = "حروف بديلة لـ (${key.primaryText})",
-                                color = colorScheme.keyText.copy(alpha = 0.7f),
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                            Column(
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                for (option in key.popupOptions) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(width = 48.dp, height = 54.dp)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(colorScheme.keyBackground)
-                                            .clickable(
-                                                role = androidx.compose.ui.semantics.Role.Button,
-                                                onClick = {
-                                                    HapticHelper.performKeyHaptic(context, view)
-                                                    onTextInput(option)
-                                                    activePopupKey = null
-                                                }
-                                            ),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = option,
-                                            color = colorScheme.keyText,
-                                            fontSize = 22.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
+                                Text(
+                                    text = "حروف وتشكيلات لـ (${key.primaryText})",
+                                    color = colorScheme.keyText.copy(alpha = 0.7f),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+
+                                androidx.compose.foundation.lazy.LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    items(allOptions) { option ->
+                                        Box(
+                                            modifier = Modifier
+                                                .size(width = 46.dp, height = 50.dp)
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(colorScheme.keyBackground)
+                                                .clickable(
+                                                    role = androidx.compose.ui.semantics.Role.Button,
+                                                    onClick = {
+                                                        HapticHelper.performKeyHaptic(context, view)
+                                                        onTextInput(option)
+                                                        activePopupKey = null
+                                                    }
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = option,
+                                                color = colorScheme.keyText,
+                                                fontSize = 20.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -664,8 +748,10 @@ private fun ArabicKeyboardLayout(
     actionIcon: androidx.compose.ui.graphics.vector.ImageVector,
     autoTranslateOnEnter: Boolean = false,
     onToggleAutoTranslate: ((Boolean) -> Unit)? = null,
+    spacebarLanguageSwitch: Boolean = true,
     onTextInput: (String) -> Unit,
     onDelete: () -> Unit,
+    onDeleteWord: (() -> Unit)? = null,
     onDeleteAll: () -> Unit,
     onSpace: () -> Unit,
     onEnter: () -> Unit,
@@ -691,7 +777,7 @@ private fun ArabicKeyboardLayout(
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
                 modifier = Modifier.weight(key.weight),
-                onLongClick = if (key.popupOptions.isNotEmpty()) { { onLongPressKey(key) } } else null
+                onLongClick = { onLongPressKey(key) }
             ) {
                 onTextInput(key.primaryText)
             }
@@ -710,7 +796,7 @@ private fun ArabicKeyboardLayout(
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
                 modifier = Modifier.weight(key.weight),
-                onLongClick = if (key.popupOptions.isNotEmpty()) { { onLongPressKey(key) } } else null
+                onLongClick = { onLongPressKey(key) }
             ) {
                 onTextInput(key.primaryText)
             }
@@ -729,13 +815,13 @@ private fun ArabicKeyboardLayout(
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
                 modifier = Modifier.weight(1f),
-                onLongClick = if (key.popupOptions.isNotEmpty()) { { onLongPressKey(key) } } else null
+                onLongClick = { onLongPressKey(key) }
             ) {
                 onTextInput(key.primaryText)
             }
         }
 
-        // Repeating Delete Button on the Right
+        // Repeating Delete Button on the Right with left-swipe word deletion
         RepeatingDeleteKeyButton(
             height = keyHeight,
             colorScheme = colorScheme,
@@ -743,6 +829,7 @@ private fun ArabicKeyboardLayout(
             soundEnabled = soundEnabled,
             modifier = Modifier.weight(1.35f),
             onDelete = onDelete,
+            onDeleteWord = onDeleteWord,
             onDeleteAll = onDeleteAll
         )
     }
@@ -763,11 +850,14 @@ private fun ArabicKeyboardLayout(
         onSwitchMode = onSwitchMode,
         onSwitchLanguage = onSwitchLanguage,
         onLongPressLanguage = onLongPressLanguage,
+        onOpenClipboard = onOpenClipboard,
+        onOpenTranslate = onOpenTranslate,
         onSpace = onSpace,
         onEnter = onEnter,
         onOpenEmoji = onOpenEmoji,
         onMoveCursor = onMoveCursor,
-        onTextInput = onTextInput
+        onTextInput = onTextInput,
+        spacebarLanguageSwitch = spacebarLanguageSwitch
     )
 }
 
@@ -782,11 +872,14 @@ private fun DynamicKeyboardLayout(
     actionIcon: androidx.compose.ui.graphics.vector.ImageVector,
     autoTranslateOnEnter: Boolean = false,
     onToggleAutoTranslate: ((Boolean) -> Unit)? = null,
+    spacebarLanguageSwitch: Boolean = true,
     onTextInput: (String) -> Unit,
     onDelete: () -> Unit,
+    onDeleteWord: (() -> Unit)? = null,
     onDeleteAll: (() -> Unit)? = null,
     onSpace: () -> Unit,
     onEnter: () -> Unit,
+    onOpenClipboard: (() -> Unit)? = null,
     onOpenEmoji: (() -> Unit)? = null,
     onShiftClick: () -> Unit,
     onSwitchMode: () -> Unit,
@@ -811,7 +904,7 @@ private fun DynamicKeyboardLayout(
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
                 modifier = Modifier.weight(key.weight),
-                onLongClick = if (key.popupOptions.isNotEmpty()) { { onLongPressKey(key) } } else null
+                onLongClick = { onLongPressKey(key) }
             ) {
                 onTextInput(letter)
             }
@@ -830,7 +923,7 @@ private fun DynamicKeyboardLayout(
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
                 modifier = Modifier.weight(key.weight),
-                onLongClick = if (key.popupOptions.isNotEmpty()) { { onLongPressKey(key) } } else null
+                onLongClick = { onLongPressKey(key) }
             ) {
                 onTextInput(letter)
             }
@@ -868,13 +961,13 @@ private fun DynamicKeyboardLayout(
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
                 modifier = Modifier.weight(key.weight),
-                onLongClick = if (key.popupOptions.isNotEmpty()) { { onLongPressKey(key) } } else null
+                onLongClick = { onLongPressKey(key) }
             ) {
                 onTextInput(letter)
             }
         }
 
-        // Repeating Backspace Key
+        // Repeating Backspace Key with word-delete swipe
         RepeatingDeleteKeyButton(
             height = keyHeight,
             colorScheme = colorScheme,
@@ -882,6 +975,7 @@ private fun DynamicKeyboardLayout(
             soundEnabled = soundEnabled,
             modifier = Modifier.weight(1.35f),
             onDelete = onDelete,
+            onDeleteWord = onDeleteWord,
             onDeleteAll = onDeleteAll
         )
     }
@@ -902,11 +996,14 @@ private fun DynamicKeyboardLayout(
         onSwitchMode = onSwitchMode,
         onSwitchLanguage = onSwitchLanguage,
         onLongPressLanguage = onLongPressLanguage,
+        onOpenClipboard = onOpenClipboard,
+        onOpenTranslate = onOpenTranslate,
         onSpace = onSpace,
         onEnter = onEnter,
         onOpenEmoji = onOpenEmoji,
         onMoveCursor = onMoveCursor,
-        onTextInput = onTextInput
+        onTextInput = onTextInput,
+        spacebarLanguageSwitch = spacebarLanguageSwitch
     )
 }
 
@@ -1043,12 +1140,17 @@ private fun Symbols1Layout(
     actionIcon: androidx.compose.ui.graphics.vector.ImageVector,
     autoTranslateOnEnter: Boolean = false,
     onToggleAutoTranslate: ((Boolean) -> Unit)? = null,
+    spacebarLanguageSwitch: Boolean = true,
     onTextInput: (String) -> Unit,
     onDelete: () -> Unit,
+    onDeleteWord: (() -> Unit)? = null,
     onSpace: () -> Unit,
     onEnter: () -> Unit,
     onSwitchToAlpha: () -> Unit,
     onSwitchToSymbols2: () -> Unit,
+    onSwitchToNumpad: (() -> Unit)? = null,
+    onOpenClipboard: (() -> Unit)? = null,
+    onOpenTranslate: (() -> Unit)? = null,
     onSwitchLanguage: () -> Unit,
     onMoveCursor: (Int) -> Unit
 ) {
@@ -1090,8 +1192,21 @@ private fun Symbols1Layout(
             colorScheme = colorScheme,
             hapticEnabled = hapticEnabled,
             soundEnabled = soundEnabled,
-            modifier = Modifier.weight(1.3f)
+            modifier = Modifier.weight(1.0f)
         ) { onSwitchToSymbols2() }
+
+        if (onSwitchToNumpad != null) {
+            KeyButton(
+                text = "123",
+                isSpecial = true,
+                fontSize = 12.sp,
+                height = keyHeight,
+                colorScheme = colorScheme,
+                hapticEnabled = hapticEnabled,
+                soundEnabled = soundEnabled,
+                modifier = Modifier.weight(0.9f)
+            ) { onSwitchToNumpad() }
+        }
 
         for (key in KeyboardLayouts.symbols1Row3.filter { it.type == KeyType.CHARACTER }) {
             KeyButton(
@@ -1110,7 +1225,8 @@ private fun Symbols1Layout(
             hapticEnabled = hapticEnabled,
             soundEnabled = soundEnabled,
             modifier = Modifier.weight(1.35f),
-            onDelete = onDelete
+            onDelete = onDelete,
+            onDeleteWord = onDeleteWord
         )
     }
 
@@ -1129,10 +1245,13 @@ private fun Symbols1Layout(
         onToggleAutoTranslate = onToggleAutoTranslate,
         onSwitchMode = onSwitchToAlpha,
         onSwitchLanguage = onSwitchLanguage,
+        onOpenClipboard = onOpenClipboard,
+        onOpenTranslate = onOpenTranslate,
         onSpace = onSpace,
         onEnter = onEnter,
         onMoveCursor = onMoveCursor,
-        onTextInput = onTextInput
+        onTextInput = onTextInput,
+        spacebarLanguageSwitch = spacebarLanguageSwitch
     )
 }
 
@@ -1145,12 +1264,16 @@ private fun Symbols2Layout(
     actionIcon: androidx.compose.ui.graphics.vector.ImageVector,
     autoTranslateOnEnter: Boolean = false,
     onToggleAutoTranslate: ((Boolean) -> Unit)? = null,
+    spacebarLanguageSwitch: Boolean = true,
     onTextInput: (String) -> Unit,
     onDelete: () -> Unit,
+    onDeleteWord: (() -> Unit)? = null,
     onSpace: () -> Unit,
     onEnter: () -> Unit,
     onSwitchToAlpha: () -> Unit,
     onSwitchToSymbols1: () -> Unit,
+    onOpenClipboard: (() -> Unit)? = null,
+    onOpenTranslate: (() -> Unit)? = null,
     onSwitchLanguage: () -> Unit,
     onMoveCursor: (Int) -> Unit
 ) {
@@ -1212,7 +1335,8 @@ private fun Symbols2Layout(
             hapticEnabled = hapticEnabled,
             soundEnabled = soundEnabled,
             modifier = Modifier.weight(1.35f),
-            onDelete = onDelete
+            onDelete = onDelete,
+            onDeleteWord = onDeleteWord
         )
     }
 
@@ -1231,11 +1355,149 @@ private fun Symbols2Layout(
         onToggleAutoTranslate = onToggleAutoTranslate,
         onSwitchMode = onSwitchToAlpha,
         onSwitchLanguage = onSwitchLanguage,
+        onOpenClipboard = onOpenClipboard,
+        onOpenTranslate = onOpenTranslate,
         onSpace = onSpace,
         onEnter = onEnter,
         onMoveCursor = onMoveCursor,
-        onTextInput = onTextInput
+        onTextInput = onTextInput,
+        spacebarLanguageSwitch = spacebarLanguageSwitch
     )
+}
+
+@Composable
+private fun NumpadKeyboardLayout(
+    colorScheme: KeyboardColorScheme,
+    keyHeight: androidx.compose.ui.unit.Dp,
+    hapticEnabled: Boolean,
+    soundEnabled: Boolean,
+    actionIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    onTextInput: (String) -> Unit,
+    onDelete: () -> Unit,
+    onDeleteWord: (() -> Unit)? = null,
+    onEnter: () -> Unit,
+    onSwitchToAlpha: () -> Unit,
+    onSwitchToSymbols: () -> Unit
+) {
+    // Row 1: ( ) 1 2 3 ABC
+    Row(modifier = Modifier.fillMaxWidth()) {
+        for (key in KeyboardLayouts.numpadRow1) {
+            KeyButton(
+                text = key.primaryText,
+                isSpecial = key.type != KeyType.CHARACTER,
+                height = keyHeight,
+                fontSize = if (key.type == KeyType.CHARACTER) 20.sp else 14.sp,
+                colorScheme = colorScheme,
+                hapticEnabled = hapticEnabled,
+                soundEnabled = soundEnabled,
+                modifier = Modifier.weight(key.weight)
+            ) {
+                if (key.type == KeyType.SWITCH_MODE) {
+                    onSwitchToAlpha()
+                } else {
+                    onTextInput(key.primaryText)
+                }
+            }
+        }
+    }
+
+    // Row 2: + - 4 5 6 =
+    Row(modifier = Modifier.fillMaxWidth()) {
+        for (key in KeyboardLayouts.numpadRow2) {
+            KeyButton(
+                text = key.primaryText,
+                isSpecial = key.type != KeyType.CHARACTER,
+                height = keyHeight,
+                fontSize = 20.sp,
+                colorScheme = colorScheme,
+                hapticEnabled = hapticEnabled,
+                soundEnabled = soundEnabled,
+                modifier = Modifier.weight(key.weight)
+            ) {
+                onTextInput(key.primaryText)
+            }
+        }
+    }
+
+    // Row 3: / % 7 8 9 ⌫
+    Row(modifier = Modifier.fillMaxWidth()) {
+        for (key in KeyboardLayouts.numpadRow3) {
+            if (key.type == KeyType.BACKSPACE) {
+                RepeatingDeleteKeyButton(
+                    height = keyHeight,
+                    colorScheme = colorScheme,
+                    hapticEnabled = hapticEnabled,
+                    soundEnabled = soundEnabled,
+                    modifier = Modifier.weight(key.weight),
+                    onDelete = onDelete,
+                    onDeleteWord = onDeleteWord
+                )
+            } else {
+                KeyButton(
+                    text = key.primaryText,
+                    height = keyHeight,
+                    fontSize = 20.sp,
+                    colorScheme = colorScheme,
+                    hapticEnabled = hapticEnabled,
+                    soundEnabled = soundEnabled,
+                    modifier = Modifier.weight(key.weight)
+                ) {
+                    onTextInput(key.primaryText)
+                }
+            }
+        }
+    }
+
+    // Row 4: 123!#() , * 0 . ↵
+    Row(modifier = Modifier.fillMaxWidth()) {
+        for (key in KeyboardLayouts.numpadRow4) {
+            if (key.type == KeyType.ENTER) {
+                Box(
+                    modifier = Modifier
+                        .weight(key.weight)
+                        .height(keyHeight)
+                        .padding(horizontal = 1.5.dp, vertical = 2.dp)
+                        .shadow(1.dp, RoundedCornerShape(6.dp))
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(colorScheme.accent)
+                        .clickable { onEnter() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = actionIcon,
+                        contentDescription = "إدخال",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            } else if (key.type == KeyType.SWITCH_MODE) {
+                KeyButton(
+                    text = key.primaryText,
+                    isSpecial = true,
+                    height = keyHeight,
+                    fontSize = 12.sp,
+                    colorScheme = colorScheme,
+                    hapticEnabled = hapticEnabled,
+                    soundEnabled = soundEnabled,
+                    modifier = Modifier.weight(key.weight)
+                ) {
+                    onSwitchToSymbols()
+                }
+            } else {
+                KeyButton(
+                    text = key.primaryText,
+                    height = keyHeight,
+                    fontSize = 20.sp,
+                    colorScheme = colorScheme,
+                    hapticEnabled = hapticEnabled,
+                    soundEnabled = soundEnabled,
+                    modifier = Modifier.weight(key.weight)
+                ) {
+                    onTextInput(key.primaryText)
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -1254,11 +1516,14 @@ private fun BottomControlRow(
     onSwitchMode: () -> Unit,
     onSwitchLanguage: () -> Unit,
     onLongPressLanguage: (() -> Unit)? = null,
+    onOpenClipboard: (() -> Unit)? = null,
+    onOpenTranslate: (() -> Unit)? = null,
     onSpace: () -> Unit,
     onEnter: () -> Unit,
     onOpenEmoji: (() -> Unit)? = null,
     onMoveCursor: (Int) -> Unit,
-    onTextInput: (String) -> Unit
+    onTextInput: (String) -> Unit,
+    spacebarLanguageSwitch: Boolean = true
 ) {
     val context = LocalContext.current
     val view = LocalView.current
@@ -1276,44 +1541,47 @@ private fun BottomControlRow(
             colorScheme = colorScheme,
             hapticEnabled = hapticEnabled,
             soundEnabled = soundEnabled,
-            modifier = Modifier.weight(1.25f)
+            modifier = Modifier.weight(1.05f)
         ) {
             onSwitchMode()
+        }
+
+        // Dedicated Clipboard Button beside spacebar (📋)
+        if (onOpenClipboard != null) {
+            KeyButton(
+                text = "📋",
+                isSpecial = true,
+                fontSize = 14.sp,
+                height = keyHeight,
+                colorScheme = colorScheme,
+                hapticEnabled = hapticEnabled,
+                soundEnabled = soundEnabled,
+                modifier = Modifier.weight(0.85f)
+            ) {
+                onOpenClipboard()
+            }
         }
 
         // Language Switch (🌐) located prominently at the bottom for easy access!
         KeyButton(
             text = langLabel,
             isSpecial = true,
-            fontSize = 15.sp,
+            fontSize = 14.sp,
             height = keyHeight,
             colorScheme = colorScheme,
             hapticEnabled = hapticEnabled,
             soundEnabled = soundEnabled,
-            modifier = Modifier.weight(0.95f),
+            modifier = Modifier.weight(0.85f),
             onLongClick = onLongPressLanguage
         ) {
             onSwitchLanguage()
         }
 
-        // Comma
-        KeyButton(
-            text = commaLabel,
-            height = keyHeight,
-            fontSize = 16.sp,
-            colorScheme = colorScheme,
-            hapticEnabled = hapticEnabled,
-            soundEnabled = soundEnabled,
-            modifier = Modifier.weight(0.85f)
-        ) {
-            onTextInput(commaLabel)
-        }
-
-        // Spacebar with sleek styling and cursor swipe gesture
+        // Spacebar with sleek styling, language switch capsule, cursor swipe and language swipe
         var totalDragX by remember { mutableStateOf(0f) }
         Box(
             modifier = Modifier
-                .weight(3.6f)
+                .weight(3.4f)
                 .height(keyHeight)
                 .padding(horizontal = 1.5.dp, vertical = 2.dp)
                 .shadow(
@@ -1324,19 +1592,25 @@ private fun BottomControlRow(
                 )
                 .clip(RoundedCornerShape(6.dp))
                 .background(colorScheme.keyBackground)
-                .pointerInput(Unit) {
+                .pointerInput(spacebarLanguageSwitch) {
                     detectDragGestures(
                         onDrag = { change, dragAmount ->
                             change.consume()
                             totalDragX += dragAmount.x
-                            if (totalDragX > 35f) {
+                            if (spacebarLanguageSwitch && (totalDragX > 45f || totalDragX < -45f)) {
                                 if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
-                                onMoveCursor(1)
+                                onSwitchLanguage()
                                 totalDragX = 0f
-                            } else if (totalDragX < -35f) {
-                                if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
-                                onMoveCursor(-1)
-                                totalDragX = 0f
+                            } else if (!spacebarLanguageSwitch) {
+                                if (totalDragX > 35f) {
+                                    if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
+                                    onMoveCursor(1)
+                                    totalDragX = 0f
+                                } else if (totalDragX < -35f) {
+                                    if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
+                                    onMoveCursor(-1)
+                                    totalDragX = 0f
+                                }
                             }
                         },
                         onDragEnd = { totalDragX = 0f }
@@ -1345,17 +1619,60 @@ private fun BottomControlRow(
                 .clickable {
                     if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
                     if (soundEnabled) view.playSoundEffect(SoundEffectConstants.CLICK)
-                    onSpace()
+                    if (spacebarLanguageSwitch) {
+                        onSwitchLanguage()
+                    } else {
+                        onSpace()
+                    }
                 },
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = spaceLabel,
-                color = colorScheme.keyText.copy(alpha = 0.65f),
-                fontSize = 12.5.sp,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1
-            )
+            if (spacebarLanguageSwitch) {
+                // Interactive Language Switch Capsule directly inside the Spacebar
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(colorScheme.specialKeyBackground.copy(alpha = 0.45f))
+                        .clickable {
+                            if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
+                            if (soundEnabled) view.playSoundEffect(SoundEffectConstants.CLICK)
+                            onSwitchLanguage()
+                        }
+                        .padding(horizontal = 8.dp, vertical = 3.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Language,
+                        contentDescription = "تبديل اللغة",
+                        tint = colorScheme.accent,
+                        modifier = Modifier.size(13.dp)
+                    )
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text(
+                        text = spaceLabel,
+                        color = colorScheme.accent,
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1
+                    )
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text(
+                        text = "⇄",
+                        color = colorScheme.accent.copy(alpha = 0.8f),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            } else {
+                Text(
+                    text = spaceLabel,
+                    color = colorScheme.keyText.copy(alpha = 0.65f),
+                    fontSize = 12.5.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1
+                )
+            }
         }
 
         // Period
@@ -1366,31 +1683,44 @@ private fun BottomControlRow(
             colorScheme = colorScheme,
             hapticEnabled = hapticEnabled,
             soundEnabled = soundEnabled,
-            modifier = Modifier.weight(0.85f)
+            modifier = Modifier.weight(0.75f)
         ) {
             onTextInput(".")
         }
 
-        // Emoji Button (😊)
-        if (onOpenEmoji != null) {
+        // Dedicated Translation Button beside Enter: "زيل خيار الترجمة من زر انتر وضيف زر بجانبة للترجمة بجميع اللغات بدل زر انتر"
+        if (onOpenTranslate != null) {
             KeyButton(
-                text = "😊",
+                text = "文A",
                 isSpecial = true,
-                fontSize = 16.sp,
+                fontSize = 13.sp,
                 height = keyHeight,
                 colorScheme = colorScheme,
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
                 modifier = Modifier.weight(0.95f)
             ) {
+                onOpenTranslate()
+            }
+        } else if (onOpenEmoji != null) {
+            KeyButton(
+                text = "😊",
+                isSpecial = true,
+                fontSize = 15.sp,
+                height = keyHeight,
+                colorScheme = colorScheme,
+                hapticEnabled = hapticEnabled,
+                soundEnabled = soundEnabled,
+                modifier = Modifier.weight(0.85f)
+            ) {
                 onOpenEmoji()
             }
         }
 
-        // Enter / Action Key with accent color, tap to execute and long-press for auto-translate toggle
+        // Clean Enter / Action Key without translation option
         Box(
             modifier = Modifier
-                .weight(1.35f)
+                .weight(1.2f)
                 .height(keyHeight)
                 .padding(horizontal = 1.5.dp, vertical = 2.dp)
                 .shadow(
@@ -1401,18 +1731,10 @@ private fun BottomControlRow(
                 )
                 .clip(RoundedCornerShape(6.dp))
                 .background(colorScheme.accent)
-                .pointerInput(autoTranslateOnEnter) {
-                    detectTapGestures(
-                        onTap = {
-                            if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
-                            if (soundEnabled) view.playSoundEffect(SoundEffectConstants.CLICK)
-                            onEnter()
-                        },
-                        onLongPress = {
-                            if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
-                            onToggleAutoTranslate?.invoke(!autoTranslateOnEnter)
-                        }
-                    )
+                .clickable {
+                    if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
+                    if (soundEnabled) view.playSoundEffect(SoundEffectConstants.CLICK)
+                    onEnter()
                 },
             contentAlignment = Alignment.Center
         ) {
@@ -1422,15 +1744,6 @@ private fun BottomControlRow(
                 tint = Color.White,
                 modifier = Modifier.size(20.dp)
             )
-            if (autoTranslateOnEnter) {
-                Text(
-                    text = "⚡",
-                    fontSize = 9.sp,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(top = 1.dp, end = 2.dp)
-                )
-            }
         }
     }
 }

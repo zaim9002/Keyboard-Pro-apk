@@ -229,6 +229,8 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
             val arabicNumerals by prefs.arabicNumeralsState.collectAsState()
             val isIncognitoPref by prefs.incognitoState.collectAsState()
             val autoTranslateOnEnter by prefs.autoTranslateOnEnterState.collectAsState()
+            val spacebarLangSwitch by prefs.spacebarLanguageSwitchState.collectAsState()
+            val oneHandedModePref by prefs.oneHandedState.collectAsState()
             val langManager = (applicationContext as? KeyboardProApp)?.languageManager
 
             val effectiveIncognito = isIncognitoPref || isPasswordField
@@ -249,7 +251,7 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
                 showNumberRow = showNumberRow,
                 hapticEnabled = hapticSetting != "Off",
                 soundEnabled = prefs.keySound != "Off",
-                oneHandedMode = prefs.oneHandedMode,
+                oneHandedMode = oneHandedModePref,
                 suggestions = currentSuggestions,
                 clipboardList = clips,
                 isVoiceListening = isVoiceListening,
@@ -258,6 +260,7 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
                 showSuggestions = showSuggestions,
                 arabicNumerals = arabicNumerals,
                 autoTranslateOnEnter = autoTranslateOnEnter,
+                spacebarLanguageSwitch = spacebarLangSwitch,
                 currentTypedWord = currentWord,
                 isCurrentWordKnown = isKnown,
                 userWords = wordsList,
@@ -274,6 +277,7 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
                 },
                 onTextInput = { text -> handleTextInput(text) },
                 onDelete = { handleDelete() },
+                onDeleteWord = { handleDeleteWord() },
                 onDeleteAll = { handleDeleteAll() },
                 onEnter = { handleEnter() },
                 onSpace = { handleSpace() },
@@ -452,6 +456,43 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
             updateSuggestions()
         } catch (e: Throwable) {
             Log.e("KeyboardIME", "Error in handleDeleteAll", e)
+        }
+    }
+
+    private fun handleDeleteWord() {
+        try {
+            val ic = currentInputConnection ?: return
+            val selectedText = ic.getSelectedText(0)
+            if (!selectedText.isNullOrEmpty()) {
+                ic.commitText("", 1)
+                currentWordBuffer.clear()
+                updateSuggestions()
+                return
+            }
+            val textBefore = ic.getTextBeforeCursor(120, 0)?.toString() ?: ""
+            if (textBefore.isEmpty()) {
+                ic.deleteSurroundingText(1, 0)
+                return
+            }
+            var i = textBefore.length - 1
+            // Skip trailing whitespace
+            while (i >= 0 && textBefore[i].isWhitespace()) {
+                i--
+            }
+            // Skip word characters
+            while (i >= 0 && !textBefore[i].isWhitespace()) {
+                i--
+            }
+            val deleteCount = textBefore.length - 1 - i
+            if (deleteCount > 0) {
+                ic.deleteSurroundingText(deleteCount, 0)
+            } else {
+                ic.deleteSurroundingText(1, 0)
+            }
+            currentWordBuffer.clear()
+            updateSuggestions()
+        } catch (e: Throwable) {
+            Log.e("KeyboardIME", "Error in handleDeleteWord", e)
         }
     }
 

@@ -41,6 +41,22 @@ class KeyboardPreferences(context: Context) {
     val autoTranslateState: StateFlow<Boolean> = _autoTranslateState.asStateFlow()
     val autoTranslateOnEnterState: StateFlow<Boolean> = _autoTranslateState.asStateFlow()
 
+    private val _spacebarLanguageSwitchState = MutableStateFlow(spacebarLanguageSwitchEnabled)
+    val spacebarLanguageSwitchState: StateFlow<Boolean> = _spacebarLanguageSwitchState.asStateFlow()
+
+    private val _oneHandedState = MutableStateFlow(oneHandedMode)
+    val oneHandedState: StateFlow<String> = _oneHandedState.asStateFlow()
+
+    private val _customKeyColorState = MutableStateFlow(customKeyColor)
+    val customKeyColorState: StateFlow<String> = _customKeyColorState.asStateFlow()
+
+    var customKeyColor: String
+        get() = prefs.getString(KEY_CUSTOM_KEY_COLOR, "default") ?: "default"
+        set(value) {
+            prefs.edit().putString(KEY_CUSTOM_KEY_COLOR, value).apply()
+            _customKeyColorState.value = value
+        }
+
     var theme: String
         get() = prefs.getString(KEY_THEME, "Midnight") ?: "Midnight"
         set(value) {
@@ -121,6 +137,13 @@ class KeyboardPreferences(context: Context) {
         get() = prefs.getString(KEY_SPACE_SWIPE, "SWITCH_LANG") ?: "SWITCH_LANG"
         set(value) = prefs.edit().putString(KEY_SPACE_SWIPE, value).apply()
 
+    var spacebarLanguageSwitchEnabled: Boolean
+        get() = prefs.getBoolean(KEY_SPACEBAR_LANG_SWITCH, true)
+        set(value) {
+            prefs.edit().putBoolean(KEY_SPACEBAR_LANG_SWITCH, value).apply()
+            _spacebarLanguageSwitchState.value = value
+        }
+
     var isIncognito: Boolean
         get() = prefs.getBoolean(KEY_INCOGNITO, false)
         set(value) {
@@ -134,7 +157,10 @@ class KeyboardPreferences(context: Context) {
 
     var oneHandedMode: String
         get() = prefs.getString(KEY_ONE_HANDED, "OFF") ?: "OFF"
-        set(value) = prefs.edit().putString(KEY_ONE_HANDED, value).apply()
+        set(value) {
+            prefs.edit().putString(KEY_ONE_HANDED, value).apply()
+            _oneHandedState.value = value
+        }
 
     var wordsTypedCount: Long
         get() = prefs.getLong(KEY_WORD_COUNT, 0L)
@@ -200,6 +226,7 @@ class KeyboardPreferences(context: Context) {
         private const val KEY_AI_TONE = "ai_tone_selected"
         private const val KEY_GEMINI_KEY = "gemini_api_key_custom"
         private const val KEY_SPACE_SWIPE = "spacebar_swipe"
+        private const val KEY_SPACEBAR_LANG_SWITCH = "spacebar_lang_switch"
         private const val KEY_INCOGNITO = "is_incognito"
         private const val KEY_GAMING = "is_gaming_mode"
         private const val KEY_ONE_HANDED = "one_handed_mode"
@@ -209,5 +236,6 @@ class KeyboardPreferences(context: Context) {
         private const val KEY_AUTO_TRANSLATE_ENTER = "auto_translate_on_enter"
         private const val KEY_TRANSLATE_SOURCE = "translate_source_lang"
         private const val KEY_TRANSLATE_TARGET = "translate_target_lang"
+        private const val KEY_CUSTOM_KEY_COLOR = "custom_key_color"
     }
 }

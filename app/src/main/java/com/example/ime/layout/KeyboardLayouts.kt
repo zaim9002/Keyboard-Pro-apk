@@ -153,4 +153,41 @@ object KeyboardLayouts {
 
     val englishNumberRow = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0")
     val arabicNumberRow = listOf("١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩", "٠")
+
+    // Calculator / Numpad Keypad (Image 6 from user)
+    val numpadRow1 = listOf(
+        KeyModel("(", weight = 1f),
+        KeyModel(")", weight = 1f),
+        KeyModel("1", weight = 1.3f),
+        KeyModel("2", weight = 1.3f),
+        KeyModel("3", weight = 1.3f),
+        KeyModel("ABC", type = KeyType.SWITCH_MODE, weight = 1.2f)
+    )
+
+    val numpadRow2 = listOf(
+        KeyModel("+", weight = 1f),
+        KeyModel("-", weight = 1f),
+        KeyModel("4", weight = 1.3f),
+        KeyModel("5", weight = 1.3f),
+        KeyModel("6", weight = 1.3f),
+        KeyModel("=", weight = 1.2f)
+    )
+
+    val numpadRow3 = listOf(
+        KeyModel("/", weight = 1f),
+        KeyModel("%", weight = 1f),
+        KeyModel("7", weight = 1.3f),
+        KeyModel("8", weight = 1.3f),
+        KeyModel("9", weight = 1.3f),
+        KeyModel("delete", type = KeyType.BACKSPACE, weight = 1.2f)
+    )
+
+    val numpadRow4 = listOf(
+        KeyModel("123!#()", type = KeyType.SWITCH_MODE, weight = 1.2f),
+        KeyModel(",", weight = 1f),
+        KeyModel("*", weight = 1.3f),
+        KeyModel("0", weight = 1.3f),
+        KeyModel(".", weight = 1f),
+        KeyModel("enter", type = KeyType.ENTER, weight = 1.2f)
+    )
 }
