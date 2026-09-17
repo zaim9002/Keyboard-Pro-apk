@@ -280,6 +280,12 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
                 onDeleteWord = { handleDeleteWord() },
                 onDeleteAll = { handleDeleteAll() },
                 onEnter = { handleEnter() },
+                onLongPressEnter = {
+                    handleTranslate(prefs.translateSourceLang, prefs.translateTargetLang)
+                },
+                onTranslateNow = { src, tgt ->
+                    handleTranslate(src, tgt)
+                },
                 onSpace = { handleSpace() },
                 onSwitchLanguage = {
                     if (langManager != null) {
@@ -625,6 +631,63 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
             updateSuggestions()
         } catch (e: Throwable) {
             Log.e("KeyboardIME", "Error in executeStandardEnter", e)
+        }
+    }
+
+    private fun handleTranslate(sourceLang: String = prefs.translateSourceLang, targetLang: String = prefs.translateTargetLang) {
+        try {
+            val ic = currentInputConnection ?: return
+            val selectedText = ic.getSelectedText(0)?.toString() ?: ""
+            val textToTranslate = if (selectedText.isNotBlank()) {
+                selectedText
+            } else {
+                val textBefore = ic.getTextBeforeCursor(1000, 0)?.toString() ?: ""
+                val lastLine = textBefore.substringAfterLast('\n').trim()
+                if (lastLine.isNotBlank()) lastLine else textBefore.trim()
+            }
+
+            if (textToTranslate.isBlank()) {
+                // If nothing in editor, try translating latest clip or word buffer
+                val word = currentWordBuffer.toString().trim()
+                if (word.isNotEmpty()) {
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        val translated = TranslationEngine.translateAsync(word, sourceLang, targetLang)
+                        withContext(Dispatchers.Main) {
+                            try {
+                                val currentIc = currentInputConnection ?: return@withContext
+                                currentIc.commitText(translated, 1)
+                                currentWordBuffer.clear()
+                                updateSuggestions()
+                            } catch (e: Throwable) {}
+                        }
+                    }
+                }
+                return
+            }
+
+            lifecycleScope.launch(Dispatchers.IO) {
+                val translated = TranslationEngine.translateAsync(textToTranslate, sourceLang, targetLang)
+                withContext(Dispatchers.Main) {
+                    try {
+                        val currentIc = currentInputConnection ?: return@withContext
+                        if (selectedText.isNotBlank()) {
+                            currentIc.commitText(translated, 1)
+                        } else {
+                            val currentTextBefore = currentIc.getTextBeforeCursor(1000, 0)?.toString() ?: ""
+                            val currentLastLine = currentTextBefore.substringAfterLast('\n')
+                            val deleteLen = if (currentLastLine.isNotBlank()) currentLastLine.length else textToTranslate.length
+                            currentIc.deleteSurroundingText(deleteLen, 0)
+                            currentIc.commitText(translated, 1)
+                        }
+                        currentWordBuffer.clear()
+                        updateSuggestions()
+                    } catch (e: Throwable) {
+                        Log.e("KeyboardIME", "Error committing translation", e)
+                    }
+                }
+            }
+        } catch (e: Throwable) {
+            Log.e("KeyboardIME", "Error in handleTranslate", e)
         }
     }
 

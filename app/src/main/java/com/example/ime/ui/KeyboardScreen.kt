@@ -119,7 +119,9 @@ fun KeyboardScreen(
     currentDraftText: String = "",
     onApplyAiText: (String) -> Unit = {},
     onAddWordToDictionary: (String) -> Unit = {},
-    onDeleteUserWord: (Long) -> Unit = {}
+    onDeleteUserWord: (Long) -> Unit = {},
+    onLongPressEnter: (() -> Unit)? = null,
+    onTranslateNow: ((String, String) -> Unit)? = null
 ) {
     var layoutMode by remember { mutableStateOf(LayoutMode.ALPHA) }
     var shiftState by remember { mutableStateOf(ShiftState.OFF) }
@@ -197,18 +199,19 @@ fun KeyboardScreen(
                     translateTargetLang = temp
                 },
                 onTranslateNow = {
-                    val textToTranslate = currentDraftText.ifBlank { currentTypedWord ?: "" }
-                    if (textToTranslate.isNotBlank()) {
-                        coroutineScope.launch {
-                            val translated = com.example.engine.TranslationEngine.translate(
-                                textToTranslate,
-                                translateSourceLang,
-                                translateTargetLang
-                            )
-                            for (i in 0 until textToTranslate.length) {
-                                onDelete()
+                    if (onTranslateNow != null) {
+                        onTranslateNow(translateSourceLang, translateTargetLang)
+                    } else {
+                        val textToTranslate = currentDraftText.ifBlank { currentTypedWord ?: "" }
+                        if (textToTranslate.isNotBlank()) {
+                            coroutineScope.launch {
+                                val translated = com.example.engine.TranslationEngine.translateAsync(
+                                    textToTranslate,
+                                    translateSourceLang,
+                                    translateTargetLang
+                                )
+                                onTextInput(translated)
                             }
-                            onTextInput(translated)
                         }
                     }
                 },
@@ -491,6 +494,7 @@ fun KeyboardScreen(
                                                 onDeleteAll = onDeleteAll,
                                                 onSpace = onSpace,
                                                 onEnter = onEnter,
+                                                onLongPressEnter = onLongPressEnter,
                                                 onSwitchMode = { layoutMode = LayoutMode.SYMBOLS_1 },
                                                 onSwitchLanguage = onSwitchLanguage,
                                                 onLongPressLanguage = { showLanguagePicker = true },
@@ -532,6 +536,7 @@ fun KeyboardScreen(
                                                 onDeleteAll = onDeleteAll,
                                                 onSpace = onSpace,
                                                 onEnter = onEnter,
+                                                onLongPressEnter = onLongPressEnter,
                                                 onOpenClipboard = { activePanel = KeyboardPanel.CLIPBOARD },
                                                 onOpenTranslate = { isInlineTranslateOpen = !isInlineTranslateOpen },
                                                 onOpenEmoji = { activePanel = KeyboardPanel.EMOJI },
@@ -565,6 +570,7 @@ fun KeyboardScreen(
                                             onDeleteWord = onDeleteWord,
                                             onSpace = onSpace,
                                             onEnter = onEnter,
+                                            onLongPressEnter = onLongPressEnter,
                                             onSwitchToAlpha = { layoutMode = LayoutMode.ALPHA },
                                             onSwitchToSymbols2 = { layoutMode = LayoutMode.SYMBOLS_2 },
                                             onSwitchToNumpad = { layoutMode = LayoutMode.NUMPAD },
@@ -590,6 +596,7 @@ fun KeyboardScreen(
                                             onDeleteWord = onDeleteWord,
                                             onSpace = onSpace,
                                             onEnter = onEnter,
+                                            onLongPressEnter = onLongPressEnter,
                                             onSwitchToAlpha = { layoutMode = LayoutMode.ALPHA },
                                             onSwitchToSymbols1 = { layoutMode = LayoutMode.SYMBOLS_1 },
                                             onOpenClipboard = { activePanel = KeyboardPanel.CLIPBOARD },
@@ -786,6 +793,7 @@ private fun ArabicKeyboardLayout(
     onDeleteAll: () -> Unit,
     onSpace: () -> Unit,
     onEnter: () -> Unit,
+    onLongPressEnter: (() -> Unit)? = null,
     onSwitchMode: () -> Unit,
     onSwitchLanguage: () -> Unit,
     onLongPressLanguage: (() -> Unit)? = null,
@@ -865,7 +873,7 @@ private fun ArabicKeyboardLayout(
         )
     }
 
-    // Row 4: Professional Bottom Control Row with Language Switcher in bottom row
+    // Row 4: Professional Bottom Control Row
     BottomControlRow(
         modeLabel = "١٢٣",
         langLabel = "🌐",
@@ -885,6 +893,7 @@ private fun ArabicKeyboardLayout(
         onOpenTranslate = onOpenTranslate,
         onSpace = onSpace,
         onEnter = onEnter,
+        onLongPressEnter = onLongPressEnter,
         onOpenEmoji = onOpenEmoji,
         onMoveCursor = onMoveCursor,
         onTextInput = onTextInput,
@@ -910,6 +919,7 @@ private fun DynamicKeyboardLayout(
     onDeleteAll: (() -> Unit)? = null,
     onSpace: () -> Unit,
     onEnter: () -> Unit,
+    onLongPressEnter: (() -> Unit)? = null,
     onOpenClipboard: (() -> Unit)? = null,
     onOpenEmoji: (() -> Unit)? = null,
     onShiftClick: () -> Unit,
@@ -1031,6 +1041,7 @@ private fun DynamicKeyboardLayout(
         onOpenTranslate = onOpenTranslate,
         onSpace = onSpace,
         onEnter = onEnter,
+        onLongPressEnter = onLongPressEnter,
         onOpenEmoji = onOpenEmoji,
         onMoveCursor = onMoveCursor,
         onTextInput = onTextInput,
@@ -1177,6 +1188,7 @@ private fun Symbols1Layout(
     onDeleteWord: (() -> Unit)? = null,
     onSpace: () -> Unit,
     onEnter: () -> Unit,
+    onLongPressEnter: (() -> Unit)? = null,
     onSwitchToAlpha: () -> Unit,
     onSwitchToSymbols2: () -> Unit,
     onSwitchToNumpad: (() -> Unit)? = null,
@@ -1282,6 +1294,7 @@ private fun Symbols1Layout(
         onOpenEmoji = onOpenEmoji,
         onSpace = onSpace,
         onEnter = onEnter,
+        onLongPressEnter = onLongPressEnter,
         onMoveCursor = onMoveCursor,
         onTextInput = onTextInput,
         spacebarLanguageSwitch = spacebarLanguageSwitch
@@ -1303,6 +1316,7 @@ private fun Symbols2Layout(
     onDeleteWord: (() -> Unit)? = null,
     onSpace: () -> Unit,
     onEnter: () -> Unit,
+    onLongPressEnter: (() -> Unit)? = null,
     onSwitchToAlpha: () -> Unit,
     onSwitchToSymbols1: () -> Unit,
     onOpenClipboard: (() -> Unit)? = null,
@@ -1394,6 +1408,7 @@ private fun Symbols2Layout(
         onOpenEmoji = onOpenEmoji,
         onSpace = onSpace,
         onEnter = onEnter,
+        onLongPressEnter = onLongPressEnter,
         onMoveCursor = onMoveCursor,
         onTextInput = onTextInput,
         spacebarLanguageSwitch = spacebarLanguageSwitch
@@ -1555,6 +1570,7 @@ private fun BottomControlRow(
     onOpenTranslate: (() -> Unit)? = null,
     onSpace: () -> Unit,
     onEnter: () -> Unit,
+    onLongPressEnter: (() -> Unit)? = null,
     onOpenEmoji: (() -> Unit)? = null,
     onMoveCursor: (Int) -> Unit,
     onTextInput: (String) -> Unit,
@@ -1576,12 +1592,12 @@ private fun BottomControlRow(
             colorScheme = colorScheme,
             hapticEnabled = hapticEnabled,
             soundEnabled = soundEnabled,
-            modifier = Modifier.weight(1.05f)
+            modifier = Modifier.weight(1.0f)
         ) {
             onSwitchMode()
         }
 
-        // 2. Language Switch (🌐) - Dedicated language switcher button as requested
+        // 2. Language Switch (🌐)
         KeyButton(
             text = langLabel,
             isSpecial = true,
@@ -1596,27 +1612,27 @@ private fun BottomControlRow(
             onSwitchLanguage()
         }
 
-        // 3. Emoji / Faces Button (😊) - Restored in the keyboard
-        if (onOpenEmoji != null) {
-            KeyButton(
-                text = "😊",
-                isSpecial = true,
-                fontSize = 15.sp,
-                height = keyHeight,
-                colorScheme = colorScheme,
-                hapticEnabled = hapticEnabled,
-                soundEnabled = soundEnabled,
-                modifier = Modifier.weight(0.85f)
-            ) {
-                onOpenEmoji()
+        // 3. Clipboard Button (📋) - Placed in the bottom row (where faces used to be)
+        KeyButton(
+            text = "📋",
+            isSpecial = true,
+            fontSize = 15.sp,
+            height = keyHeight,
+            colorScheme = colorScheme,
+            hapticEnabled = hapticEnabled,
+            soundEnabled = soundEnabled,
+            modifier = Modifier.weight(0.85f)
+        ) {
+            if (onOpenClipboard != null) {
+                onOpenClipboard()
             }
         }
 
-        // 4. Spacebar - Always inputs space on tap, swipe left/right to move cursor smoothly
+        // 4. Spacebar - Tap for space; swipe left/right to switch language
         var totalDragX by remember { mutableStateOf(0f) }
         Box(
             modifier = Modifier
-                .weight(3.3f)
+                .weight(3.4f)
                 .height(keyHeight)
                 .padding(horizontal = 1.5.dp, vertical = 2.dp)
                 .shadow(
@@ -1632,13 +1648,13 @@ private fun BottomControlRow(
                         onDrag = { change, dragAmount ->
                             change.consume()
                             totalDragX += dragAmount.x
-                            if (totalDragX > 30f) {
+                            if (totalDragX > 35f) {
                                 if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
-                                onMoveCursor(1)
+                                onSwitchLanguage()
                                 totalDragX = 0f
-                            } else if (totalDragX < -30f) {
+                            } else if (totalDragX < -35f) {
                                 if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
-                                onMoveCursor(-1)
+                                onSwitchLanguage()
                                 totalDragX = 0f
                             }
                         },
@@ -1661,7 +1677,7 @@ private fun BottomControlRow(
             )
         }
 
-        // 5. Period Key
+        // 5. Period Key (.)
         KeyButton(
             text = ".",
             height = keyHeight,
@@ -1674,23 +1690,24 @@ private fun BottomControlRow(
             onTextInput(".")
         }
 
-        // 6. Dedicated Translation Button beside Enter
-        if (onOpenTranslate != null) {
-            KeyButton(
-                text = "文A",
-                isSpecial = true,
-                fontSize = 13.sp,
-                height = keyHeight,
-                colorScheme = colorScheme,
-                hapticEnabled = hapticEnabled,
-                soundEnabled = soundEnabled,
-                modifier = Modifier.weight(0.85f)
-            ) {
-                onOpenTranslate()
+        // 6. Emoji / Faces Button (😊) - In place of the translation button
+        KeyButton(
+            text = "😊",
+            isSpecial = true,
+            fontSize = 15.sp,
+            height = keyHeight,
+            colorScheme = colorScheme,
+            hapticEnabled = hapticEnabled,
+            soundEnabled = soundEnabled,
+            modifier = Modifier.weight(0.85f)
+        ) {
+            if (onOpenEmoji != null) {
+                onOpenEmoji()
             }
         }
 
-        // 7. Clean Enter / Action Key
+        // 7. Action / Enter Key - Tap triggers Enter; Long Press (~3.5-4s) triggers Translation
+        var isEnterPressed by remember { mutableStateOf(false) }
         Box(
             modifier = Modifier
                 .weight(1.15f)
@@ -1703,17 +1720,35 @@ private fun BottomControlRow(
                     spotColor = Color.Black.copy(alpha = 0.3f)
                 )
                 .clip(RoundedCornerShape(6.dp))
-                .background(colorScheme.accent)
-                .clickable {
-                    if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
-                    if (soundEnabled) view.playSoundEffect(SoundEffectConstants.CLICK)
-                    onEnter()
+                .background(if (isEnterPressed) colorScheme.accent.copy(alpha = 0.75f) else colorScheme.accent)
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onPress = {
+                            isEnterPressed = true
+                            if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
+                            if (soundEnabled) view.playSoundEffect(SoundEffectConstants.CLICK)
+                            tryAwaitRelease()
+                            isEnterPressed = false
+                        },
+                        onLongPress = {
+                            if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
+                            if (soundEnabled) view.playSoundEffect(SoundEffectConstants.CLICK)
+                            if (onLongPressEnter != null) {
+                                onLongPressEnter()
+                            } else if (onOpenTranslate != null) {
+                                onOpenTranslate()
+                            }
+                        },
+                        onTap = {
+                            onEnter()
+                        }
+                    )
                 },
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = actionIcon,
-                contentDescription = "إدخال",
+                contentDescription = "إدخال (اضغط مطولاً للترجمة)",
                 tint = Color.White,
                 modifier = Modifier.size(20.dp)
             )

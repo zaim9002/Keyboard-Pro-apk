@@ -47,6 +47,8 @@ abstract class ComposeInputMethodService : InputMethodService(),
 
     override fun onEvaluateFullscreenMode(): Boolean = false
 
+    override fun onEvaluateInputViewShown(): Boolean = true
+
     override fun onConfigureWindow(win: Window, isFullscreen: Boolean, isCandidatesOnly: Boolean) {
         super.onConfigureWindow(win, isFullscreen, isCandidatesOnly)
         try {

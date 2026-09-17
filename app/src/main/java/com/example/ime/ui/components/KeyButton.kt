@@ -208,22 +208,18 @@ fun RepeatingDeleteKeyButton(
                     // 1. Initial delete
                     currentOnDelete()
 
-                    // Steady, medium-paced repetition (balanced, harmonious)
+                    // Steady, controlled repetition (smooth and comfortable, not too fast)
                     val repeatJob: Job = coroutineScope.launch {
-                        delay(350L) // Balanced initial delay before repeat
+                        delay(450L) // Comfortable initial delay before repeat
                         var repeatCount = 0
                         while (isActive) {
                             if (isWordDeleted) break
                             repeatCount++
-                            if (repeatCount > 35 && currentOnDeleteAll != null) {
-                                currentOnDeleteAll?.invoke()
-                            } else {
-                                currentOnDelete()
-                            }
+                            currentOnDelete()
                             if (hapticEnabled && repeatCount % 2 == 0) {
                                 HapticHelper.performKeyHaptic(context, view)
                             }
-                            delay(70L) // Consistent, harmonious medium speed
+                            delay(125L) // Calm, controlled deletion speed
                         }
                     }
 
