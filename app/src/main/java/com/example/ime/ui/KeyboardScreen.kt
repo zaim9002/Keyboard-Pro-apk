@@ -54,6 +54,22 @@ import com.example.ime.ui.panels.*
 import com.example.language.layout.KeyboardLayoutData
 import com.example.language.layout.KeyboardLayoutManager
 import com.example.language.model.LayoutFamily
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.border
+import com.example.ime.util.CharacterVariants
+
+data class KeyCalloutState(
+    val key: KeyModel,
+    val keyRect: Rect,
+    val options: List<String>
+)
 
 enum class LayoutMode {
     ALPHA,
@@ -129,7 +145,8 @@ fun KeyboardScreen(
     var activePanel by remember { mutableStateOf(KeyboardPanel.NONE) }
     var showTashkeelRow by remember { mutableStateOf(false) }
     var showLanguagePicker by remember { mutableStateOf(false) }
-    var activePopupKey by remember { mutableStateOf<KeyModel?>(null) }
+    var activeCalloutState by remember { mutableStateOf<KeyCalloutState?>(null) }
+    var keyboardContainerCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     var isInlineTranslateOpen by remember { mutableStateOf(false) }
     var showTermuxKeys by remember { mutableStateOf(false) }
     var showQuickSnippets by remember { mutableStateOf(false) }
@@ -151,6 +168,30 @@ fun KeyboardScreen(
             EditorInfo.IME_ACTION_DONE -> Icons.Default.Check
             EditorInfo.IME_ACTION_NEXT -> Icons.Default.ArrowDownward
             else -> Icons.Default.KeyboardReturn
+        }
+    }
+
+    val handleLongPressKey: (KeyModel, LayoutCoordinates?) -> Unit = { key, coords ->
+        val root = keyboardContainerCoordinates
+        val isUpper = shiftState != ShiftState.OFF
+        val effectiveChar = if (isUpper && key.primaryText.length == 1 && key.primaryText[0].isLetter()) {
+            key.primaryText.uppercase()
+        } else {
+            key.primaryText
+        }
+        val effectiveKey = key.copy(primaryText = effectiveChar)
+        val variants = CharacterVariants.getVariants(effectiveChar, key.popupOptions)
+        val decorations = DecorationEngine.getLetterDecorations(effectiveChar)
+        val allOptions = (variants + decorations + listOfNotNull(key.secondaryText)).distinct().filter { it.isNotBlank() }
+
+        if (root != null && coords != null && coords.isAttached && root.isAttached) {
+            val offset = root.localPositionOf(coords, Offset.Zero)
+            val size = coords.size
+            val rect = Rect(offset, Size(size.width.toFloat(), size.height.toFloat()))
+            activeCalloutState = KeyCalloutState(effectiveKey, rect, allOptions)
+        } else {
+            val fallbackRect = Rect(Offset(200f, 300f), Size(100f, 100f))
+            activeCalloutState = KeyCalloutState(effectiveKey, fallbackRect, allOptions)
         }
     }
 
@@ -242,6 +283,7 @@ fun KeyboardScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .wrapContentHeight()
+                .onGloballyPositioned { keyboardContainerCoordinates = it }
         ) {
             when (activePanel) {
                 KeyboardPanel.RESIZE -> {
@@ -504,7 +546,7 @@ fun KeyboardScreen(
                                                 onOpenTranslate = { isInlineTranslateOpen = !isInlineTranslateOpen },
                                                 onToggleTashkeel = { showTashkeelRow = !showTashkeelRow },
                                                 onMoveCursor = onMoveCursor,
-                                                onLongPressKey = { activePopupKey = it }
+                                                onLongPressKey = handleLongPressKey
                                             )
                                         } else {
                                             val layoutData = remember(currentLanguage) {
@@ -552,7 +594,7 @@ fun KeyboardScreen(
                                                 onSwitchLanguage = onSwitchLanguage,
                                                 onLongPressLanguage = { showLanguagePicker = true },
                                                 onMoveCursor = onMoveCursor,
-                                                onLongPressKey = { activePopupKey = it }
+                                                onLongPressKey = handleLongPressKey
                                             )
                                         }
                                     }
@@ -639,125 +681,86 @@ fun KeyboardScreen(
                 }
             }
 
-            // Long Press Popup Overlay with alternative letters, Hamzat, and Tashkeel
-            if (activePopupKey != null) {
-                val key = activePopupKey!!
-                val decorations = DecorationEngine.getLetterDecorations(key.primaryText)
-                val baseOptions = key.popupOptions.ifEmpty { listOf(key.primaryText) }
-                val allOptions = (baseOptions + decorations + listOfNotNull(key.secondaryText)).distinct().filter { it.isNotBlank() }
-                val tashkeelOptions = listOf("َ", "ً", "ُ", "ٌ", "ِ", "ٍ", "ْ", "ّ", "ـ")
-                
+            // Floating Callout View positioned dynamically relative to the pressed key
+            if (activeCalloutState != null) {
+                val callout = activeCalloutState!!
+                val options = callout.options
+                val density = LocalDensity.current
                 val context = LocalContext.current
                 val view = LocalView.current
+                val rootWidthPx = keyboardContainerCoordinates?.size?.width?.toFloat() ?: 1080f
+
+                val itemWidthDp = 44.dp
+                val itemHeightDp = 50.dp
+                val itemSpacingDp = 4.dp
+                val horizontalPaddingDp = 6.dp
+                val verticalPaddingDp = 6.dp
+
+                val totalWidthDp = (itemWidthDp * options.size) + (itemSpacingDp * (options.size - 1).coerceAtLeast(0)) + (horizontalPaddingDp * 2)
+                val totalWidthPx = with(density) { totalWidthDp.toPx() }
+                val calloutHeightPx = with(density) { itemHeightDp.toPx() + (verticalPaddingDp.toPx() * 2) }
+
+                // Dynamically calculate horizontal position centered relative to the pressed key's position
+                val keyCenterX = callout.keyRect.center.x
+                val minMarginPx = with(density) { 6.dp.toPx() }
+                val rawLeftPx = keyCenterX - (totalWidthPx / 2f)
+                val clampedLeftPx = rawLeftPx.coerceIn(minMarginPx, (rootWidthPx - totalWidthPx - minMarginPx).coerceAtLeast(minMarginPx))
+
+                // Dynamically calculate vertical position placed directly above the pressed key
+                val gapPx = with(density) { 8.dp.toPx() }
+                val targetTopPx = (callout.keyRect.top - calloutHeightPx - gapPx).coerceAtLeast(with(density) { 2.dp.toPx() })
+
+                val offsetX = with(density) { clampedLeftPx.toDp() }
+                val offsetY = with(density) { targetTopPx.toDp() }
+
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .background(Color.Black.copy(alpha = 0.6f))
-                        .clickable { activePopupKey = null },
-                    contentAlignment = Alignment.Center
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { activeCalloutState = null }
                 ) {
-                    Card(
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = colorScheme.background),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
+                    // Floating Callout View Bubble
+                    Box(
                         modifier = Modifier
-                            .padding(12.dp)
+                            .offset(x = offsetX, y = offsetY)
+                            .shadow(12.dp, RoundedCornerShape(16.dp))
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(colorScheme.background)
+                            .border(1.5.dp, colorScheme.accent.copy(alpha = 0.6f), RoundedCornerShape(16.dp))
                             .clickable(enabled = false) {}
+                            .padding(horizontal = horizontalPaddingDp, vertical = verticalPaddingDp)
                     ) {
-                        Column(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(itemSpacingDp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "الحروف والتشكيلات لـ (${key.primaryText})",
-                                    color = colorScheme.keyText.copy(alpha = 0.85f),
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+                            options.forEach { option ->
+                                val isPrimary = option == callout.key.primaryText
                                 Box(
                                     modifier = Modifier
-                                        .size(28.dp)
-                                        .clip(CircleShape)
-                                        .background(colorScheme.specialKeyBackground)
-                                        .clickable { activePopupKey = null },
+                                        .size(width = itemWidthDp, height = itemHeightDp)
+                                        .shadow(if (isPrimary) 2.dp else 1.dp, RoundedCornerShape(10.dp))
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(if (isPrimary) colorScheme.accent.copy(alpha = 0.3f) else colorScheme.keyBackground)
+                                        .clickable {
+                                            HapticHelper.performKeyHaptic(context, view, "Medium")
+                                            if (soundEnabled) {
+                                                view.playSoundEffect(SoundEffectConstants.CLICK)
+                                            }
+                                            onTextInput(option)
+                                            activeCalloutState = null
+                                        },
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
-                                        text = "✕",
+                                        text = option,
                                         color = colorScheme.keyText,
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold
+                                        fontSize = 22.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        textAlign = TextAlign.Center
                                     )
-                                }
-                            }
-
-                            // 1. Primary Alternate Letters & Variants
-                            if (allOptions.isNotEmpty()) {
-                                androidx.compose.foundation.lazy.LazyRow(
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    items(allOptions) { option ->
-                                        Box(
-                                            modifier = Modifier
-                                                .size(width = 48.dp, height = 52.dp)
-                                                .shadow(1.dp, RoundedCornerShape(10.dp))
-                                                .clip(RoundedCornerShape(10.dp))
-                                                .background(colorScheme.keyBackground)
-                                                .clickable(
-                                                    role = androidx.compose.ui.semantics.Role.Button,
-                                                    onClick = {
-                                                        HapticHelper.performKeyHaptic(context, view)
-                                                        onTextInput(option)
-                                                        activePopupKey = null
-                                                    }
-                                                ),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(
-                                                text = option,
-                                                color = colorScheme.keyText,
-                                                fontSize = 22.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-
-                            // 2. Quick Tashkeel Row (حركات التشكيل السريعة)
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                for (tashkeel in tashkeelOptions) {
-                                    Box(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .height(38.dp)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(colorScheme.specialKeyBackground)
-                                            .clickable {
-                                                HapticHelper.performKeyHaptic(context, view)
-                                                onTextInput(tashkeel)
-                                                activePopupKey = null
-                                            },
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = tashkeel,
-                                            color = colorScheme.accent,
-                                            fontSize = 18.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
                                 }
                             }
                         }
@@ -858,7 +861,7 @@ private fun ArabicKeyboardLayout(
     onOpenEmoji: () -> Unit,
     onToggleTashkeel: () -> Unit,
     onMoveCursor: (Int) -> Unit,
-    onLongPressKey: (KeyModel) -> Unit,
+    onLongPressKey: (KeyModel, LayoutCoordinates?) -> Unit,
     onOpenTranslate: (() -> Unit)? = null
 ) {
     // Row 1 (ض ص ث ق ف غ ع ه خ ح ج)
@@ -873,7 +876,8 @@ private fun ArabicKeyboardLayout(
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
                 modifier = Modifier.weight(key.weight),
-                onLongClick = { onLongPressKey(key) }
+                onLongClickWithCoords = { coords -> onLongPressKey(key, coords) },
+                onLongClick = { onLongPressKey(key, null) }
             ) {
                 onTextInput(key.primaryText)
             }
@@ -892,7 +896,8 @@ private fun ArabicKeyboardLayout(
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
                 modifier = Modifier.weight(key.weight),
-                onLongClick = { onLongPressKey(key) }
+                onLongClickWithCoords = { coords -> onLongPressKey(key, coords) },
+                onLongClick = { onLongPressKey(key, null) }
             ) {
                 onTextInput(key.primaryText)
             }
@@ -911,7 +916,8 @@ private fun ArabicKeyboardLayout(
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
                 modifier = Modifier.weight(1f),
-                onLongClick = { onLongPressKey(key) }
+                onLongClickWithCoords = { coords -> onLongPressKey(key, coords) },
+                onLongClick = { onLongPressKey(key, null) }
             ) {
                 onTextInput(key.primaryText)
             }
@@ -984,7 +990,7 @@ private fun DynamicKeyboardLayout(
     onSwitchLanguage: () -> Unit,
     onLongPressLanguage: (() -> Unit)? = null,
     onMoveCursor: (Int) -> Unit,
-    onLongPressKey: (KeyModel) -> Unit,
+    onLongPressKey: (KeyModel, LayoutCoordinates?) -> Unit,
     onOpenTranslate: (() -> Unit)? = null
 ) {
     val isUpper = shiftState != ShiftState.OFF
@@ -1002,7 +1008,8 @@ private fun DynamicKeyboardLayout(
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
                 modifier = Modifier.weight(key.weight),
-                onLongClick = { onLongPressKey(key) }
+                onLongClickWithCoords = { coords -> onLongPressKey(key, coords) },
+                onLongClick = { onLongPressKey(key, null) }
             ) {
                 onTextInput(letter)
             }
@@ -1021,7 +1028,8 @@ private fun DynamicKeyboardLayout(
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
                 modifier = Modifier.weight(key.weight),
-                onLongClick = { onLongPressKey(key) }
+                onLongClickWithCoords = { coords -> onLongPressKey(key, coords) },
+                onLongClick = { onLongPressKey(key, null) }
             ) {
                 onTextInput(letter)
             }
@@ -1059,7 +1067,8 @@ private fun DynamicKeyboardLayout(
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
                 modifier = Modifier.weight(key.weight),
-                onLongClick = { onLongPressKey(key) }
+                onLongClickWithCoords = { coords -> onLongPressKey(key, coords) },
+                onLongClick = { onLongPressKey(key, null) }
             ) {
                 onTextInput(letter)
             }

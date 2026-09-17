@@ -237,5 +237,93 @@ class KeyboardPreferences(context: Context) {
         private const val KEY_TRANSLATE_SOURCE = "translate_source_lang"
         private const val KEY_TRANSLATE_TARGET = "translate_target_lang"
         private const val KEY_CUSTOM_KEY_COLOR = "custom_key_color"
+        private const val KEY_CUSTOM_THEME_BG = "custom_theme_bg"
+        private const val KEY_CUSTOM_THEME_KEY_BG = "custom_theme_key_bg"
+        private const val KEY_CUSTOM_THEME_KEY_TEXT = "custom_theme_key_text"
+        private const val KEY_CUSTOM_THEME_SPECIAL_BG = "custom_theme_special_bg"
+        private const val KEY_CUSTOM_THEME_SPECIAL_TEXT = "custom_theme_special_text"
+        private const val KEY_CUSTOM_THEME_ACCENT = "custom_theme_accent"
+        private const val KEY_CUSTOM_THEME_SUGGESTION_BG = "custom_theme_suggestion_bg"
+        private const val KEY_CUSTOM_THEME_SUGGESTION_TEXT = "custom_theme_suggestion_text"
+    }
+
+    var customThemeBg: String
+        get() = prefs.getString(KEY_CUSTOM_THEME_BG, "#121824") ?: "#121824"
+        set(value) = prefs.edit().putString(KEY_CUSTOM_THEME_BG, value).apply()
+
+    var customThemeKeyBg: String
+        get() = prefs.getString(KEY_CUSTOM_THEME_KEY_BG, "#1F293D") ?: "#1F293D"
+        set(value) = prefs.edit().putString(KEY_CUSTOM_THEME_KEY_BG, value).apply()
+
+    var customThemeKeyText: String
+        get() = prefs.getString(KEY_CUSTOM_THEME_KEY_TEXT, "#FFFFFF") ?: "#FFFFFF"
+        set(value) = prefs.edit().putString(KEY_CUSTOM_THEME_KEY_TEXT, value).apply()
+
+    var customThemeSpecialBg: String
+        get() = prefs.getString(KEY_CUSTOM_THEME_SPECIAL_BG, "#162032") ?: "#162032"
+        set(value) = prefs.edit().putString(KEY_CUSTOM_THEME_SPECIAL_BG, value).apply()
+
+    var customThemeSpecialText: String
+        get() = prefs.getString(KEY_CUSTOM_THEME_SPECIAL_TEXT, "#60A5FA") ?: "#60A5FA"
+        set(value) = prefs.edit().putString(KEY_CUSTOM_THEME_SPECIAL_TEXT, value).apply()
+
+    var customThemeAccent: String
+        get() = prefs.getString(KEY_CUSTOM_THEME_ACCENT, "#38BDF8") ?: "#38BDF8"
+        set(value) = prefs.edit().putString(KEY_CUSTOM_THEME_ACCENT, value).apply()
+
+    var customThemeSuggestionBg: String
+        get() = prefs.getString(KEY_CUSTOM_THEME_SUGGESTION_BG, "#121824") ?: "#121824"
+        set(value) = prefs.edit().putString(KEY_CUSTOM_THEME_SUGGESTION_BG, value).apply()
+
+    var customThemeSuggestionText: String
+        get() = prefs.getString(KEY_CUSTOM_THEME_SUGGESTION_TEXT, "#E2E8F0") ?: "#E2E8F0"
+        set(value) = prefs.edit().putString(KEY_CUSTOM_THEME_SUGGESTION_TEXT, value).apply()
+
+    fun saveCustomTheme(
+        bg: String,
+        keyBg: String,
+        keyText: String,
+        specialBg: String,
+        specialText: String,
+        accent: String,
+        suggestionBg: String,
+        suggestionText: String
+    ) {
+        prefs.edit()
+            .putString(KEY_CUSTOM_THEME_BG, bg)
+            .putString(KEY_CUSTOM_THEME_KEY_BG, keyBg)
+            .putString(KEY_CUSTOM_THEME_KEY_TEXT, keyText)
+            .putString(KEY_CUSTOM_THEME_SPECIAL_BG, specialBg)
+            .putString(KEY_CUSTOM_THEME_SPECIAL_TEXT, specialText)
+            .putString(KEY_CUSTOM_THEME_ACCENT, accent)
+            .putString(KEY_CUSTOM_THEME_SUGGESTION_BG, suggestionBg)
+            .putString(KEY_CUSTOM_THEME_SUGGESTION_TEXT, suggestionText)
+            .putString(KEY_THEME, "Custom")
+            .apply()
+        _themeState.value = "Custom"
+    }
+
+    fun getCustomColorScheme(): com.example.ime.theme.KeyboardColorScheme {
+        fun parseColor(hex: String, defaultColor: androidx.compose.ui.graphics.Color): androidx.compose.ui.graphics.Color {
+            return try {
+                androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(hex))
+            } catch (e: Throwable) {
+                defaultColor
+            }
+        }
+        val accentColor = parseColor(customThemeAccent, androidx.compose.ui.graphics.Color(0xFF38BDF8))
+        return com.example.ime.theme.KeyboardColorScheme(
+            name = "Custom",
+            isDark = true,
+            background = parseColor(customThemeBg, androidx.compose.ui.graphics.Color(0xFF121824)),
+            keyBackground = parseColor(customThemeKeyBg, androidx.compose.ui.graphics.Color(0xFF1F293D)),
+            keyText = parseColor(customThemeKeyText, androidx.compose.ui.graphics.Color(0xFFFFFFFF)),
+            specialKeyBackground = parseColor(customThemeSpecialBg, androidx.compose.ui.graphics.Color(0xFF162032)),
+            specialKeyText = parseColor(customThemeSpecialText, androidx.compose.ui.graphics.Color(0xFF60A5FA)),
+            accent = accentColor,
+            suggestionBar = parseColor(customThemeSuggestionBg, androidx.compose.ui.graphics.Color(0xFF121824)),
+            suggestionText = parseColor(customThemeSuggestionText, androidx.compose.ui.graphics.Color(0xFFE2E8F0)),
+            borderColor = accentColor.copy(alpha = 0.35f)
+        )
     }
 }

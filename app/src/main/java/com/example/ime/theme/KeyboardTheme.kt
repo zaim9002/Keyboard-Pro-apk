@@ -423,6 +423,20 @@ object KeyboardThemes {
         borderColor = Color(0x333B82F6)
     )
 
+    val CustomThemeDefault = KeyboardColorScheme(
+        name = "Custom",
+        isDark = true,
+        background = Color(0xFF121824),
+        keyBackground = Color(0xFF1F293D),
+        keyText = Color(0xFFFFFFFF),
+        specialKeyBackground = Color(0xFF162032),
+        specialKeyText = Color(0xFF60A5FA),
+        accent = Color(0xFF38BDF8),
+        suggestionBar = Color(0xFF121824),
+        suggestionText = Color(0xFFE2E8F0),
+        borderColor = Color(0x4438BDF8)
+    )
+
     val allThemes = listOf(
         GboardDark,
         IOSGlass,
@@ -455,7 +469,14 @@ object KeyboardThemes {
         Dark
     )
 
-    fun getTheme(name: String, customKeyColor: String? = null): KeyboardColorScheme {
+    fun getTheme(
+        name: String,
+        customKeyColor: String? = null,
+        prefs: com.example.data.pref.KeyboardPreferences? = null
+    ): KeyboardColorScheme {
+        if (name.equals("Custom", ignoreCase = true)) {
+            return prefs?.getCustomColorScheme() ?: CustomThemeDefault
+        }
         val base = allThemes.find { it.name.equals(name, ignoreCase = true) } ?: Midnight
         if (!customKeyColor.isNullOrEmpty() && customKeyColor != "default") {
             try {

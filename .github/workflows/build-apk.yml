@@ -58,8 +58,24 @@ jobs:
           echo "=== Checking / Generating Debug Keystore ==="
           if [ -f "./debug.keystore" ]; then
             echo "debug.keystore already exists."
+          elif [ -f "./debug.keystore.base64" ]; then
+            echo "Restoring debug.keystore from debug.keystore.base64 to preserve existing signature..."
+            base64 -d ./debug.keystore.base64 > ./debug.keystore
           else
-            echo "Generating temporary debug.keystore..."
+            echo "Generating temporary debug.keystore with keytool..."
+            "$JAVA_HOME/bin/keytool" -genkeypair \
+              -alias androiddebugkey \
+              -keypass android \
+              -keystore ./debug.keystore \
+              -storepass android \
+              -dname "CN=Android Debug,O=Android,C=US" \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000
+          fi
+
+          if [ ! -f "./debug.keystore" ]; then
+            echo "Generating temporary debug.keystore with keytool fallback..."
             "$JAVA_HOME/bin/keytool" -genkeypair \
               -alias androiddebugkey \
               -keypass android \

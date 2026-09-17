@@ -234,7 +234,7 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
             val langManager = (applicationContext as? KeyboardProApp)?.languageManager
 
             val effectiveIncognito = isIncognitoPref || isPasswordField
-            val currentTheme = KeyboardThemes.getTheme(currentThemeName)
+            val currentTheme = KeyboardThemes.getTheme(currentThemeName, prefs = prefs)
             val currentSuggestions by suggestions.collectAsState()
             val clips by clipboardItems.collectAsState()
             val currentWord by currentTypedWord.collectAsState()

@@ -35,29 +35,69 @@ object HapticHelper {
         return cachedVibrator
     }
 
-    fun performKeyHaptic(context: Context?, view: View?) {
-        try {
-            // 1. Fast View haptic feedback (0ms latency direct hardware signal)
-            val performed = view?.performHapticFeedback(
-                HapticFeedbackConstants.KEYBOARD_TAP,
-                HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING
-            ) ?: false
+    fun performKeyHaptic(context: Context?, view: View?, intensity: String = "Medium") {
+        if (intensity.equals("Off", ignoreCase = true)) return
 
-            if (!performed && hasVibratorHardware) {
-                val vibrator = getVibrator(context) ?: return
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    val effect = VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK)
-                    vibrator.vibrate(effect)
-                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    val effect = VibrationEffect.createOneShot(10L, VibrationEffect.DEFAULT_AMPLITUDE)
-                    vibrator.vibrate(effect)
-                } else {
-                    @Suppress("DEPRECATION")
-                    vibrator.vibrate(10L)
+        try {
+            val vibrator = getVibrator(context)
+            val hasVib = hasVibratorHardware && vibrator != null
+
+            when (intensity.lowercase()) {
+                "light" -> {
+                    val performed = view?.performHapticFeedback(
+                        HapticFeedbackConstants.KEYBOARD_TAP,
+                        HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING
+                    ) ?: false
+                    if (!performed && hasVib) {
+                        vibrateMillis(vibrator, 8L, 80)
+                    }
+                }
+                "strong" -> {
+                    var performed = false
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        performed = view?.performHapticFeedback(
+                            HapticFeedbackConstants.CONFIRM,
+                            HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING
+                        ) ?: false
+                    }
+                    if (!performed) {
+                        performed = view?.performHapticFeedback(
+                            HapticFeedbackConstants.LONG_PRESS,
+                            HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING
+                        ) ?: false
+                    }
+                    if (hasVib) {
+                        vibrateMillis(vibrator, 35L, 255)
+                    }
+                }
+                else -> { // "medium"
+                    val performed = view?.performHapticFeedback(
+                        HapticFeedbackConstants.KEYBOARD_TAP,
+                        HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING
+                    ) ?: false
+                    if (!performed && hasVib) {
+                        vibrateMillis(vibrator, 18L, 160)
+                    }
                 }
             }
         } catch (e: Throwable) {
             // Ignored for safety
+        }
+    }
+
+    private fun vibrateMillis(vibrator: Vibrator?, millis: Long, amplitude: Int) {
+        if (vibrator == null) return
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val clampedAmp = amplitude.coerceIn(1, 255)
+                val effect = VibrationEffect.createOneShot(millis, clampedAmp)
+                vibrator.vibrate(effect)
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(millis)
+            }
+        } catch (e: Throwable) {
+            // Ignored
         }
     }
 }

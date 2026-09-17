@@ -39,6 +39,12 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+
+private val KeyDefaultShape = RoundedCornerShape(6.dp)
+private val KeyShadowColor = Color.Black.copy(alpha = 0.15f)
+
 @Composable
 fun KeyButton(
     modifier: Modifier = Modifier,
@@ -49,17 +55,21 @@ fun KeyButton(
     height: Dp = 48.dp,
     colorScheme: KeyboardColorScheme,
     hapticEnabled: Boolean = true,
+    hapticIntensity: String = "Medium",
     soundEnabled: Boolean = false,
     showPreview: Boolean = !isSpecial,
+    onLongClickWithCoords: ((LayoutCoordinates) -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
     onClick: () -> Unit
 ) {
     val view = LocalView.current
     val context = LocalContext.current
     var isPressed by remember { mutableStateOf(false) }
+    var keyCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
 
     val currentOnClick by rememberUpdatedState(onClick)
     val currentOnLongClick by rememberUpdatedState(onLongClick)
+    val currentOnLongClickWithCoords by rememberUpdatedState(onLongClickWithCoords)
 
     val bgColor = if (isSpecial) {
         if (isPressed) colorScheme.specialKeyBackground.copy(alpha = 0.8f) else colorScheme.specialKeyBackground
@@ -68,24 +78,27 @@ fun KeyButton(
     }
     val textColor = if (isSpecial) colorScheme.specialKeyText else colorScheme.keyText
 
+    val hasLongClick = currentOnLongClickWithCoords != null || currentOnLongClick != null
+
     Box(
         modifier = modifier
             .padding(horizontal = 1.5.dp, vertical = 2.dp)
             .height(height)
+            .onGloballyPositioned { keyCoordinates = it }
             .shadow(
                 elevation = 1.dp,
-                shape = RoundedCornerShape(6.dp),
-                ambientColor = Color.Black.copy(alpha = 0.15f),
-                spotColor = Color.Black.copy(alpha = 0.15f)
+                shape = KeyDefaultShape,
+                ambientColor = KeyShadowColor,
+                spotColor = KeyShadowColor
             )
-            .clip(RoundedCornerShape(6.dp))
+            .clip(KeyDefaultShape)
             .background(bgColor)
-            .pointerInput(text, hapticEnabled, soundEnabled, currentOnLongClick != null) {
+            .pointerInput(text, hapticEnabled, soundEnabled, hapticIntensity, hasLongClick) {
                 detectTapGestures(
                     onPress = {
                         isPressed = true
                         if (hapticEnabled) {
-                            HapticHelper.performKeyHaptic(context, view)
+                            HapticHelper.performKeyHaptic(context, view, hapticIntensity)
                         }
                         if (soundEnabled) {
                             view.playSoundEffect(SoundEffectConstants.CLICK)
@@ -93,12 +106,14 @@ fun KeyButton(
                         tryAwaitRelease()
                         isPressed = false
                     },
-                    onLongPress = if (currentOnLongClick != null) {
+                    onLongPress = if (hasLongClick) {
                         {
                             if (hapticEnabled) {
-                                HapticHelper.performKeyHaptic(context, view)
+                                HapticHelper.performKeyHaptic(context, view, hapticIntensity)
                             }
-                            currentOnLongClick?.invoke()
+                            keyCoordinates?.let { coords ->
+                                currentOnLongClickWithCoords?.invoke(coords)
+                            } ?: currentOnLongClick?.invoke()
                         }
                     } else null,
                     onTap = {
@@ -129,6 +144,33 @@ fun KeyButton(
                     .padding(top = 1.5.dp, end = 3.dp)
             )
         }
+
+        // Key Press Preview Balloon (Floating touch preview directly above the key)
+        if (showPreview && isPressed && !isSpecial && text.isNotBlank() && text.length <= 2) {
+            Popup(
+                alignment = Alignment.TopCenter,
+                offset = IntOffset(0, -115),
+                properties = PopupProperties(focusable = false)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(width = 50.dp, height = 58.dp)
+                        .shadow(10.dp, RoundedCornerShape(14.dp))
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(colorScheme.keyBackground)
+                        .border(1.5.dp, colorScheme.accent.copy(alpha = 0.6f), RoundedCornerShape(14.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = text,
+                        color = colorScheme.keyText,
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -138,6 +180,7 @@ fun RepeatingDeleteKeyButton(
     height: Dp = 48.dp,
     colorScheme: KeyboardColorScheme,
     hapticEnabled: Boolean = true,
+    hapticIntensity: String = "Medium",
     soundEnabled: Boolean = false,
     onDelete: () -> Unit,
     onDeleteWord: (() -> Unit)? = null,
@@ -161,38 +204,57 @@ fun RepeatingDeleteKeyButton(
             .height(height)
             .shadow(
                 elevation = 1.dp,
-                shape = RoundedCornerShape(6.dp),
-                ambientColor = Color.Black.copy(alpha = 0.3f),
-                spotColor = Color.Black.copy(alpha = 0.3f)
+                shape = KeyDefaultShape,
+                ambientColor = KeyShadowColor,
+                spotColor = KeyShadowColor
             )
-            .clip(RoundedCornerShape(6.dp))
+            .clip(KeyDefaultShape)
             .background(bgColor)
-            .pointerInput(Unit) {
+            .pointerInput(hapticEnabled, soundEnabled, hapticIntensity) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
                     var isWordDeleted = false
                     isPressed = true
                     if (hapticEnabled) {
-                        HapticHelper.performKeyHaptic(context, view)
+                        HapticHelper.performKeyHaptic(context, view, hapticIntensity)
                     }
                     if (soundEnabled) {
                         view.playSoundEffect(SoundEffectConstants.CLICK)
                     }
-                    // 1. Initial delete
+                    // 1. Initial single delete
                     currentOnDelete()
+                    val startTime = System.currentTimeMillis()
 
-                    // Steady, controlled repetition (smooth and comfortable, not too fast)
+                    // Accelerated deletion loop: accelerates after 1.8s, and turbo accelerates after 4s!
                     val repeatJob: Job = coroutineScope.launch {
-                        delay(450L) // Comfortable initial delay before repeat
-                        var repeatCount = 0
+                        delay(320L) // initial hold delay before repeating
                         while (isActive) {
                             if (isWordDeleted) break
-                            repeatCount++
-                            currentOnDelete()
-                            if (hapticEnabled && repeatCount % 2 == 0) {
-                                HapticHelper.performKeyHaptic(context, view)
+                            val elapsed = System.currentTimeMillis() - startTime
+                            if (elapsed >= 4000L) {
+                                // AFTER 4 SECONDS: SUPER FAST TURBO ACCELERATED DELETE!
+                                currentOnDeleteWord?.invoke() ?: run {
+                                    repeat(4) { currentOnDelete() }
+                                }
+                                if (hapticEnabled) {
+                                    HapticHelper.performKeyHaptic(context, view, "Light")
+                                }
+                                delay(25L)
+                            } else if (elapsed >= 1800L) {
+                                // FAST DELETE (between 1.8s and 4s)
+                                currentOnDelete()
+                                if (hapticEnabled) {
+                                    HapticHelper.performKeyHaptic(context, view, "Light")
+                                }
+                                delay(50L)
+                            } else {
+                                // NORMAL REPEAT (first 1.8s)
+                                currentOnDelete()
+                                if (hapticEnabled) {
+                                    HapticHelper.performKeyHaptic(context, view, "Light")
+                                }
+                                delay(85L)
                             }
-                            delay(125L) // Calm, controlled deletion speed
                         }
                     }
 
@@ -209,7 +271,7 @@ fun RepeatingDeleteKeyButton(
                             isWordDeleted = true
                             repeatJob.cancel()
                             if (hapticEnabled) {
-                                HapticHelper.performKeyHaptic(context, view)
+                                HapticHelper.performKeyHaptic(context, view, "Strong")
                             }
                             currentOnDeleteWord?.invoke()
                         }
