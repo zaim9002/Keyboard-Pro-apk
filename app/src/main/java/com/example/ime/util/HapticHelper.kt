@@ -12,6 +12,7 @@ object HapticHelper {
 
     private var cachedVibrator: Vibrator? = null
     private var isVibratorInitialized = false
+    private var hasVibratorHardware = true
 
     private fun getVibrator(context: Context?): Vibrator? {
         if (!isVibratorInitialized && context != null) {
@@ -24,9 +25,11 @@ object HapticHelper {
                     @Suppress("DEPRECATION")
                     cachedVibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
                 }
+                hasVibratorHardware = cachedVibrator?.hasVibrator() ?: false
                 isVibratorInitialized = true
             } catch (e: Throwable) {
                 isVibratorInitialized = true
+                hasVibratorHardware = false
             }
         }
         return cachedVibrator
@@ -34,25 +37,23 @@ object HapticHelper {
 
     fun performKeyHaptic(context: Context?, view: View?) {
         try {
-            // 1. Fast View haptic feedback
+            // 1. Fast View haptic feedback (0ms latency direct hardware signal)
             val performed = view?.performHapticFeedback(
                 HapticFeedbackConstants.KEYBOARD_TAP,
                 HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING
             ) ?: false
 
-            if (!performed) {
+            if (!performed && hasVibratorHardware) {
                 val vibrator = getVibrator(context) ?: return
-                if (vibrator.hasVibrator()) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        val effect = VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK)
-                        vibrator.vibrate(effect)
-                    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        val effect = VibrationEffect.createOneShot(12L, VibrationEffect.DEFAULT_AMPLITUDE)
-                        vibrator.vibrate(effect)
-                    } else {
-                        @Suppress("DEPRECATION")
-                        vibrator.vibrate(12L)
-                    }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    val effect = VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK)
+                    vibrator.vibrate(effect)
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val effect = VibrationEffect.createOneShot(10L, VibrationEffect.DEFAULT_AMPLITUDE)
+                    vibrator.vibrate(effect)
+                } else {
+                    @Suppress("DEPRECATION")
+                    vibrator.vibrate(10L)
                 }
             }
         } catch (e: Throwable) {

@@ -156,14 +156,18 @@ fun EmojiPanel(
             }
         }
 
-        // Emoji Grid with stable item keys
+        // Emoji Grid with high-performance indexed items
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 40.dp),
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(4.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            items(currentEmojis, key = { it }) { emoji ->
+            items(
+                count = currentEmojis.size,
+                key = { index -> "${selectedCategoryId}_${index}_${currentEmojis[index]}" }
+            ) { index ->
+                val emoji = currentEmojis[index]
                 Box(
                     modifier = Modifier
                         .size(40.dp)

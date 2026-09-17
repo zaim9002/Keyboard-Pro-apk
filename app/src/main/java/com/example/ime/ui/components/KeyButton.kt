@@ -64,7 +64,7 @@ fun KeyButton(
     val bgColor = if (isSpecial) {
         if (isPressed) colorScheme.specialKeyBackground.copy(alpha = 0.8f) else colorScheme.specialKeyBackground
     } else {
-        if (isPressed) colorScheme.accent.copy(alpha = 0.35f) else colorScheme.keyBackground
+        if (isPressed) colorScheme.accent.copy(alpha = 0.4f) else colorScheme.keyBackground
     }
     val textColor = if (isSpecial) colorScheme.specialKeyText else colorScheme.keyText
 
@@ -75,36 +75,63 @@ fun KeyButton(
             .shadow(
                 elevation = 1.dp,
                 shape = RoundedCornerShape(6.dp),
-                ambientColor = Color.Black.copy(alpha = 0.2f),
-                spotColor = Color.Black.copy(alpha = 0.2f)
+                ambientColor = Color.Black.copy(alpha = 0.15f),
+                spotColor = Color.Black.copy(alpha = 0.15f)
             )
             .clip(RoundedCornerShape(6.dp))
             .background(bgColor)
-            .pointerInput(text, hapticEnabled, soundEnabled, isSpecial, currentOnLongClick != null) {
-                detectTapGestures(
-                    onPress = {
-                        isPressed = true
-                        if (hapticEnabled) {
-                            HapticHelper.performKeyHaptic(context, view)
-                        }
-                        if (soundEnabled) {
-                            view.playSoundEffect(SoundEffectConstants.CLICK)
-                        }
-                        tryAwaitRelease()
-                        isPressed = false
-                    },
-                    onLongPress = if (currentOnLongClick != null) {
-                        {
+            .pointerInput(text, hapticEnabled, soundEnabled, currentOnLongClick != null) {
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    isPressed = true
+                    if (hapticEnabled) {
+                        HapticHelper.performKeyHaptic(context, view)
+                    }
+                    if (soundEnabled) {
+                        view.playSoundEffect(SoundEffectConstants.CLICK)
+                    }
+
+                    if (currentOnLongClick != null) {
+                        var isLongClicked = false
+                        try {
+                            withTimeout(380L) {
+                                while (true) {
+                                    val event = awaitPointerEvent()
+                                    val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                                    if (!change.pressed) {
+                                        break
+                                    }
+                                }
+                            }
+                            // Released before timeout -> Normal click
+                            currentOnClick()
+                        } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+                            // Timeout reached -> Long press triggered
+                            isLongClicked = true
                             if (hapticEnabled) {
                                 HapticHelper.performKeyHaptic(context, view)
                             }
                             currentOnLongClick?.invoke()
+                            // Wait for release
+                            while (true) {
+                                val event = awaitPointerEvent()
+                                val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                                if (!change.pressed) break
+                            }
                         }
-                    } else null,
-                    onTap = {
-                        currentOnClick()
+                    } else {
+                        // Fast instant tap path
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                            if (!change.pressed) {
+                                currentOnClick()
+                                break
+                            }
+                        }
                     }
-                )
+                    isPressed = false
+                }
             },
         contentAlignment = Alignment.Center
     ) {
@@ -128,33 +155,6 @@ fun KeyButton(
                     .align(Alignment.TopEnd)
                     .padding(top = 1.5.dp, end = 3.dp)
             )
-        }
-
-        // Floating character preview bubble on key press (GBoard / iOS style)
-        if (isPressed && showPreview && !isSpecial && text.length == 1) {
-            Popup(
-                alignment = Alignment.TopCenter,
-                offset = IntOffset(0, -115),
-                properties = PopupProperties(focusable = false, dismissOnBackPress = false, dismissOnClickOutside = false)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(width = 50.dp, height = 58.dp)
-                        .shadow(elevation = 6.dp, shape = RoundedCornerShape(10.dp))
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(colorScheme.keyBackground)
-                        .border(1.dp, colorScheme.accent.copy(alpha = 0.4f), RoundedCornerShape(10.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = text,
-                        color = colorScheme.keyText,
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
         }
     }
 }
