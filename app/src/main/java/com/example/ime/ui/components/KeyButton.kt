@@ -81,57 +81,30 @@ fun KeyButton(
             .clip(RoundedCornerShape(6.dp))
             .background(bgColor)
             .pointerInput(text, hapticEnabled, soundEnabled, currentOnLongClick != null) {
-                awaitEachGesture {
-                    val down = awaitFirstDown(requireUnconsumed = false)
-                    isPressed = true
-                    if (hapticEnabled) {
-                        HapticHelper.performKeyHaptic(context, view)
-                    }
-                    if (soundEnabled) {
-                        view.playSoundEffect(SoundEffectConstants.CLICK)
-                    }
-
-                    if (currentOnLongClick != null) {
-                        var isLongClicked = false
-                        try {
-                            withTimeout(380L) {
-                                while (true) {
-                                    val event = awaitPointerEvent()
-                                    val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                                    if (!change.pressed) {
-                                        break
-                                    }
-                                }
-                            }
-                            // Released before timeout -> Normal click
-                            currentOnClick()
-                        } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
-                            // Timeout reached -> Long press triggered
-                            isLongClicked = true
+                detectTapGestures(
+                    onPress = {
+                        isPressed = true
+                        if (hapticEnabled) {
+                            HapticHelper.performKeyHaptic(context, view)
+                        }
+                        if (soundEnabled) {
+                            view.playSoundEffect(SoundEffectConstants.CLICK)
+                        }
+                        tryAwaitRelease()
+                        isPressed = false
+                    },
+                    onLongPress = if (currentOnLongClick != null) {
+                        {
                             if (hapticEnabled) {
                                 HapticHelper.performKeyHaptic(context, view)
                             }
                             currentOnLongClick?.invoke()
-                            // Wait for release
-                            while (true) {
-                                val event = awaitPointerEvent()
-                                val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                                if (!change.pressed) break
-                            }
                         }
-                    } else {
-                        // Fast instant tap path
-                        while (true) {
-                            val event = awaitPointerEvent()
-                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                            if (!change.pressed) {
-                                currentOnClick()
-                                break
-                            }
-                        }
+                    } else null,
+                    onTap = {
+                        currentOnClick()
                     }
-                    isPressed = false
-                }
+                )
             },
         contentAlignment = Alignment.Center
     ) {

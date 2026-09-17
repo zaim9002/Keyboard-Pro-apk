@@ -297,18 +297,153 @@ object KeyboardThemes {
         borderColor = Color(0x33F97316)
     )
 
+    val IOSGlass = KeyboardColorScheme(
+        name = "iOS Glass",
+        isDark = true,
+        background = Color(0xFF1C1C1E),
+        keyBackground = Color(0xFF3A3A3C),
+        keyText = Color(0xFFFFFFFF),
+        specialKeyBackground = Color(0xFF2C2C2E),
+        specialKeyText = Color(0xFF0A84FF),
+        accent = Color(0xFF0A84FF),
+        suggestionBar = Color(0xFF1C1C1E),
+        suggestionText = Color(0xFFE5E5EA),
+        borderColor = Color(0x33FFFFFF)
+    )
+
+    val TitaniumDark = KeyboardColorScheme(
+        name = "Titanium Pro",
+        isDark = true,
+        background = Color(0xFF181A1D),
+        keyBackground = Color(0xFF2B2E33),
+        keyText = Color(0xFFF0F3F6),
+        specialKeyBackground = Color(0xFF22252A),
+        specialKeyText = Color(0xFF8E95A2),
+        accent = Color(0xFF64748B),
+        suggestionBar = Color(0xFF181A1D),
+        suggestionText = Color(0xFFCBD5E1),
+        borderColor = Color(0x228E95A2)
+    )
+
+    val ObsidianGold = KeyboardColorScheme(
+        name = "Obsidian Gold",
+        isDark = true,
+        background = Color(0xFF0D0D0D),
+        keyBackground = Color(0xFF1C1A14),
+        keyText = Color(0xFFFFDF73),
+        specialKeyBackground = Color(0xFF2A2415),
+        specialKeyText = Color(0xFFFFC72C),
+        accent = Color(0xFFFFD700),
+        suggestionBar = Color(0xFF0D0D0D),
+        suggestionText = Color(0xFFFFE899),
+        borderColor = Color(0x44FFD700)
+    )
+
+    val AuroraBorealis = KeyboardColorScheme(
+        name = "Aurora Borealis",
+        isDark = true,
+        background = Color(0xFF08131E),
+        keyBackground = Color(0xFF0E273C),
+        keyText = Color(0xFF7DF9FF),
+        specialKeyBackground = Color(0xFF143753),
+        specialKeyText = Color(0xFF2DD4BF),
+        accent = Color(0xFF06B6D4),
+        suggestionBar = Color(0xFF08131E),
+        suggestionText = Color(0xFFA5F3FC),
+        borderColor = Color(0x332DD4BF)
+    )
+
+    val SakuraPastel = KeyboardColorScheme(
+        name = "Sakura Blossom",
+        isDark = false,
+        background = Color(0xFFFFF0F5),
+        keyBackground = Color(0xFFFFFFFF),
+        keyText = Color(0xFF831843),
+        specialKeyBackground = Color(0xFFFCE7F3),
+        specialKeyText = Color(0xFFDB2777),
+        accent = Color(0xFFEC4899),
+        suggestionBar = Color(0xFFFFF0F5),
+        suggestionText = Color(0xFF9D174D),
+        borderColor = Color(0x22EC4899)
+    )
+
+    val CrimsonRuby = KeyboardColorScheme(
+        name = "Crimson Ruby",
+        isDark = true,
+        background = Color(0xFF1F0B11),
+        keyBackground = Color(0xFF3B121F),
+        keyText = Color(0xFFFFE4E6),
+        specialKeyBackground = Color(0xFF50182A),
+        specialKeyText = Color(0xFFFB7185),
+        accent = Color(0xFFE11D48),
+        suggestionBar = Color(0xFF1F0B11),
+        suggestionText = Color(0xFFFECDD3),
+        borderColor = Color(0x33E11D48)
+    )
+
+    val MochaCoffee = KeyboardColorScheme(
+        name = "Mocha Coffee",
+        isDark = true,
+        background = Color(0xFF1A1412),
+        keyBackground = Color(0xFF2C221E),
+        keyText = Color(0xFFEDE0D4),
+        specialKeyBackground = Color(0xFF3D302A),
+        specialKeyText = Color(0xFFDDB892),
+        accent = Color(0xFFB08968),
+        suggestionBar = Color(0xFF1A1412),
+        suggestionText = Color(0xFFE6CCB2),
+        borderColor = Color(0x22DDB892)
+    )
+
+    val ForestZen = KeyboardColorScheme(
+        name = "Forest Zen",
+        isDark = true,
+        background = Color(0xFF0D1B13),
+        keyBackground = Color(0xFF173022),
+        keyText = Color(0xFFE6F4EA),
+        specialKeyBackground = Color(0xFF20422F),
+        specialKeyText = Color(0xFF6EE7B7),
+        accent = Color(0xFF10B981),
+        suggestionBar = Color(0xFF0D1B13),
+        suggestionText = Color(0xFFA7F3D0),
+        borderColor = Color(0x2210B981)
+    )
+
+    val DeepSapphire = KeyboardColorScheme(
+        name = "Royal Sapphire",
+        isDark = true,
+        background = Color(0xFF0A1128),
+        keyBackground = Color(0xFF1C2D5A),
+        keyText = Color(0xFFE0E7FF),
+        specialKeyBackground = Color(0xFF131F43),
+        specialKeyText = Color(0xFF60A5FA),
+        accent = Color(0xFF3B82F6),
+        suggestionBar = Color(0xFF0A1128),
+        suggestionText = Color(0xFFBFDBFE),
+        borderColor = Color(0x333B82F6)
+    )
+
     val allThemes = listOf(
         GboardDark,
+        IOSGlass,
+        TitaniumDark,
+        ObsidianGold,
+        DeepSapphire,
+        AuroraBorealis,
         SwiftKeyDark,
         GboardLight,
         Amoled,
-        ProSlateDark,
         Midnight,
+        ProSlateDark,
+        SakuraPastel,
+        CrimsonRuby,
+        MochaCoffee,
+        ForestZen,
+        Cyberpunk,
+        RoyalLavender,
         MatrixTerminal,
         EmeraldDark,
         RoseGold,
-        Cyberpunk,
-        RoyalLavender,
         SunsetCrimson,
         Ocean,
         Purple,

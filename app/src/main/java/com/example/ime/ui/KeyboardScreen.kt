@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Backspace
@@ -638,41 +639,66 @@ fun KeyboardScreen(
                 }
             }
 
-            // Long Press Popup Overlay with alternative letters and decorative variants
+            // Long Press Popup Overlay with alternative letters, Hamzat, and Tashkeel
             if (activePopupKey != null) {
                 val key = activePopupKey!!
                 val decorations = DecorationEngine.getLetterDecorations(key.primaryText)
-                val allOptions = (key.popupOptions + decorations).distinct()
-                if (allOptions.isNotEmpty()) {
-                    val context = LocalContext.current
-                    val view = LocalView.current
-                    Box(
+                val baseOptions = key.popupOptions.ifEmpty { listOf(key.primaryText) }
+                val allOptions = (baseOptions + decorations + listOfNotNull(key.secondaryText)).distinct().filter { it.isNotBlank() }
+                val tashkeelOptions = listOf("َ", "ً", "ُ", "ٌ", "ِ", "ٍ", "ْ", "ّ", "ـ")
+                
+                val context = LocalContext.current
+                val view = LocalView.current
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(Color.Black.copy(alpha = 0.6f))
+                        .clickable { activePopupKey = null },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = colorScheme.background),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
                         modifier = Modifier
-                            .matchParentSize()
-                            .background(Color.Black.copy(alpha = 0.5f))
-                            .clickable { activePopupKey = null },
-                        contentAlignment = Alignment.Center
+                            .padding(12.dp)
+                            .clickable(enabled = false) {}
                     ) {
-                        Card(
-                            shape = RoundedCornerShape(14.dp),
-                            colors = CardDefaults.cardColors(containerColor = colorScheme.background),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-                            modifier = Modifier
-                                .padding(12.dp)
-                                .clickable(enabled = false) {}
+                        Column(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Column(
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "حروف وتشكيلات لـ (${key.primaryText})",
-                                    color = colorScheme.keyText.copy(alpha = 0.7f),
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium
+                                    text = "الحروف والتشكيلات لـ (${key.primaryText})",
+                                    color = colorScheme.keyText.copy(alpha = 0.85f),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold
                                 )
+                                Box(
+                                    modifier = Modifier
+                                        .size(28.dp)
+                                        .clip(CircleShape)
+                                        .background(colorScheme.specialKeyBackground)
+                                        .clickable { activePopupKey = null },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "✕",
+                                        color = colorScheme.keyText,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
 
+                            // 1. Primary Alternate Letters & Variants
+                            if (allOptions.isNotEmpty()) {
                                 androidx.compose.foundation.lazy.LazyRow(
                                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                                     verticalAlignment = Alignment.CenterVertically
@@ -680,8 +706,9 @@ fun KeyboardScreen(
                                     items(allOptions) { option ->
                                         Box(
                                             modifier = Modifier
-                                                .size(width = 46.dp, height = 50.dp)
-                                                .clip(RoundedCornerShape(8.dp))
+                                                .size(width = 48.dp, height = 52.dp)
+                                                .shadow(1.dp, RoundedCornerShape(10.dp))
+                                                .clip(RoundedCornerShape(10.dp))
                                                 .background(colorScheme.keyBackground)
                                                 .clickable(
                                                     role = androidx.compose.ui.semantics.Role.Button,
@@ -696,10 +723,40 @@ fun KeyboardScreen(
                                             Text(
                                                 text = option,
                                                 color = colorScheme.keyText,
-                                                fontSize = 20.sp,
+                                                fontSize = 22.sp,
                                                 fontWeight = FontWeight.Bold
                                             )
                                         }
+                                    }
+                                }
+                            }
+
+                            // 2. Quick Tashkeel Row (حركات التشكيل السريعة)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                for (tashkeel in tashkeelOptions) {
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(38.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(colorScheme.specialKeyBackground)
+                                            .clickable {
+                                                HapticHelper.performKeyHaptic(context, view)
+                                                onTextInput(tashkeel)
+                                                activePopupKey = null
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = tashkeel,
+                                            color = colorScheme.accent,
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
                                     }
                                 }
                             }
