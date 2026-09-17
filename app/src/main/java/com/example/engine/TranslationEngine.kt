@@ -151,16 +151,16 @@ object TranslationEngine {
         val cacheKey = "${actualSource}_${actualTarget}_$trimmed"
         memoryCache[cacheKey]?.let { return@withContext it }
 
-        // Try Online Translation via Google Translate Endpoint
+        // Try Primary Online Translation via Google Translate Endpoint
         try {
             val encodedQuery = URLEncoder.encode(trimmed, "UTF-8")
             val urlString = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=$actualSource&tl=$actualTarget&dt=t&q=$encodedQuery"
             val url = URL(urlString)
             val conn = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
-                connectTimeout = 4000
-                readTimeout = 4000
-                setRequestProperty("User-Agent", "Mozilla/5.0 (Android; Mobile; rv:109.0) Gecko/109.0 Firefox/109.0")
+                connectTimeout = 3500
+                readTimeout = 3500
+                setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
             }
 
             if (conn.responseCode == 200) {
@@ -173,21 +173,57 @@ object TranslationEngine {
                 reader.close()
 
                 val jsonArray = JSONArray(response.toString())
-                val sentencesArray = jsonArray.getJSONArray(0)
-                val resultBuilder = StringBuilder()
-                for (i in 0 until sentencesArray.length()) {
-                    val sentence = sentencesArray.getJSONArray(i)
-                    resultBuilder.append(sentence.getString(0))
-                }
+                val sentencesArray = jsonArray.optJSONArray(0)
+                if (sentencesArray != null && sentencesArray.length() > 0) {
+                    val resultBuilder = StringBuilder()
+                    for (i in 0 until sentencesArray.length()) {
+                        val sentence = sentencesArray.optJSONArray(i)
+                        if (sentence != null) {
+                            resultBuilder.append(sentence.optString(0, ""))
+                        }
+                    }
 
-                val translated = resultBuilder.toString().trim()
-                if (translated.isNotEmpty()) {
+                    val translated = resultBuilder.toString().trim()
+                    if (translated.isNotEmpty()) {
+                        memoryCache[cacheKey] = translated
+                        return@withContext translated
+                    }
+                }
+            }
+        } catch (e: Throwable) {
+            Log.w(TAG, "Google translation failed: ${e.message}")
+        }
+
+        // Try Secondary Online Translation Endpoint (MyMemory API)
+        try {
+            val encodedQuery = URLEncoder.encode(trimmed, "UTF-8")
+            val src = if (actualSource == "auto") (if (containsAr) "ar" else "en") else actualSource
+            val urlString = "https://api.mymemory.translated.net/get?q=$encodedQuery&langpair=$src|$actualTarget"
+            val url = URL(urlString)
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                connectTimeout = 3500
+                readTimeout = 3500
+                setRequestProperty("User-Agent", "Mozilla/5.0")
+            }
+            if (conn.responseCode == 200) {
+                val reader = BufferedReader(InputStreamReader(conn.inputStream, "UTF-8"))
+                val response = StringBuilder()
+                var line: String?
+                while (reader.readLine().also { line = it } != null) {
+                    response.append(line)
+                }
+                reader.close()
+                val json = org.json.JSONObject(response.toString())
+                val resData = json.optJSONObject("responseData")
+                val translated = resData?.optString("translatedText")?.trim() ?: ""
+                if (translated.isNotEmpty() && !translated.startsWith("MYMEMORY WARNING")) {
                     memoryCache[cacheKey] = translated
                     return@withContext translated
                 }
             }
         } catch (e: Throwable) {
-            Log.w(TAG, "Online translation failed, falling back to offline dictionary: ${e.message}")
+            Log.w(TAG, "MyMemory fallback failed: ${e.message}")
         }
 
         // Offline Fallback for Arabic -> English

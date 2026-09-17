@@ -37,6 +37,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 
 @Composable
 fun KeyButton(
@@ -79,11 +80,9 @@ fun KeyButton(
             )
             .clip(RoundedCornerShape(6.dp))
             .background(bgColor)
-            .pointerInput(text, hapticEnabled, soundEnabled, isSpecial) {
-                var isLongPressHandled = false
+            .pointerInput(text, hapticEnabled, soundEnabled, isSpecial, currentOnLongClick != null) {
                 detectTapGestures(
                     onPress = {
-                        isLongPressHandled = false
                         isPressed = true
                         if (hapticEnabled) {
                             HapticHelper.performKeyHaptic(context, view)
@@ -91,19 +90,19 @@ fun KeyButton(
                         if (soundEnabled) {
                             view.playSoundEffect(SoundEffectConstants.CLICK)
                         }
-                        val released = tryAwaitRelease()
+                        tryAwaitRelease()
                         isPressed = false
-                        if (released && !isLongPressHandled) {
-                            currentOnClick()
-                        }
                     },
-                    onLongPress = {
-                        isLongPressHandled = true
-                        isPressed = false
-                        if (hapticEnabled) {
-                            HapticHelper.performKeyHaptic(context, view)
+                    onLongPress = if (currentOnLongClick != null) {
+                        {
+                            if (hapticEnabled) {
+                                HapticHelper.performKeyHaptic(context, view)
+                            }
+                            currentOnLongClick?.invoke()
                         }
-                        currentOnLongClick?.invoke()
+                    } else null,
+                    onTap = {
+                        currentOnClick()
                     }
                 )
             },

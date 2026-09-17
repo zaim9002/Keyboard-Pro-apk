@@ -213,21 +213,111 @@ object KeyboardThemes {
         borderColor = Color(0x44FFFFFF)
     )
 
+    val MatrixTerminal = KeyboardColorScheme(
+        name = "Matrix Terminal",
+        isDark = true,
+        background = Color(0xFF0D1117),
+        keyBackground = Color(0xFF161B22),
+        keyText = Color(0xFF39D353),
+        specialKeyBackground = Color(0xFF21262D),
+        specialKeyText = Color(0xFF58A6FF),
+        accent = Color(0xFF39D353),
+        suggestionBar = Color(0xFF161B22),
+        suggestionText = Color(0xFF7EE787),
+        borderColor = Color(0x4439D353)
+    )
+
+    val EmeraldDark = KeyboardColorScheme(
+        name = "Emerald Dark",
+        isDark = true,
+        background = Color(0xFF062016),
+        keyBackground = Color(0xFF0E3D2A),
+        keyText = Color(0xFFECFDF5),
+        specialKeyBackground = Color(0xFF134E36),
+        specialKeyText = Color(0xFF34D399),
+        accent = Color(0xFF10B981),
+        suggestionBar = Color(0xFF0E3D2A),
+        suggestionText = Color(0xFFA7F3D0),
+        borderColor = Color(0x3310B981)
+    )
+
+    val RoseGold = KeyboardColorScheme(
+        name = "Rose Gold",
+        isDark = true,
+        background = Color(0xFF24151C),
+        keyBackground = Color(0xFF3A212D),
+        keyText = Color(0xFFFFF1F2),
+        specialKeyBackground = Color(0xFF522F3F),
+        specialKeyText = Color(0xFFFB7185),
+        accent = Color(0xFFF43F5E),
+        suggestionBar = Color(0xFF3A212D),
+        suggestionText = Color(0xFFFECDD3),
+        borderColor = Color(0x33F43F5E)
+    )
+
+    val Cyberpunk = KeyboardColorScheme(
+        name = "Cyberpunk",
+        isDark = true,
+        background = Color(0xFF100B2B),
+        keyBackground = Color(0xFF201648),
+        keyText = Color(0xFFFACC15),
+        specialKeyBackground = Color(0xFF321A6B),
+        specialKeyText = Color(0xFF22D3EE),
+        accent = Color(0xFF22D3EE),
+        suggestionBar = Color(0xFF201648),
+        suggestionText = Color(0xFFFDE047),
+        borderColor = Color(0x55FACC15)
+    )
+
+    val RoyalLavender = KeyboardColorScheme(
+        name = "Royal Lavender",
+        isDark = true,
+        background = Color(0xFF1E1B2E),
+        keyBackground = Color(0xFF2E294A),
+        keyText = Color(0xFFF3E8FF),
+        specialKeyBackground = Color(0xFF433C68),
+        specialKeyText = Color(0xFFC084FC),
+        accent = Color(0xFFA855F7),
+        suggestionBar = Color(0xFF2E294A),
+        suggestionText = Color(0xFFE9D5FF),
+        borderColor = Color(0x33A855F7)
+    )
+
+    val SunsetCrimson = KeyboardColorScheme(
+        name = "Sunset Crimson",
+        isDark = true,
+        background = Color(0xFF210E14),
+        keyBackground = Color(0xFF3D1A25),
+        keyText = Color(0xFFFFEDD5),
+        specialKeyBackground = Color(0xFF592636),
+        specialKeyText = Color(0xFFFB923C),
+        accent = Color(0xFFF97316),
+        suggestionBar = Color(0xFF3D1A25),
+        suggestionText = Color(0xFFFED7AA),
+        borderColor = Color(0x33F97316)
+    )
+
     val allThemes = listOf(
         GboardDark,
         SwiftKeyDark,
         GboardLight,
-        Transparent,
+        Amoled,
         ProSlateDark,
         Midnight,
-        Dark,
+        MatrixTerminal,
+        EmeraldDark,
+        RoseGold,
+        Cyberpunk,
+        RoyalLavender,
+        SunsetCrimson,
         Ocean,
         Purple,
         Green,
         Red,
         Neon,
-        Amoled,
-        CleanLight
+        CleanLight,
+        Transparent,
+        Dark
     )
 
     fun getTheme(name: String, customKeyColor: String? = null): KeyboardColorScheme {

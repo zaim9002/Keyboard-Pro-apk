@@ -46,11 +46,15 @@ fun KeyboardToolbar(
     isIncognito: Boolean,
     autoTranslateOnEnter: Boolean = false,
     oneHandedMode: String = "OFF",
+    showTermuxKeys: Boolean = false,
+    showQuickSnippets: Boolean = false,
     colorScheme: KeyboardColorScheme,
     onPanelSelect: (KeyboardPanel) -> Unit,
     onSwitchLanguage: () -> Unit,
     onOpenSettings: () -> Unit,
-    onToggleOneHanded: ((String) -> Unit)? = null
+    onToggleOneHanded: ((String) -> Unit)? = null,
+    onToggleTermuxKeys: (() -> Unit)? = null,
+    onToggleQuickSnippets: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val view = LocalView.current
@@ -98,6 +102,34 @@ fun KeyboardToolbar(
                     color = colorScheme.keyText,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        // Termux / Developer Keys toggle (صف أزرار المطورين والترموكس)
+        if (onToggleTermuxKeys != null) {
+            item(key = "termux") {
+                ToolbarIconButton(
+                    icon = Icons.Default.Terminal,
+                    tooltip = "صف مفاتيح المطورين والترموكس",
+                    isSelected = showTermuxKeys,
+                    badge = "DEV",
+                    colorScheme = colorScheme,
+                    onClick = onToggleTermuxKeys
+                )
+            }
+        }
+
+        // Quick Snippets / Emoji Bar toggle (شريط العبارات والإيموجي السريع)
+        if (onToggleQuickSnippets != null) {
+            item(key = "quick_snippets") {
+                ToolbarIconButton(
+                    icon = Icons.Default.FlashOn,
+                    tooltip = "شريط الإيموجي والعبارات السريع",
+                    isSelected = showQuickSnippets,
+                    badge = "🔥",
+                    colorScheme = colorScheme,
+                    onClick = onToggleQuickSnippets
                 )
             }
         }

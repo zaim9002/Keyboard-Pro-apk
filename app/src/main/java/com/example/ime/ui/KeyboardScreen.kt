@@ -128,6 +128,8 @@ fun KeyboardScreen(
     var showLanguagePicker by remember { mutableStateOf(false) }
     var activePopupKey by remember { mutableStateOf<KeyModel?>(null) }
     var isInlineTranslateOpen by remember { mutableStateOf(false) }
+    var showTermuxKeys by remember { mutableStateOf(false) }
+    var showQuickSnippets by remember { mutableStateOf(false) }
     var translateSourceLang by remember { mutableStateOf("ar") }
     var translateTargetLang by remember { mutableStateOf("en") }
     val coroutineScope = rememberCoroutineScope()
@@ -163,6 +165,8 @@ fun KeyboardScreen(
             isIncognito = isIncognito,
             autoTranslateOnEnter = autoTranslateOnEnter,
             oneHandedMode = oneHandedMode,
+            showTermuxKeys = showTermuxKeys,
+            showQuickSnippets = showQuickSnippets,
             colorScheme = colorScheme,
             onPanelSelect = { panel ->
                 if (panel == KeyboardPanel.TRANSLATE) {
@@ -174,7 +178,9 @@ fun KeyboardScreen(
             },
             onSwitchLanguage = onSwitchLanguage,
             onOpenSettings = onOpenSettings,
-            onToggleOneHanded = onToggleOneHanded
+            onToggleOneHanded = onToggleOneHanded,
+            onToggleTermuxKeys = { showTermuxKeys = !showTermuxKeys },
+            onToggleQuickSnippets = { showQuickSnippets = !showQuickSnippets }
         )
 
         // 1.5 Inline GBoard-style Translation Bar (Google GBoard style, Image 8)
@@ -443,6 +449,29 @@ fun KeyboardScreen(
                                     }
                                 }
 
+                                // Optional Quick Snippets & Emoji Bar
+                                if (showQuickSnippets && layoutMode == LayoutMode.ALPHA) {
+                                    QuickSnippetsBar(
+                                        colorScheme = colorScheme,
+                                        hapticEnabled = hapticEnabled,
+                                        onInsertText = onTextInput
+                                    )
+                                }
+
+                                // Optional Termux & Developer Keys Row
+                                if (showTermuxKeys) {
+                                    TermuxKeysRow(
+                                        colorScheme = colorScheme,
+                                        hapticEnabled = hapticEnabled,
+                                        onTextInput = onTextInput,
+                                        onMoveCursor = onMoveCursor,
+                                        onHome = { onMoveCursor(-999) },
+                                        onEnd = { onMoveCursor(999) },
+                                        onTab = { onTextInput("\t") },
+                                        onEsc = { /* ESC action */ }
+                                    )
+                                }
+
                                  // Dynamic Layout Rows based on Language & Mode
                                 when (layoutMode) {
                                     LayoutMode.ALPHA -> {
@@ -541,6 +570,7 @@ fun KeyboardScreen(
                                             onSwitchToNumpad = { layoutMode = LayoutMode.NUMPAD },
                                             onOpenClipboard = { activePanel = KeyboardPanel.CLIPBOARD },
                                             onOpenTranslate = { isInlineTranslateOpen = !isInlineTranslateOpen },
+                                            onOpenEmoji = { activePanel = KeyboardPanel.EMOJI },
                                             onSwitchLanguage = onSwitchLanguage,
                                             onMoveCursor = onMoveCursor
                                         )
@@ -564,6 +594,7 @@ fun KeyboardScreen(
                                             onSwitchToSymbols1 = { layoutMode = LayoutMode.SYMBOLS_1 },
                                             onOpenClipboard = { activePanel = KeyboardPanel.CLIPBOARD },
                                             onOpenTranslate = { isInlineTranslateOpen = !isInlineTranslateOpen },
+                                            onOpenEmoji = { activePanel = KeyboardPanel.EMOJI },
                                             onSwitchLanguage = onSwitchLanguage,
                                             onMoveCursor = onMoveCursor
                                         )
@@ -1140,7 +1171,7 @@ private fun Symbols1Layout(
     actionIcon: androidx.compose.ui.graphics.vector.ImageVector,
     autoTranslateOnEnter: Boolean = false,
     onToggleAutoTranslate: ((Boolean) -> Unit)? = null,
-    spacebarLanguageSwitch: Boolean = true,
+    spacebarLanguageSwitch: Boolean = false,
     onTextInput: (String) -> Unit,
     onDelete: () -> Unit,
     onDeleteWord: (() -> Unit)? = null,
@@ -1151,6 +1182,7 @@ private fun Symbols1Layout(
     onSwitchToNumpad: (() -> Unit)? = null,
     onOpenClipboard: (() -> Unit)? = null,
     onOpenTranslate: (() -> Unit)? = null,
+    onOpenEmoji: (() -> Unit)? = null,
     onSwitchLanguage: () -> Unit,
     onMoveCursor: (Int) -> Unit
 ) {
@@ -1247,6 +1279,7 @@ private fun Symbols1Layout(
         onSwitchLanguage = onSwitchLanguage,
         onOpenClipboard = onOpenClipboard,
         onOpenTranslate = onOpenTranslate,
+        onOpenEmoji = onOpenEmoji,
         onSpace = onSpace,
         onEnter = onEnter,
         onMoveCursor = onMoveCursor,
@@ -1264,7 +1297,7 @@ private fun Symbols2Layout(
     actionIcon: androidx.compose.ui.graphics.vector.ImageVector,
     autoTranslateOnEnter: Boolean = false,
     onToggleAutoTranslate: ((Boolean) -> Unit)? = null,
-    spacebarLanguageSwitch: Boolean = true,
+    spacebarLanguageSwitch: Boolean = false,
     onTextInput: (String) -> Unit,
     onDelete: () -> Unit,
     onDeleteWord: (() -> Unit)? = null,
@@ -1274,6 +1307,7 @@ private fun Symbols2Layout(
     onSwitchToSymbols1: () -> Unit,
     onOpenClipboard: (() -> Unit)? = null,
     onOpenTranslate: (() -> Unit)? = null,
+    onOpenEmoji: (() -> Unit)? = null,
     onSwitchLanguage: () -> Unit,
     onMoveCursor: (Int) -> Unit
 ) {
@@ -1357,6 +1391,7 @@ private fun Symbols2Layout(
         onSwitchLanguage = onSwitchLanguage,
         onOpenClipboard = onOpenClipboard,
         onOpenTranslate = onOpenTranslate,
+        onOpenEmoji = onOpenEmoji,
         onSpace = onSpace,
         onEnter = onEnter,
         onMoveCursor = onMoveCursor,
@@ -1523,7 +1558,7 @@ private fun BottomControlRow(
     onOpenEmoji: (() -> Unit)? = null,
     onMoveCursor: (Int) -> Unit,
     onTextInput: (String) -> Unit,
-    spacebarLanguageSwitch: Boolean = true
+    spacebarLanguageSwitch: Boolean = false
 ) {
     val context = LocalContext.current
     val view = LocalView.current
@@ -1532,7 +1567,7 @@ private fun BottomControlRow(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Mode Switch (e.g. ?123, ١٢٣, ABC)
+        // 1. Mode Switch (e.g. ?123, ١٢٣, ABC)
         KeyButton(
             text = modeLabel,
             isSpecial = true,
@@ -1546,23 +1581,7 @@ private fun BottomControlRow(
             onSwitchMode()
         }
 
-        // Dedicated Clipboard Button beside spacebar (📋)
-        if (onOpenClipboard != null) {
-            KeyButton(
-                text = "📋",
-                isSpecial = true,
-                fontSize = 14.sp,
-                height = keyHeight,
-                colorScheme = colorScheme,
-                hapticEnabled = hapticEnabled,
-                soundEnabled = soundEnabled,
-                modifier = Modifier.weight(0.85f)
-            ) {
-                onOpenClipboard()
-            }
-        }
-
-        // Language Switch (🌐) located prominently at the bottom for easy access!
+        // 2. Language Switch (🌐) - Dedicated language switcher button as requested
         KeyButton(
             text = langLabel,
             isSpecial = true,
@@ -1577,132 +1596,8 @@ private fun BottomControlRow(
             onSwitchLanguage()
         }
 
-        // Spacebar with sleek styling, language switch capsule, cursor swipe and language swipe
-        var totalDragX by remember { mutableStateOf(0f) }
-        Box(
-            modifier = Modifier
-                .weight(3.4f)
-                .height(keyHeight)
-                .padding(horizontal = 1.5.dp, vertical = 2.dp)
-                .shadow(
-                    elevation = 1.dp,
-                    shape = RoundedCornerShape(6.dp),
-                    ambientColor = Color.Black.copy(alpha = 0.3f),
-                    spotColor = Color.Black.copy(alpha = 0.3f)
-                )
-                .clip(RoundedCornerShape(6.dp))
-                .background(colorScheme.keyBackground)
-                .pointerInput(spacebarLanguageSwitch) {
-                    detectDragGestures(
-                        onDrag = { change, dragAmount ->
-                            change.consume()
-                            totalDragX += dragAmount.x
-                            if (spacebarLanguageSwitch && (totalDragX > 45f || totalDragX < -45f)) {
-                                if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
-                                onSwitchLanguage()
-                                totalDragX = 0f
-                            } else if (!spacebarLanguageSwitch) {
-                                if (totalDragX > 35f) {
-                                    if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
-                                    onMoveCursor(1)
-                                    totalDragX = 0f
-                                } else if (totalDragX < -35f) {
-                                    if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
-                                    onMoveCursor(-1)
-                                    totalDragX = 0f
-                                }
-                            }
-                        },
-                        onDragEnd = { totalDragX = 0f }
-                    )
-                }
-                .clickable {
-                    if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
-                    if (soundEnabled) view.playSoundEffect(SoundEffectConstants.CLICK)
-                    if (spacebarLanguageSwitch) {
-                        onSwitchLanguage()
-                    } else {
-                        onSpace()
-                    }
-                },
-            contentAlignment = Alignment.Center
-        ) {
-            if (spacebarLanguageSwitch) {
-                // Interactive Language Switch Capsule directly inside the Spacebar
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(colorScheme.specialKeyBackground.copy(alpha = 0.45f))
-                        .clickable {
-                            if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
-                            if (soundEnabled) view.playSoundEffect(SoundEffectConstants.CLICK)
-                            onSwitchLanguage()
-                        }
-                        .padding(horizontal = 8.dp, vertical = 3.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Language,
-                        contentDescription = "تبديل اللغة",
-                        tint = colorScheme.accent,
-                        modifier = Modifier.size(13.dp)
-                    )
-                    Spacer(modifier = Modifier.width(3.dp))
-                    Text(
-                        text = spaceLabel,
-                        color = colorScheme.accent,
-                        fontSize = 11.5.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1
-                    )
-                    Spacer(modifier = Modifier.width(3.dp))
-                    Text(
-                        text = "⇄",
-                        color = colorScheme.accent.copy(alpha = 0.8f),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            } else {
-                Text(
-                    text = spaceLabel,
-                    color = colorScheme.keyText.copy(alpha = 0.65f),
-                    fontSize = 12.5.sp,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1
-                )
-            }
-        }
-
-        // Period
-        KeyButton(
-            text = ".",
-            height = keyHeight,
-            fontSize = 18.sp,
-            colorScheme = colorScheme,
-            hapticEnabled = hapticEnabled,
-            soundEnabled = soundEnabled,
-            modifier = Modifier.weight(0.75f)
-        ) {
-            onTextInput(".")
-        }
-
-        // Dedicated Translation Button beside Enter: "زيل خيار الترجمة من زر انتر وضيف زر بجانبة للترجمة بجميع اللغات بدل زر انتر"
-        if (onOpenTranslate != null) {
-            KeyButton(
-                text = "文A",
-                isSpecial = true,
-                fontSize = 13.sp,
-                height = keyHeight,
-                colorScheme = colorScheme,
-                hapticEnabled = hapticEnabled,
-                soundEnabled = soundEnabled,
-                modifier = Modifier.weight(0.95f)
-            ) {
-                onOpenTranslate()
-            }
-        } else if (onOpenEmoji != null) {
+        // 3. Emoji / Faces Button (😊) - Restored in the keyboard
+        if (onOpenEmoji != null) {
             KeyButton(
                 text = "😊",
                 isSpecial = true,
@@ -1717,10 +1612,88 @@ private fun BottomControlRow(
             }
         }
 
-        // Clean Enter / Action Key without translation option
+        // 4. Spacebar - Always inputs space on tap, swipe left/right to move cursor smoothly
+        var totalDragX by remember { mutableStateOf(0f) }
         Box(
             modifier = Modifier
-                .weight(1.2f)
+                .weight(3.3f)
+                .height(keyHeight)
+                .padding(horizontal = 1.5.dp, vertical = 2.dp)
+                .shadow(
+                    elevation = 1.dp,
+                    shape = RoundedCornerShape(6.dp),
+                    ambientColor = Color.Black.copy(alpha = 0.3f),
+                    spotColor = Color.Black.copy(alpha = 0.3f)
+                )
+                .clip(RoundedCornerShape(6.dp))
+                .background(colorScheme.keyBackground)
+                .pointerInput(Unit) {
+                    detectDragGestures(
+                        onDrag = { change, dragAmount ->
+                            change.consume()
+                            totalDragX += dragAmount.x
+                            if (totalDragX > 30f) {
+                                if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
+                                onMoveCursor(1)
+                                totalDragX = 0f
+                            } else if (totalDragX < -30f) {
+                                if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
+                                onMoveCursor(-1)
+                                totalDragX = 0f
+                            }
+                        },
+                        onDragEnd = { totalDragX = 0f }
+                    )
+                }
+                .clickable {
+                    if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
+                    if (soundEnabled) view.playSoundEffect(SoundEffectConstants.CLICK)
+                    onSpace()
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = spaceLabel,
+                color = colorScheme.keyText.copy(alpha = 0.65f),
+                fontSize = 12.5.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1
+            )
+        }
+
+        // 5. Period Key
+        KeyButton(
+            text = ".",
+            height = keyHeight,
+            fontSize = 18.sp,
+            colorScheme = colorScheme,
+            hapticEnabled = hapticEnabled,
+            soundEnabled = soundEnabled,
+            modifier = Modifier.weight(0.75f)
+        ) {
+            onTextInput(".")
+        }
+
+        // 6. Dedicated Translation Button beside Enter
+        if (onOpenTranslate != null) {
+            KeyButton(
+                text = "文A",
+                isSpecial = true,
+                fontSize = 13.sp,
+                height = keyHeight,
+                colorScheme = colorScheme,
+                hapticEnabled = hapticEnabled,
+                soundEnabled = soundEnabled,
+                modifier = Modifier.weight(0.85f)
+            ) {
+                onOpenTranslate()
+            }
+        }
+
+        // 7. Clean Enter / Action Key
+        Box(
+            modifier = Modifier
+                .weight(1.15f)
                 .height(keyHeight)
                 .padding(horizontal = 1.5.dp, vertical = 2.dp)
                 .shadow(
