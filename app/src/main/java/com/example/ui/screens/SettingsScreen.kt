@@ -43,6 +43,7 @@ fun SettingsScreen(
     var autoCorrectEnabled by remember { mutableStateOf(prefs.autoCorrectEnabled) }
     var spacebarLanguageSwitch by remember { mutableStateOf(prefs.spacebarLanguageSwitchEnabled) }
     var aiTone by remember { mutableStateOf(prefs.aiTone) }
+    var emojiStyle by remember { mutableStateOf(prefs.emojiStyle) }
     var geminiApiKey by remember { mutableStateOf(prefs.geminiApiKey) }
 
     var showResetDialog by remember { mutableStateOf(false) }
@@ -226,6 +227,38 @@ fun SettingsScreen(
                         prefs.showNumberRow = it
                     }
                 )
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                // Emoji Style Choice (iOS 26 / iOS 27)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("شكل وحزمة الفيسات (Emoji Style)", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                        Text("اختيار مظهر وحزمة الرموز التعبيرية في لوحة المفاتيح", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        listOf("iOS 26", "iOS 27").forEach { style ->
+                            FilterChip(
+                                selected = emojiStyle == style,
+                                onClick = {
+                                    emojiStyle = style
+                                    prefs.emojiStyle = style
+                                },
+                                label = {
+                                    Text(
+                                        style,
+                                        fontSize = 11.sp,
+                                        fontWeight = if (emojiStyle == style) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                }
+                            )
+                        }
+                    }
+                }
             }
         }
 

@@ -145,26 +145,26 @@ fun KeyButton(
             )
         }
 
-        // Key Press Preview Balloon (Floating touch preview directly above the key)
+        // Key Press Preview Box (Consistent rectangular preview directly above the key)
         if (showPreview && isPressed && !isSpecial && text.isNotBlank() && text.length <= 2) {
             Popup(
                 alignment = Alignment.TopCenter,
-                offset = IntOffset(0, -115),
+                offset = IntOffset(0, -110),
                 properties = PopupProperties(focusable = false)
             ) {
                 Box(
                     modifier = Modifier
-                        .size(width = 50.dp, height = 58.dp)
-                        .shadow(10.dp, RoundedCornerShape(14.dp))
-                        .clip(RoundedCornerShape(14.dp))
+                        .size(width = 46.dp, height = 52.dp)
+                        .shadow(6.dp, RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(8.dp))
                         .background(colorScheme.keyBackground)
-                        .border(1.5.dp, colorScheme.accent.copy(alpha = 0.6f), RoundedCornerShape(14.dp)),
+                        .border(1.dp, colorScheme.accent.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = text,
                         color = colorScheme.keyText,
-                        fontSize = 26.sp,
+                        fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center
                     )

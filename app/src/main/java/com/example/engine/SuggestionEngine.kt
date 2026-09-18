@@ -227,7 +227,7 @@ class SuggestionEngine(
                     suggestions.addAll(listOf("Hello", "Thanks", "How are you", "Sounds good"))
                 }
             }
-            return@withContext suggestions.distinct().take(4)
+            return@withContext suggestions.distinct().take(10)
         }
 
         // 4. User personalized words matching current prefix (High Priority!)
@@ -239,14 +239,14 @@ class SuggestionEngine(
         val prefixMatches = dict.filter {
             it.startsWith(cleanCurrent, ignoreCase = true) && !it.equals(cleanCurrent, ignoreCase = true)
         }
-        suggestions.addAll(prefixMatches.take(4))
+        suggestions.addAll(prefixMatches.take(8))
 
         // 6. If still few suggestions, find words containing the substring or close matches
-        if (suggestions.size < 3) {
+        if (suggestions.size < 6) {
             val containsMatches = dict.filter {
                 it.contains(cleanCurrent, ignoreCase = true) && !it.equals(cleanCurrent, ignoreCase = true)
             }
-            suggestions.addAll(containsMatches.take(3))
+            suggestions.addAll(containsMatches.take(6))
         }
 
         // Ensure current typed word is available if no direct exact match
@@ -254,7 +254,7 @@ class SuggestionEngine(
             suggestions.add(cleanCurrent)
         }
 
-        return@withContext suggestions.distinct().take(4)
+        return@withContext suggestions.distinct().take(10)
     }
 
     suspend fun learnWord(word: String) {

@@ -61,6 +61,8 @@ import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.border
 import com.example.ime.util.CharacterVariants
@@ -681,7 +683,7 @@ fun KeyboardScreen(
                 }
             }
 
-            // Floating Callout View positioned dynamically relative to the pressed key
+            // Floating Callout View positioned dynamically relative to the pressed key (Rectangular & Consistent)
             if (activeCalloutState != null) {
                 val callout = activeCalloutState!!
                 val options = callout.options
@@ -690,13 +692,16 @@ fun KeyboardScreen(
                 val view = LocalView.current
                 val rootWidthPx = keyboardContainerCoordinates?.size?.width?.toFloat() ?: 1080f
 
-                val itemWidthDp = 44.dp
-                val itemHeightDp = 50.dp
+                val itemWidthDp = 42.dp
+                val itemHeightDp = 46.dp
                 val itemSpacingDp = 4.dp
                 val horizontalPaddingDp = 6.dp
                 val verticalPaddingDp = 6.dp
 
-                val totalWidthDp = (itemWidthDp * options.size) + (itemSpacingDp * (options.size - 1).coerceAtLeast(0)) + (horizontalPaddingDp * 2)
+                val maxVisibleItems = 7
+                val visibleCount = options.size.coerceAtMost(maxVisibleItems)
+                val isScrollable = options.size > maxVisibleItems
+                val totalWidthDp = (itemWidthDp * visibleCount) + (itemSpacingDp * (visibleCount - 1).coerceAtLeast(0)) + (horizontalPaddingDp * 2)
                 val totalWidthPx = with(density) { totalWidthDp.toPx() }
                 val calloutHeightPx = with(density) { itemHeightDp.toPx() + (verticalPaddingDp.toPx() * 2) }
 
@@ -707,7 +712,7 @@ fun KeyboardScreen(
                 val clampedLeftPx = rawLeftPx.coerceIn(minMarginPx, (rootWidthPx - totalWidthPx - minMarginPx).coerceAtLeast(minMarginPx))
 
                 // Dynamically calculate vertical position placed directly above the pressed key
-                val gapPx = with(density) { 8.dp.toPx() }
+                val gapPx = with(density) { 6.dp.toPx() }
                 val targetTopPx = (callout.keyRect.top - calloutHeightPx - gapPx).coerceAtLeast(with(density) { 2.dp.toPx() })
 
                 val offsetX = with(density) { clampedLeftPx.toDp() }
@@ -721,18 +726,23 @@ fun KeyboardScreen(
                             indication = null
                         ) { activeCalloutState = null }
                 ) {
-                    // Floating Callout View Bubble
+                    // Floating Callout View - Rectangular with subtle clean corners
                     Box(
                         modifier = Modifier
                             .offset(x = offsetX, y = offsetY)
-                            .shadow(12.dp, RoundedCornerShape(16.dp))
-                            .clip(RoundedCornerShape(16.dp))
+                            .shadow(8.dp, RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(8.dp))
                             .background(colorScheme.background)
-                            .border(1.5.dp, colorScheme.accent.copy(alpha = 0.6f), RoundedCornerShape(16.dp))
+                            .border(1.dp, colorScheme.accent.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
                             .clickable(enabled = false) {}
                             .padding(horizontal = horizontalPaddingDp, vertical = verticalPaddingDp)
+                            .then(
+                                if (isScrollable) Modifier.widthIn(max = totalWidthDp)
+                                else Modifier
+                            )
                     ) {
                         Row(
+                            modifier = if (isScrollable) Modifier.horizontalScroll(rememberScrollState()) else Modifier,
                             horizontalArrangement = Arrangement.spacedBy(itemSpacingDp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -741,9 +751,14 @@ fun KeyboardScreen(
                                 Box(
                                     modifier = Modifier
                                         .size(width = itemWidthDp, height = itemHeightDp)
-                                        .shadow(if (isPrimary) 2.dp else 1.dp, RoundedCornerShape(10.dp))
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(if (isPrimary) colorScheme.accent.copy(alpha = 0.3f) else colorScheme.keyBackground)
+                                        .shadow(if (isPrimary) 2.dp else 0.5.dp, RoundedCornerShape(6.dp))
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(if (isPrimary) colorScheme.accent.copy(alpha = 0.28f) else colorScheme.keyBackground)
+                                        .border(
+                                            if (isPrimary) 1.dp else 0.5.dp,
+                                            if (isPrimary) colorScheme.accent else colorScheme.borderColor,
+                                            RoundedCornerShape(6.dp)
+                                        )
                                         .clickable {
                                             HapticHelper.performKeyHaptic(context, view, "Medium")
                                             if (soundEnabled) {
@@ -757,7 +772,7 @@ fun KeyboardScreen(
                                     Text(
                                         text = option,
                                         color = colorScheme.keyText,
-                                        fontSize = 22.sp,
+                                        fontSize = 20.sp,
                                         fontWeight = FontWeight.Bold,
                                         textAlign = TextAlign.Center
                                     )

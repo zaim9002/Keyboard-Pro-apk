@@ -311,6 +311,34 @@ object KeyboardThemes {
         borderColor = Color(0x33FFFFFF)
     )
 
+    val IOS26 = KeyboardColorScheme(
+        name = "iOS 26",
+        isDark = false,
+        background = Color(0xFFD1D5DB),
+        keyBackground = Color(0xFFFFFFFF),
+        keyText = Color(0xFF000000),
+        specialKeyBackground = Color(0xFFB0B7C3),
+        specialKeyText = Color(0xFF007AFF),
+        accent = Color(0xFF007AFF),
+        suggestionBar = Color(0xFFD1D5DB),
+        suggestionText = Color(0xFF1F2937),
+        borderColor = Color(0x449CA3AF)
+    )
+
+    val IOS27 = KeyboardColorScheme(
+        name = "iOS 27",
+        isDark = true,
+        background = Color(0xFF121316),
+        keyBackground = Color(0xFF24272D),
+        keyText = Color(0xFFF9FAFB),
+        specialKeyBackground = Color(0xFF191B20),
+        specialKeyText = Color(0xFF38BDF8),
+        accent = Color(0xFF0EA5E9),
+        suggestionBar = Color(0xFF121316),
+        suggestionText = Color(0xFFE2E8F0),
+        borderColor = Color(0x3338BDF8)
+    )
+
     val TitaniumDark = KeyboardColorScheme(
         name = "Titanium Pro",
         isDark = true,
@@ -438,8 +466,10 @@ object KeyboardThemes {
     )
 
     val allThemes = listOf(
-        GboardDark,
+        IOS27,
+        IOS26,
         IOSGlass,
+        GboardDark,
         TitaniumDark,
         ObsidianGold,
         DeepSapphire,

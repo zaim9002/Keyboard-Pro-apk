@@ -245,6 +245,27 @@ class KeyboardPreferences(context: Context) {
         private const val KEY_CUSTOM_THEME_ACCENT = "custom_theme_accent"
         private const val KEY_CUSTOM_THEME_SUGGESTION_BG = "custom_theme_suggestion_bg"
         private const val KEY_CUSTOM_THEME_SUGGESTION_TEXT = "custom_theme_suggestion_text"
+        private const val KEY_EMOJI_STYLE = "emoji_style_version"
+        private const val KEY_RECENT_EMOJIS = "recent_emojis_list"
+    }
+
+    var emojiStyle: String
+        get() = prefs.getString(KEY_EMOJI_STYLE, "iOS 27") ?: "iOS 27"
+        set(value) = prefs.edit().putString(KEY_EMOJI_STYLE, value).apply()
+
+    fun getRecentEmojis(): List<String> {
+        val raw = prefs.getString(KEY_RECENT_EMOJIS, "") ?: ""
+        if (raw.isBlank()) return emptyList()
+        return raw.split(",").filter { it.isNotBlank() }
+    }
+
+    fun addRecentEmoji(emoji: String) {
+        if (emoji.isBlank()) return
+        val current = getRecentEmojis().toMutableList()
+        current.remove(emoji)
+        current.add(0, emoji)
+        val limited = current.take(30)
+        prefs.edit().putString(KEY_RECENT_EMOJIS, limited.joinToString(",")).apply()
     }
 
     var customThemeBg: String
