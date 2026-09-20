@@ -82,6 +82,8 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
     private var voicePartialText by mutableStateOf("")
 
     private var currentEditorInfo: EditorInfo? = null
+    private val _editorInfoState = MutableStateFlow<EditorInfo?>(null)
+    private val editorInfoState = _editorInfoState.asStateFlow()
     private var isPasswordField by mutableStateOf(false)
     private val currentWordBuffer = java.lang.StringBuilder()
 
@@ -241,11 +243,12 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
             val isKnown by isCurrentWordKnown.collectAsState()
             val wordsList by userWords.collectAsState()
             val draftText by currentDraftText.collectAsState()
+            val activeEditorInfo by editorInfoState.collectAsState()
 
             KeyboardScreen(
                 colorScheme = currentTheme,
                 currentLanguage = currentLang,
-                imeOptions = currentEditorInfo?.imeOptions ?: EditorInfo.IME_ACTION_DONE,
+                imeOptions = activeEditorInfo?.imeOptions ?: currentEditorInfo?.imeOptions ?: EditorInfo.IME_ACTION_DONE,
                 isIncognito = effectiveIncognito,
                 keyboardHeight = keyboardHeight,
                 showNumberRow = showNumberRow,
@@ -367,6 +370,7 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
     override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
         super.onStartInput(attribute, restarting)
         currentEditorInfo = attribute
+        _editorInfoState.value = attribute
 
         // Detect password variation
         val inputType = attribute?.inputType ?: 0
@@ -390,6 +394,10 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        if (info != null) {
+            currentEditorInfo = info
+            _editorInfoState.value = info
+        }
         syncPrimaryClip()
         try {
             val ic = currentInputConnection
@@ -594,43 +602,48 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
             val isMultiLine = (inputType and InputType.TYPE_TEXT_FLAG_MULTI_LINE) != 0
             val noEnterAction = (imeOptions and EditorInfo.IME_FLAG_NO_ENTER_ACTION) != 0
 
-            // 1. Explicit custom action from target app (e.g. custom send/search ID)
+            // 1. Explicit actionId if specified by the host app (e.g. Google Play search view or custom ID)
             if (info?.actionId != null && info.actionId != 0) {
                 val handled = ic.performEditorAction(info.actionId)
                 if (!handled) {
+                    // Fallback to action or enter key
+                    if (action != EditorInfo.IME_ACTION_NONE && action != EditorInfo.IME_ACTION_UNSPECIFIED) {
+                        ic.performEditorAction(action)
+                    }
                     sendKeyEvents(KeyEvent.KEYCODE_ENTER)
                 }
             }
-            // 2. Explicit standard action (Send, Search, Go, Next, Done) when not restricted by multiline
-            else if (!isMultiLine && !noEnterAction && action != EditorInfo.IME_ACTION_NONE && action != EditorInfo.IME_ACTION_UNSPECIFIED) {
+            // 2. Explicit action from IME_MASK_ACTION (SEARCH, GO, SEND, DONE, NEXT)
+            else if (action != EditorInfo.IME_ACTION_NONE && action != EditorInfo.IME_ACTION_UNSPECIFIED && (!isMultiLine || !noEnterAction)) {
                 val handled = ic.performEditorAction(action)
                 if (!handled) {
                     sendKeyEvents(KeyEvent.KEYCODE_ENTER)
                 }
             }
-            // 3. For Telegram, WhatsApp, Messenger, multiline chat and text fields:
-            // Insert newline directly or trigger send key event
-            else {
-                if (action == EditorInfo.IME_ACTION_SEND) {
-                    val handled = ic.performEditorAction(EditorInfo.IME_ACTION_SEND)
-                    if (!handled) {
-                        val committed = ic.commitText("\n", 1)
-                        if (!committed) {
-                            sendKeyEvents(KeyEvent.KEYCODE_ENTER)
-                        }
-                    }
-                } else {
-                    // Standard multiline / return: commit \n and fallback to KEYCODE_ENTER
+            // 3. For chat apps or multi-line text where action is SEND
+            else if (action == EditorInfo.IME_ACTION_SEND) {
+                val handled = ic.performEditorAction(EditorInfo.IME_ACTION_SEND)
+                if (!handled) {
                     val committed = ic.commitText("\n", 1)
                     if (!committed) {
                         sendKeyEvents(KeyEvent.KEYCODE_ENTER)
                     }
                 }
             }
+            // 4. Default Enter / Multi-line / Newline
+            else {
+                val committed = ic.commitText("\n", 1)
+                if (!committed) {
+                    sendKeyEvents(KeyEvent.KEYCODE_ENTER)
+                }
+            }
             currentWordBuffer.clear()
             updateSuggestions()
         } catch (e: Throwable) {
             Log.e("KeyboardIME", "Error in executeStandardEnter", e)
+            try {
+                sendKeyEvents(KeyEvent.KEYCODE_ENTER)
+            } catch (t: Throwable) {}
         }
     }
 

@@ -1583,6 +1583,10 @@ private fun NumpadKeyboardLayout(
     Row(modifier = Modifier.fillMaxWidth()) {
         for (key in KeyboardLayouts.numpadRow4) {
             if (key.type == KeyType.ENTER) {
+                val context = LocalContext.current
+                val view = LocalView.current
+                var isEnterPressed by remember { mutableStateOf(false) }
+                val currentOnEnter by rememberUpdatedState(onEnter)
                 Box(
                     modifier = Modifier
                         .weight(key.weight)
@@ -1590,8 +1594,21 @@ private fun NumpadKeyboardLayout(
                         .padding(horizontal = 1.5.dp, vertical = 2.dp)
                         .shadow(1.dp, RoundedCornerShape(6.dp))
                         .clip(RoundedCornerShape(6.dp))
-                        .background(colorScheme.accent)
-                        .clickable { onEnter() },
+                        .background(if (isEnterPressed) colorScheme.accent.copy(alpha = 0.75f) else colorScheme.accent)
+                        .pointerInput(hapticEnabled, soundEnabled) {
+                            detectTapGestures(
+                                onPress = {
+                                    isEnterPressed = true
+                                    if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
+                                    if (soundEnabled) view.playSoundEffect(SoundEffectConstants.CLICK)
+                                    tryAwaitRelease()
+                                    isEnterPressed = false
+                                },
+                                onTap = {
+                                    currentOnEnter()
+                                }
+                            )
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -1787,8 +1804,11 @@ private fun BottomControlRow(
             }
         }
 
-        // 7. Action / Enter Key - Tap triggers Enter; Long Press (~3.5-4s) triggers Translation
+        // 7. Action / Enter Key - Tap triggers Enter; Long Press triggers Translation
         var isEnterPressed by remember { mutableStateOf(false) }
+        val currentOnEnter by rememberUpdatedState(onEnter)
+        val currentOnLongPressEnter by rememberUpdatedState(onLongPressEnter)
+        val currentOnOpenTranslate by rememberUpdatedState(onOpenTranslate)
         Box(
             modifier = Modifier
                 .weight(1.15f)
@@ -1802,7 +1822,7 @@ private fun BottomControlRow(
                 )
                 .clip(RoundedCornerShape(6.dp))
                 .background(if (isEnterPressed) colorScheme.accent.copy(alpha = 0.75f) else colorScheme.accent)
-                .pointerInput(Unit) {
+                .pointerInput(hapticEnabled, soundEnabled) {
                     detectTapGestures(
                         onPress = {
                             isEnterPressed = true
@@ -1814,14 +1834,14 @@ private fun BottomControlRow(
                         onLongPress = {
                             if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
                             if (soundEnabled) view.playSoundEffect(SoundEffectConstants.CLICK)
-                            if (onLongPressEnter != null) {
-                                onLongPressEnter()
-                            } else if (onOpenTranslate != null) {
-                                onOpenTranslate()
+                            if (currentOnLongPressEnter != null) {
+                                currentOnLongPressEnter?.invoke()
+                            } else if (currentOnOpenTranslate != null) {
+                                currentOnOpenTranslate?.invoke()
                             }
                         },
                         onTap = {
-                            onEnter()
+                            currentOnEnter()
                         }
                     )
                 },
