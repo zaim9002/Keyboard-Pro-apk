@@ -7,6 +7,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -18,6 +20,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -1727,48 +1730,61 @@ private fun BottomControlRow(
         }
 
         // 4. Spacebar - Tap for space; swipe left/right to switch language
-        var totalDragX by remember { mutableStateOf(0f) }
+        // 4. Spacebar - Tap for space; swipe left/right to switch language (ultra-responsive unified gesture)
+        var isSpacePressed by remember { mutableStateOf(false) }
+        val currentOnSpace by rememberUpdatedState(onSpace)
+        val currentOnSwitchLanguage by rememberUpdatedState(onSwitchLanguage)
+
         Box(
             modifier = Modifier
                 .weight(3.4f)
                 .height(keyHeight)
                 .padding(horizontal = 1.5.dp, vertical = 2.dp)
                 .shadow(
-                    elevation = 1.dp,
+                    elevation = if (isSpacePressed) 0.5.dp else 1.dp,
                     shape = RoundedCornerShape(6.dp),
                     ambientColor = Color.Black.copy(alpha = 0.3f),
                     spotColor = Color.Black.copy(alpha = 0.3f)
                 )
                 .clip(RoundedCornerShape(6.dp))
-                .background(colorScheme.keyBackground)
-                .pointerInput(Unit) {
-                    detectDragGestures(
-                        onDrag = { change, dragAmount ->
-                            change.consume()
-                            totalDragX += dragAmount.x
-                            if (totalDragX > 35f) {
-                                if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
-                                onSwitchLanguage()
-                                totalDragX = 0f
-                            } else if (totalDragX < -35f) {
-                                if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
-                                onSwitchLanguage()
-                                totalDragX = 0f
+                .background(if (isSpacePressed) colorScheme.accent.copy(alpha = 0.35f) else colorScheme.keyBackground)
+                .pointerInput(spacebarLanguageSwitch, hapticEnabled, soundEnabled) {
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        isSpacePressed = true
+                        if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
+                        if (soundEnabled) view.playSoundEffect(SoundEffectConstants.CLICK)
+
+                        var totalDragX = 0f
+                        var didSwipeLang = false
+
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                            if (!change.pressed) {
+                                change.consume()
+                                break
                             }
-                        },
-                        onDragEnd = { totalDragX = 0f }
-                    )
-                }
-                .clickable {
-                    if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
-                    if (soundEnabled) view.playSoundEffect(SoundEffectConstants.CLICK)
-                    onSpace()
+                            val dragAmountX = change.position.x - down.position.x
+                            totalDragX = dragAmountX
+                            if (spacebarLanguageSwitch && !didSwipeLang && (totalDragX > 40f || totalDragX < -40f)) {
+                                didSwipeLang = true
+                                if (hapticEnabled) HapticHelper.performKeyHaptic(context, view, "Medium")
+                                currentOnSwitchLanguage()
+                            }
+                        }
+
+                        isSpacePressed = false
+                        if (!didSwipeLang) {
+                            currentOnSpace()
+                        }
+                    }
                 },
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = spaceLabel,
-                color = colorScheme.keyText.copy(alpha = 0.65f),
+                color = colorScheme.keyText.copy(alpha = 0.75f),
                 fontSize = 12.5.sp,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1
@@ -1809,13 +1825,15 @@ private fun BottomControlRow(
         val currentOnEnter by rememberUpdatedState(onEnter)
         val currentOnLongPressEnter by rememberUpdatedState(onLongPressEnter)
         val currentOnOpenTranslate by rememberUpdatedState(onOpenTranslate)
+        val coroutineScope = rememberCoroutineScope()
+
         Box(
             modifier = Modifier
                 .weight(1.15f)
                 .height(keyHeight)
                 .padding(horizontal = 1.5.dp, vertical = 2.dp)
                 .shadow(
-                    elevation = 1.dp,
+                    elevation = if (isEnterPressed) 0.5.dp else 1.dp,
                     shape = RoundedCornerShape(6.dp),
                     ambientColor = Color.Black.copy(alpha = 0.3f),
                     spotColor = Color.Black.copy(alpha = 0.3f)
@@ -1823,15 +1841,16 @@ private fun BottomControlRow(
                 .clip(RoundedCornerShape(6.dp))
                 .background(if (isEnterPressed) colorScheme.accent.copy(alpha = 0.75f) else colorScheme.accent)
                 .pointerInput(hapticEnabled, soundEnabled) {
-                    detectTapGestures(
-                        onPress = {
-                            isEnterPressed = true
-                            if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
-                            if (soundEnabled) view.playSoundEffect(SoundEffectConstants.CLICK)
-                            tryAwaitRelease()
-                            isEnterPressed = false
-                        },
-                        onLongPress = {
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        isEnterPressed = true
+                        if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
+                        if (soundEnabled) view.playSoundEffect(SoundEffectConstants.CLICK)
+
+                        var isLongPress = false
+                        val longPressJob = coroutineScope.launch {
+                            delay(350L)
+                            isLongPress = true
                             if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
                             if (soundEnabled) view.playSoundEffect(SoundEffectConstants.CLICK)
                             if (currentOnLongPressEnter != null) {
@@ -1839,11 +1858,24 @@ private fun BottomControlRow(
                             } else if (currentOnOpenTranslate != null) {
                                 currentOnOpenTranslate?.invoke()
                             }
-                        },
-                        onTap = {
+                        }
+
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                            if (!change.pressed) {
+                                change.consume()
+                                break
+                            }
+                        }
+
+                        longPressJob.cancel()
+                        isEnterPressed = false
+
+                        if (!isLongPress) {
                             currentOnEnter()
                         }
-                    )
+                    }
                 },
             contentAlignment = Alignment.Center
         ) {

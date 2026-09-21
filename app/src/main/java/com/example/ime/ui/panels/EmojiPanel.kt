@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.KeyboardProApp
 import com.example.engine.EmojiData
+import kotlinx.coroutines.launch
 import com.example.ime.theme.KeyboardColorScheme
 import com.example.ime.util.HapticHelper
 
@@ -61,6 +62,8 @@ fun EmojiPanel(
             EmojiData.categories.find { it.id == selectedCategoryId }?.emojis ?: emptyList()
         }
     }
+
+    val coroutineScope = rememberCoroutineScope()
 
     Column(
         modifier = modifier
@@ -212,9 +215,11 @@ fun EmojiPanel(
                         .clip(RoundedCornerShape(8.dp))
                         .clickable {
                             HapticHelper.performKeyHaptic(context, view)
-                            prefs.addRecentEmoji(emoji)
-                            recentEmojis = prefs.getRecentEmojis()
                             onEmojiClick(emoji)
+                            recentEmojis = (listOf(emoji) + recentEmojis.filter { it != emoji }).take(30)
+                            coroutineScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                                prefs.addRecentEmoji(emoji)
+                            }
                         },
                     contentAlignment = Alignment.Center
                 ) {

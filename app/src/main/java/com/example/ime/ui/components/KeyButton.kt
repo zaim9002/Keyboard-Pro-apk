@@ -64,6 +64,7 @@ fun KeyButton(
 ) {
     val view = LocalView.current
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     var isPressed by remember { mutableStateOf(false) }
     var keyCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
 
@@ -71,43 +72,53 @@ fun KeyButton(
     val currentOnLongClick by rememberUpdatedState(onLongClick)
     val currentOnLongClickWithCoords by rememberUpdatedState(onLongClickWithCoords)
 
+    val hasLongClick = currentOnLongClickWithCoords != null || currentOnLongClick != null
+
     val bgColor = if (isSpecial) {
         if (isPressed) colorScheme.specialKeyBackground.copy(alpha = 0.8f) else colorScheme.specialKeyBackground
     } else {
-        if (isPressed) colorScheme.accent.copy(alpha = 0.4f) else colorScheme.keyBackground
+        if (isPressed) colorScheme.accent.copy(alpha = 0.35f) else colorScheme.keyBackground
     }
     val textColor = if (isSpecial) colorScheme.specialKeyText else colorScheme.keyText
 
-    val hasLongClick = currentOnLongClickWithCoords != null || currentOnLongClick != null
+    val baseModifier = modifier
+        .padding(horizontal = 1.5.dp, vertical = 2.dp)
+        .height(height)
+
+    val positionedModifier = if (hasLongClick) {
+        baseModifier.onGloballyPositioned { keyCoordinates = it }
+    } else {
+        baseModifier
+    }
 
     Box(
-        modifier = modifier
-            .padding(horizontal = 1.5.dp, vertical = 2.dp)
-            .height(height)
-            .onGloballyPositioned { keyCoordinates = it }
+        modifier = positionedModifier
             .shadow(
-                elevation = 1.dp,
+                elevation = if (isPressed) 0.5.dp else 1.2.dp,
                 shape = KeyDefaultShape,
                 ambientColor = KeyShadowColor,
                 spotColor = KeyShadowColor
             )
             .clip(KeyDefaultShape)
             .background(bgColor)
-            .pointerInput(text, hapticEnabled, soundEnabled, hapticIntensity, hasLongClick) {
-                detectTapGestures(
-                    onPress = {
-                        isPressed = true
-                        if (hapticEnabled) {
-                            HapticHelper.performKeyHaptic(context, view, hapticIntensity)
-                        }
-                        if (soundEnabled) {
-                            view.playSoundEffect(SoundEffectConstants.CLICK)
-                        }
-                        tryAwaitRelease()
-                        isPressed = false
-                    },
-                    onLongPress = if (hasLongClick) {
-                        {
+            .pointerInput(hasLongClick, hapticEnabled, soundEnabled, hapticIntensity) {
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    isPressed = true
+
+                    // 1. Immediate touch feedback (haptic & audio)
+                    if (hapticEnabled) {
+                        HapticHelper.performKeyHaptic(context, view, hapticIntensity)
+                    }
+                    if (soundEnabled) {
+                        view.playSoundEffect(SoundEffectConstants.CLICK)
+                    }
+
+                    var isLongTriggered = false
+                    val longPressJob: Job? = if (hasLongClick) {
+                        coroutineScope.launch {
+                            delay(350L)
+                            isLongTriggered = true
                             if (hapticEnabled) {
                                 HapticHelper.performKeyHaptic(context, view, hapticIntensity)
                             }
@@ -115,11 +126,34 @@ fun KeyButton(
                                 currentOnLongClickWithCoords?.invoke(coords)
                             } ?: currentOnLongClick?.invoke()
                         }
-                    } else null,
-                    onTap = {
+                    } else null
+
+                    // 2. Track pointer until release
+                    var isCancelled = false
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                        if (!change.pressed) {
+                            change.consume()
+                            break
+                        }
+                        // If finger moved far away from key (> 65px), cancel
+                        val delta = change.position - down.position
+                        if (delta.getDistance() > 65f) {
+                            isCancelled = true
+                            longPressJob?.cancel()
+                            break
+                        }
+                    }
+
+                    longPressJob?.cancel()
+                    isPressed = false
+
+                    // 3. Immediately emit click if not cancelled and not long-clicked
+                    if (!isCancelled && !isLongTriggered) {
                         currentOnClick()
                     }
-                )
+                }
             },
         contentAlignment = Alignment.Center
     ) {
@@ -128,7 +162,7 @@ fun KeyButton(
             text = text,
             color = textColor,
             fontSize = fontSize,
-            fontWeight = if (isSpecial) FontWeight.Medium else FontWeight.Normal,
+            fontWeight = if (isSpecial || isPressed) FontWeight.SemiBold else FontWeight.Normal,
             textAlign = TextAlign.Center
         )
 
@@ -143,33 +177,6 @@ fun KeyButton(
                     .align(Alignment.TopEnd)
                     .padding(top = 1.5.dp, end = 3.dp)
             )
-        }
-
-        // Key Press Preview Box (Consistent rectangular preview directly above the key)
-        if (showPreview && isPressed && !isSpecial && text.isNotBlank() && text.length <= 2) {
-            Popup(
-                alignment = Alignment.TopCenter,
-                offset = IntOffset(0, -110),
-                properties = PopupProperties(focusable = false)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(width = 46.dp, height = 52.dp)
-                        .shadow(6.dp, RoundedCornerShape(8.dp))
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(colorScheme.keyBackground)
-                        .border(1.dp, colorScheme.accent.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = text,
-                        color = colorScheme.keyText,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
         }
     }
 }

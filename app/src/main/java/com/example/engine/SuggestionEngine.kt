@@ -131,6 +131,9 @@ class SuggestionEngine(
         "thier" to "their", "becuase" to "because", "beleive" to "believe", "acheive" to "achieve"
     )
 
+    private val arabicDictionarySet by lazy { arabicDictionary.toHashSet() }
+    private val englishDictionarySet by lazy { englishDictionary.toHashSet() }
+
     /**
      * Check if a word is a known typo and get its accurate correction.
      */
@@ -144,10 +147,15 @@ class SuggestionEngine(
             englishTypoMap[clean.lowercase()]?.let { return it }
         }
 
-        // Fuzzy 1-character edit distance check if word is long enough and not in dictionary
+        // Fast bounded 1-character edit distance check
+        val dictSet = if (isArabic) arabicDictionarySet else englishDictionarySet
         val dict = if (isArabic) arabicDictionary else englishDictionary
-        if (clean.length >= 4 && !dict.contains(clean)) {
-            val candidate = dict.firstOrNull { editDistance(it, clean) == 1 }
+        if (clean.length >= 4 && !dictSet.contains(clean)) {
+            val firstChar = clean[0]
+            val candidate = dict.asSequence()
+                .filter { it.isNotEmpty() && it[0] == firstChar && kotlin.math.abs(it.length - clean.length) <= 1 }
+                .take(40)
+                .firstOrNull { editDistance(it, clean) == 1 }
             if (candidate != null) return candidate
         }
 
@@ -158,11 +166,27 @@ class SuggestionEngine(
      * Simple Levenshtein distance for fuzzy matching
      */
     private fun editDistance(s1: String, s2: String): Int {
-        val dp = Array(s1.length + 1) { IntArray(s2.length + 1) }
-        for (i in 0..s1.length) dp[i][0] = i
-        for (j in 0..s2.length) dp[0][j] = j
-        for (i in 1..s1.length) {
-            for (j in 1..s2.length) {
+        if (s1 == s2) return 0
+        val len1 = s1.length
+        val len2 = s2.length
+        if (kotlin.math.abs(len1 - len2) > 1) return 2
+
+        var diff = 0
+        if (len1 == len2) {
+            for (i in 0 until len1) {
+                if (s1[i] != s2[i]) {
+                    diff++
+                    if (diff > 1) return diff
+                }
+            }
+            return diff
+        }
+
+        val dp = Array(len1 + 1) { IntArray(len2 + 1) }
+        for (i in 0..len1) dp[i][0] = i
+        for (j in 0..len2) dp[0][j] = j
+        for (i in 1..len1) {
+            for (j in 1..len2) {
                 val cost = if (s1[i - 1] == s2[j - 1]) 0 else 1
                 dp[i][j] = minOf(
                     dp[i - 1][j] + 1,
@@ -171,7 +195,7 @@ class SuggestionEngine(
                 )
             }
         }
-        return dp[s1.length][s2.length]
+        return dp[len1][len2]
     }
 
     /**
@@ -180,8 +204,8 @@ class SuggestionEngine(
     suspend fun isWordKnown(word: String, isArabic: Boolean): Boolean {
         val clean = word.trim()
         if (clean.isEmpty()) return true
-        val dict = if (isArabic) arabicDictionary else englishDictionary
-        if (dict.contains(clean)) return true
+        val dictSet = if (isArabic) arabicDictionarySet else englishDictionarySet
+        if (dictSet.contains(clean)) return true
         val userMatches = userWordRepository.getMatchingWords(clean)
         return userMatches.any { it.equals(clean, ignoreCase = true) }
     }
@@ -234,19 +258,21 @@ class SuggestionEngine(
         val userMatches = userWordRepository.getMatchingWords(cleanCurrent)
         suggestions.addAll(userMatches)
 
-        // 5. Word completion from dictionary matching prefix
+        // 5. Word completion from dictionary matching prefix (Terminates early)
         val dict = if (isArabic) arabicDictionary else englishDictionary
-        val prefixMatches = dict.filter {
-            it.startsWith(cleanCurrent, ignoreCase = true) && !it.equals(cleanCurrent, ignoreCase = true)
-        }
-        suggestions.addAll(prefixMatches.take(8))
+        val prefixMatches = dict.asSequence()
+            .filter { it.startsWith(cleanCurrent, ignoreCase = true) && !it.equals(cleanCurrent, ignoreCase = true) }
+            .take(8)
+            .toList()
+        suggestions.addAll(prefixMatches)
 
-        // 6. If still few suggestions, find words containing the substring or close matches
-        if (suggestions.size < 6) {
-            val containsMatches = dict.filter {
-                it.contains(cleanCurrent, ignoreCase = true) && !it.equals(cleanCurrent, ignoreCase = true)
-            }
-            suggestions.addAll(containsMatches.take(6))
+        // 6. If still few suggestions, find words containing the substring
+        if (suggestions.size < 5) {
+            val containsMatches = dict.asSequence()
+                .filter { it.contains(cleanCurrent, ignoreCase = true) && !it.equals(cleanCurrent, ignoreCase = true) }
+                .take(5)
+                .toList()
+            suggestions.addAll(containsMatches)
         }
 
         // Ensure current typed word is available if no direct exact match

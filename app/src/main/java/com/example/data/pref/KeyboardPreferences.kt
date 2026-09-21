@@ -162,9 +162,30 @@ class KeyboardPreferences(context: Context) {
             _oneHandedState.value = value
         }
 
+    private val cachedWordCount = java.util.concurrent.atomic.AtomicLong(prefs.getLong(KEY_WORD_COUNT, 0L))
+    private val pendingCountDelta = java.util.concurrent.atomic.AtomicInteger(0)
+
     var wordsTypedCount: Long
-        get() = prefs.getLong(KEY_WORD_COUNT, 0L)
-        set(value) = prefs.edit().putLong(KEY_WORD_COUNT, value).apply()
+        get() = cachedWordCount.get()
+        set(value) {
+            cachedWordCount.set(value)
+            prefs.edit().putLong(KEY_WORD_COUNT, value).apply()
+        }
+
+    fun incrementWordCount() {
+        if (!isIncognito) {
+            cachedWordCount.incrementAndGet()
+            if (pendingCountDelta.incrementAndGet() >= 20) {
+                flushWordCount()
+            }
+        }
+    }
+
+    fun flushWordCount() {
+        if (pendingCountDelta.getAndSet(0) > 0) {
+            prefs.edit().putLong(KEY_WORD_COUNT, cachedWordCount.get()).apply()
+        }
+    }
 
     var showSuggestions: Boolean
         get() = prefs.getBoolean(KEY_SHOW_SUGGESTIONS, true)
@@ -202,12 +223,6 @@ class KeyboardPreferences(context: Context) {
     var targetTranslateLang: String
         get() = translateTargetLang
         set(value) { translateTargetLang = value }
-
-    fun incrementWordCount() {
-        if (!isIncognito) {
-            wordsTypedCount = wordsTypedCount + 1
-        }
-    }
 
     companion object {
         private const val PREFS_NAME = "keyboard_pro_prefs"

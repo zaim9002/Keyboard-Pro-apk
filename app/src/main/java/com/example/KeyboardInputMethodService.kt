@@ -153,6 +153,7 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
 
     override fun onDestroy() {
         super.onDestroy()
+        prefs.flushWordCount()
         try {
             clipManager?.removePrimaryClipChangedListener(clipListener)
         } catch (e: Throwable) {}
@@ -940,5 +941,15 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
             speechRecognizer?.stopListening()
         } catch (e: Throwable) {}
         voiceStatusText = "تم إيقاف الاستماع"
+    }
+
+    override fun onFinishInputView(finishingInput: Boolean) {
+        super.onFinishInputView(finishingInput)
+        prefs.flushWordCount()
+    }
+
+    override fun onFinishInput() {
+        super.onFinishInput()
+        prefs.flushWordCount()
     }
 }
