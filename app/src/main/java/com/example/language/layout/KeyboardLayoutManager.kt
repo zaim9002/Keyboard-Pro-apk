@@ -20,7 +20,7 @@ object KeyboardLayoutManager {
 
     fun getLayout(langId: String, layoutFamily: LayoutFamily): KeyboardLayoutData {
         return when {
-            langId == "ar" || layoutFamily == LayoutFamily.ARABIC -> getArabicLayout()
+            langId.startsWith("ar") || layoutFamily == LayoutFamily.ARABIC -> getArabicLayout(langId)
             langId == "fr" || layoutFamily == LayoutFamily.AZERTY -> getAzertyLayout()
             langId == "de" || layoutFamily == LayoutFamily.QWERTZ -> getQwertzLayout()
             langId == "ru" || langId == "uk" || langId == "bg" || langId == "sr" || layoutFamily == LayoutFamily.CYRILLIC -> getCyrillicLayout(langId)
@@ -37,14 +37,31 @@ object KeyboardLayoutManager {
         }
     }
 
-    private fun getArabicLayout(): KeyboardLayoutData {
+    private fun getArabicLayout(langId: String = "ar"): KeyboardLayoutData {
+        val label = when (langId) {
+            "ar-sa" -> "العربية (السعودية)"
+            "ar-eg" -> "العربية (مصر)"
+            "ar-sy" -> "العربية (الشام)"
+            "ar-ae" -> "العربية (الخليج)"
+            "ar-ma" -> "العربية (المغرب)"
+            "ar-dz" -> "العربية (الجزائر)"
+            "ar-tn" -> "العربية (تونس)"
+            "ar-iq" -> "العربية (العراق)"
+            "ar-jo" -> "العربية (الأردن)"
+            "ar-lb" -> "العربية (لبنان)"
+            "ar-kw" -> "العربية (الكويت)"
+            "ar-ps" -> "العربية (فلسطين)"
+            "ar-sd" -> "العربية (السودان)"
+            "ar-ye" -> "العربية (اليمن)"
+            else -> "العربية"
+        }
         return KeyboardLayoutData(
-            id = "ar",
+            id = langId,
             row1 = ArabicLanguagePack.row1,
             row2 = ArabicLanguagePack.row2,
             row3 = ArabicLanguagePack.row3,
             numberRow = ArabicLanguagePack.arabicNumerals,
-            spaceLabel = "مسافة",
+            spaceLabel = label,
             isRtl = true,
             hasShift = false // Arabic has Tashkeel toggle
         )
@@ -53,6 +70,10 @@ object KeyboardLayoutManager {
     private fun getStandardQwertyLayout(langId: String): KeyboardLayoutData {
         val label = when (langId) {
             "en" -> "English"
+            "en-us" -> "English (US)"
+            "en-gb" -> "English (UK)"
+            "en-ca" -> "English (Canada)"
+            "en-au" -> "English (Australia)"
             "id" -> "Indonesia"
             "nl" -> "Nederlands"
             "it" -> "Italiano"

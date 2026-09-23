@@ -45,6 +45,9 @@ fun SettingsScreen(
     var aiTone by remember { mutableStateOf(prefs.aiTone) }
     var emojiStyle by remember { mutableStateOf(prefs.emojiStyle) }
     var geminiApiKey by remember { mutableStateOf(prefs.geminiApiKey) }
+    var showKeyPreview by remember { mutableStateOf(prefs.showKeyPreview) }
+    var bottomChinPadding by remember { mutableStateOf(prefs.bottomChinPadding) }
+    var showToolbarUndoRedo by remember { mutableStateOf(prefs.showToolbarUndoRedo) }
 
     var showResetDialog by remember { mutableStateOf(false) }
     var showApiKeyDialog by remember { mutableStateOf(false) }
@@ -259,6 +262,61 @@ fun SettingsScreen(
                         }
                     }
                 }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                // Key Preview Switch
+                SettingsSwitchRow(
+                    title = "معاينة المفتاح أثناء الكتابة (Key Popup)",
+                    subtitle = "إظهار بالون منبثق مكبّر للحرف المكتوب فور لمس المفتاح",
+                    checked = showKeyPreview,
+                    onCheckedChange = {
+                        showKeyPreview = it
+                        prefs.showKeyPreview = it
+                    }
+                )
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                // Bottom Chin / Navigation Bar Clearance
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("رفع الكيبورد عن شريط التنقل السفلي", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    Text("ضبط المسافة الآمنة لعدم تداخل الكيبورد مع أزرار التنقل وإيماءات Android السفلية", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        listOf(
+                            "AUTO" to "تلقائي (موصى به)",
+                            "SMALL" to "صغيرة (16dp)",
+                            "MEDIUM" to "متوسطة (28dp)",
+                            "LARGE" to "كبيرة (40dp)",
+                            "NONE" to "بدون مسافة"
+                        ).forEach { (pad, label) ->
+                            FilterChip(
+                                selected = bottomChinPadding == pad,
+                                onClick = {
+                                    bottomChinPadding = pad
+                                    prefs.bottomChinPadding = pad
+                                },
+                                label = { Text(label, fontSize = 11.sp) }
+                            )
+                        }
+                    }
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                // Toolbar Undo / Redo buttons
+                SettingsSwitchRow(
+                    title = "أزرار التراجع والإعادة والبحث بالشريط",
+                    subtitle = "إظهار أزرار Undo و Redo وحذف الكل والبحث في شريط الأدوات العلوي",
+                    checked = showToolbarUndoRedo,
+                    onCheckedChange = {
+                        showToolbarUndoRedo = it
+                        prefs.showToolbarUndoRedo = it
+                    }
+                )
             }
         }
 

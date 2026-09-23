@@ -11,22 +11,201 @@ class LanguageRepository(private val cache: LanguageCache) {
 
     // Master catalog of all supported languages
     private val masterCatalog = listOf(
+        // === Arabic variants (العربية الفصحى ولهجاتها المستقلة) ===
         LanguageInfo(
             id = "ar",
-            nameArabic = "العربية",
-            nativeName = "العربية",
-            flag = "🇸🇦",
-            sizeMb = 2.4,
+            nameArabic = "العربية (الفصحى)",
+            nativeName = "العربية الفصحى",
+            flag = "🌐",
+            sizeMb = 0.0,
             isBuiltIn = true,
             layoutFamily = LayoutFamily.ARABIC,
             isRtl = true
         ),
         LanguageInfo(
+            id = "ar-sa",
+            nameArabic = "العربية (السعودية)",
+            nativeName = "العربية (السعودية)",
+            flag = "🇸🇦",
+            sizeMb = 0.0,
+            isBuiltIn = true,
+            layoutFamily = LayoutFamily.ARABIC,
+            isRtl = true
+        ),
+        LanguageInfo(
+            id = "ar-eg",
+            nameArabic = "العربية (مصر)",
+            nativeName = "العربية (مصر)",
+            flag = "🇪🇬",
+            sizeMb = 0.0,
+            isBuiltIn = true,
+            layoutFamily = LayoutFamily.ARABIC,
+            isRtl = true
+        ),
+        LanguageInfo(
+            id = "ar-sy",
+            nameArabic = "العربية (بلاد الشام)",
+            nativeName = "العربية (سوريا والشام)",
+            flag = "🇸🇾",
+            sizeMb = 0.0,
+            isBuiltIn = true,
+            layoutFamily = LayoutFamily.ARABIC,
+            isRtl = true
+        ),
+        LanguageInfo(
+            id = "ar-ae",
+            nameArabic = "العربية (الخليج والإمارات)",
+            nativeName = "العربية (الخليج العربي)",
+            flag = "🇦🇪",
+            sizeMb = 0.0,
+            isBuiltIn = true,
+            layoutFamily = LayoutFamily.ARABIC,
+            isRtl = true
+        ),
+        LanguageInfo(
+            id = "ar-ma",
+            nameArabic = "العربية (المغرب)",
+            nativeName = "العربية (المغرب)",
+            flag = "🇲🇦",
+            sizeMb = 0.0,
+            isBuiltIn = true,
+            layoutFamily = LayoutFamily.ARABIC,
+            isRtl = true
+        ),
+        LanguageInfo(
+            id = "ar-dz",
+            nameArabic = "العربية (الجزائر)",
+            nativeName = "العربية (الجزائر)",
+            flag = "🇩🇿",
+            sizeMb = 0.0,
+            isBuiltIn = true,
+            layoutFamily = LayoutFamily.ARABIC,
+            isRtl = true
+        ),
+        LanguageInfo(
+            id = "ar-tn",
+            nameArabic = "العربية (تونس)",
+            nativeName = "العربية (تونس)",
+            flag = "🇹🇳",
+            sizeMb = 0.0,
+            isBuiltIn = true,
+            layoutFamily = LayoutFamily.ARABIC,
+            isRtl = true
+        ),
+        LanguageInfo(
+            id = "ar-iq",
+            nameArabic = "العربية (العراق)",
+            nativeName = "العربية (العراق)",
+            flag = "🇮🇶",
+            sizeMb = 0.0,
+            isBuiltIn = true,
+            layoutFamily = LayoutFamily.ARABIC,
+            isRtl = true
+        ),
+        LanguageInfo(
+            id = "ar-jo",
+            nameArabic = "العربية (الأردن)",
+            nativeName = "العربية (الأردن)",
+            flag = "🇯🇴",
+            sizeMb = 0.0,
+            isBuiltIn = true,
+            layoutFamily = LayoutFamily.ARABIC,
+            isRtl = true
+        ),
+        LanguageInfo(
+            id = "ar-lb",
+            nameArabic = "العربية (لبنان)",
+            nativeName = "العربية (لبنان)",
+            flag = "🇱🇧",
+            sizeMb = 0.0,
+            isBuiltIn = true,
+            layoutFamily = LayoutFamily.ARABIC,
+            isRtl = true
+        ),
+        LanguageInfo(
+            id = "ar-kw",
+            nameArabic = "العربية (الكويت)",
+            nativeName = "العربية (الكويت)",
+            flag = "🇰🇼",
+            sizeMb = 0.0,
+            isBuiltIn = true,
+            layoutFamily = LayoutFamily.ARABIC,
+            isRtl = true
+        ),
+        LanguageInfo(
+            id = "ar-ps",
+            nameArabic = "العربية (فلسطين)",
+            nativeName = "العربية (فلسطين)",
+            flag = "🇵🇸",
+            sizeMb = 0.0,
+            isBuiltIn = true,
+            layoutFamily = LayoutFamily.ARABIC,
+            isRtl = true
+        ),
+        LanguageInfo(
+            id = "ar-sd",
+            nameArabic = "العربية (السودان)",
+            nativeName = "العربية (السودان)",
+            flag = "🇸🇩",
+            sizeMb = 0.0,
+            isBuiltIn = true,
+            layoutFamily = LayoutFamily.ARABIC,
+            isRtl = true
+        ),
+        LanguageInfo(
+            id = "ar-ye",
+            nameArabic = "العربية (اليمن)",
+            nativeName = "العربية (اليمن)",
+            flag = "🇾🇪",
+            sizeMb = 0.0,
+            isBuiltIn = true,
+            layoutFamily = LayoutFamily.ARABIC,
+            isRtl = true
+        ),
+
+        // === English variants (الإنجليزية وخياراتها الإقليمية) ===
+        LanguageInfo(
             id = "en",
-            nameArabic = "الإنجليزية",
+            nameArabic = "الإنجليزية (العالمية)",
             nativeName = "English",
+            flag = "🌐",
+            sizeMb = 0.0,
+            isBuiltIn = true,
+            layoutFamily = LayoutFamily.QWERTY
+        ),
+        LanguageInfo(
+            id = "en-us",
+            nameArabic = "الإنجليزية (أمريكا)",
+            nativeName = "English (US)",
             flag = "🇺🇸",
-            sizeMb = 1.8,
+            sizeMb = 0.0,
+            isBuiltIn = true,
+            layoutFamily = LayoutFamily.QWERTY
+        ),
+        LanguageInfo(
+            id = "en-gb",
+            nameArabic = "الإنجليزية (بريطانيا)",
+            nativeName = "English (UK)",
+            flag = "🇬🇧",
+            sizeMb = 0.0,
+            isBuiltIn = true,
+            layoutFamily = LayoutFamily.QWERTY
+        ),
+        LanguageInfo(
+            id = "en-ca",
+            nameArabic = "الإنجليزية (كندا)",
+            nativeName = "English (Canada)",
+            flag = "🇨🇦",
+            sizeMb = 0.0,
+            isBuiltIn = true,
+            layoutFamily = LayoutFamily.QWERTY
+        ),
+        LanguageInfo(
+            id = "en-au",
+            nameArabic = "الإنجليزية (أستراليا)",
+            nativeName = "English (Australia)",
+            flag = "🇦🇺",
+            sizeMb = 0.0,
             isBuiltIn = true,
             layoutFamily = LayoutFamily.QWERTY
         ),
@@ -350,7 +529,7 @@ class LanguageRepository(private val cache: LanguageCache) {
     fun getAllLanguages(): Flow<List<LanguageInfo>> {
         return cache.installedLanguages.map { installedSet ->
             masterCatalog.map { lang ->
-                val isInstalled = installedSet.contains(lang.id) || lang.id == "ar"
+                val isInstalled = lang.isBuiltIn || lang.id.startsWith("ar") || lang.id.startsWith("en") || installedSet.contains(lang.id)
                 val installedVer = cache.getInstalledVersion(lang.id)
                 val status = when {
                     isInstalled && lang.version > installedVer && installedVer > 0 -> LanguagePackStatus.UPDATE_AVAILABLE
@@ -364,14 +543,14 @@ class LanguageRepository(private val cache: LanguageCache) {
 
     fun getLanguageById(id: String): LanguageInfo? {
         val lang = masterCatalog.find { it.id == id } ?: return null
-        val isInstalled = cache.isInstalled(id)
+        val isInstalled = lang.isBuiltIn || lang.id.startsWith("ar") || lang.id.startsWith("en") || cache.isInstalled(id)
         val status = if (isInstalled) LanguagePackStatus.INSTALLED else LanguagePackStatus.NOT_INSTALLED
         return lang.copy(status = status)
     }
 
     fun getInstalledLanguagesSync(): List<LanguageInfo> {
         val installedSet = cache.installedLanguages.value
-        return masterCatalog.filter { installedSet.contains(it.id) || it.id == "ar" }
+        return masterCatalog.filter { it.isBuiltIn || it.id.startsWith("ar") || it.id.startsWith("en") || installedSet.contains(it.id) }
     }
 
     fun getEnabledLanguages(enabledIds: Set<String>): List<LanguageInfo> {

@@ -234,6 +234,9 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
             val autoTranslateOnEnter by prefs.autoTranslateOnEnterState.collectAsState()
             val spacebarLangSwitch by prefs.spacebarLanguageSwitchState.collectAsState()
             val oneHandedModePref by prefs.oneHandedState.collectAsState()
+            val showKeyPreview by prefs.keyPreviewState.collectAsState()
+            val bottomChinPadding by prefs.bottomChinPaddingState.collectAsState()
+            val showToolbarUndoRedo by prefs.toolbarUndoRedoState.collectAsState()
             val langManager = (applicationContext as? KeyboardProApp)?.languageManager
 
             val effectiveIncognito = isIncognitoPref || isPasswordField
@@ -345,6 +348,13 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
                 },
                 onToggleOneHanded = { mode ->
                     prefs.oneHandedMode = mode
+                },
+                showKeyPreview = showKeyPreview,
+                bottomChinPadding = bottomChinPadding,
+                showToolbarUndoRedo = showToolbarUndoRedo,
+                onHideKeyboard = { requestHideSelf(0) },
+                onSearch = {
+                    currentInputConnection?.performEditorAction(EditorInfo.IME_ACTION_SEARCH)
                 }
             )
         }

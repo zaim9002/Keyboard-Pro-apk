@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -177,6 +178,44 @@ fun KeyButton(
                     .align(Alignment.TopEnd)
                     .padding(top = 1.5.dp, end = 3.dp)
             )
+        }
+
+        // Key Preview Popup (انبثاق المفتاح أثناء الكتابة)
+        if (showPreview && isPressed && text.isNotBlank() && !isSpecial) {
+            val density = LocalDensity.current
+            val yOffsetPx = remember(height, density) {
+                with(density) { -(height + 10.dp).roundToPx() }
+            }
+            Popup(
+                alignment = Alignment.TopCenter,
+                offset = IntOffset(0, yOffsetPx),
+                properties = PopupProperties(
+                    focusable = false,
+                    dismissOnBackPress = false,
+                    dismissOnClickOutside = false,
+                    clippingEnabled = true
+                )
+            ) {
+                Box(
+                    modifier = Modifier
+                        .widthIn(min = 48.dp)
+                        .height(52.dp)
+                        .shadow(6.dp, RoundedCornerShape(10.dp))
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(colorScheme.keyBackground)
+                        .border(1.5.dp, colorScheme.accent.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
+                        .padding(horizontal = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = text,
+                        color = colorScheme.keyText,
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
         }
     }
 }

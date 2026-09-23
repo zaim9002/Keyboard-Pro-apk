@@ -143,7 +143,12 @@ fun KeyboardScreen(
     onAddWordToDictionary: (String) -> Unit = {},
     onDeleteUserWord: (Long) -> Unit = {},
     onLongPressEnter: (() -> Unit)? = null,
-    onTranslateNow: ((String, String) -> Unit)? = null
+    onTranslateNow: ((String, String) -> Unit)? = null,
+    showKeyPreview: Boolean = true,
+    bottomChinPadding: String = "AUTO",
+    showToolbarUndoRedo: Boolean = true,
+    onHideKeyboard: (() -> Unit)? = null,
+    onSearch: (() -> Unit)? = null
 ) {
     var layoutMode by remember { mutableStateOf(LayoutMode.ALPHA) }
     var shiftState by remember { mutableStateOf(ShiftState.OFF) }
@@ -216,6 +221,7 @@ fun KeyboardScreen(
             oneHandedMode = oneHandedMode,
             showTermuxKeys = showTermuxKeys,
             showQuickSnippets = showQuickSnippets,
+            showUndoRedo = showToolbarUndoRedo,
             colorScheme = colorScheme,
             onPanelSelect = { panel ->
                 if (panel == KeyboardPanel.TRANSLATE) {
@@ -227,6 +233,10 @@ fun KeyboardScreen(
             },
             onSwitchLanguage = onSwitchLanguage,
             onOpenSettings = onOpenSettings,
+            onUndo = onUndo,
+            onRedo = onRedo,
+            onDelete = onDelete,
+            onSearch = onSearch,
             onToggleOneHanded = onToggleOneHanded,
             onToggleTermuxKeys = { showTermuxKeys = !showTermuxKeys },
             onToggleQuickSnippets = { showQuickSnippets = !showQuickSnippets }
@@ -526,7 +536,16 @@ fun KeyboardScreen(
                                  // Dynamic Layout Rows based on Language & Mode
                                 when (layoutMode) {
                                     LayoutMode.ALPHA -> {
-                                        if (currentLanguage == "ar") {
+                                        val isArabic = currentLanguage.startsWith("ar")
+                                        if (isArabic) {
+                                            val arabicSpaceLabel = remember(currentLanguage) {
+                                                try {
+                                                    val langInfo = KeyboardProApp.instance.languageManager.getLanguageInfo(currentLanguage)
+                                                    langInfo?.nameArabic ?: "العربية"
+                                                } catch (e: Throwable) {
+                                                    "العربية"
+                                                }
+                                            }
                                             ArabicKeyboardLayout(
                                                 colorScheme = colorScheme,
                                                 keyHeight = keyHeight,
@@ -551,7 +570,9 @@ fun KeyboardScreen(
                                                 onOpenTranslate = { isInlineTranslateOpen = !isInlineTranslateOpen },
                                                 onToggleTashkeel = { showTashkeelRow = !showTashkeelRow },
                                                 onMoveCursor = onMoveCursor,
-                                                onLongPressKey = handleLongPressKey
+                                                onLongPressKey = handleLongPressKey,
+                                                showKeyPreview = showKeyPreview,
+                                                spaceLabel = arabicSpaceLabel
                                             )
                                         } else {
                                             val layoutData = remember(currentLanguage) {
@@ -599,7 +620,8 @@ fun KeyboardScreen(
                                                 onSwitchLanguage = onSwitchLanguage,
                                                 onLongPressLanguage = { showLanguagePicker = true },
                                                 onMoveCursor = onMoveCursor,
-                                                onLongPressKey = handleLongPressKey
+                                                onLongPressKey = handleLongPressKey,
+                                                showKeyPreview = showKeyPreview
                                             )
                                         }
                                     }
@@ -803,6 +825,101 @@ fun KeyboardScreen(
                 )
             }
         }
+
+        // Safe Bottom Chin (المساحة الآمنة السفلية لرفع لوحة المفاتيح فوق شريط النظام/التنقل)
+        val context = LocalContext.current
+        val systemNavHeightDp = remember {
+            val res = context.resources
+            val resourceId = res.getIdentifier("navigation_bar_height", "dimen", "android")
+            if (resourceId > 0) {
+                val px = res.getDimensionPixelSize(resourceId)
+                (px / res.displayMetrics.density).dp
+            } else {
+                0.dp
+            }
+        }
+
+        val effectiveBottomPaddingDp = when (bottomChinPadding) {
+            "NONE" -> 0.dp
+            "SMALL" -> 16.dp
+            "MEDIUM" -> 28.dp
+            "LARGE" -> 40.dp
+            else -> {
+                // AUTO: adaptive height based on navigation bar, at least 22dp for gesture nav safety
+                if (systemNavHeightDp > 0.dp) {
+                    systemNavHeightDp.coerceIn(20.dp, 44.dp)
+                } else {
+                    22.dp
+                }
+            }
+        }
+
+        if (effectiveBottomPaddingDp > 0.dp) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(effectiveBottomPaddingDp)
+                    .background(colorScheme.background),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Hide Keyboard button (Gboard / Samsung style)
+                    if (onHideKeyboard != null) {
+                        IconButton(
+                            onClick = onHideKeyboard,
+                            modifier = Modifier.size(effectiveBottomPaddingDp.coerceAtMost(36.dp))
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.KeyboardHide,
+                                contentDescription = "إخفاء لوحة المفاتيح",
+                                tint = colorScheme.specialKeyText.copy(alpha = 0.55f),
+                                modifier = Modifier.size(19.dp)
+                            )
+                        }
+                    } else {
+                        Spacer(modifier = Modifier.size(24.dp))
+                    }
+
+                    // Centered elegant language badge
+                    val isArabic = currentLanguage.startsWith("ar")
+                    val langShort = if (isArabic) "عربي" else currentLanguage.take(2).uppercase()
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(colorScheme.keyBackground.copy(alpha = 0.65f))
+                            .clickable { onSwitchLanguage() }
+                            .padding(horizontal = 14.dp, vertical = 2.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = langShort,
+                            color = colorScheme.keyText.copy(alpha = 0.75f),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    // Quick Switch Language icon button
+                    IconButton(
+                        onClick = onSwitchLanguage,
+                        modifier = Modifier.size(effectiveBottomPaddingDp.coerceAtMost(36.dp))
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Language,
+                            contentDescription = "تغيير اللغة",
+                            tint = colorScheme.specialKeyText.copy(alpha = 0.55f),
+                            modifier = Modifier.size(19.dp)
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -880,7 +997,9 @@ private fun ArabicKeyboardLayout(
     onToggleTashkeel: () -> Unit,
     onMoveCursor: (Int) -> Unit,
     onLongPressKey: (KeyModel, LayoutCoordinates?) -> Unit,
-    onOpenTranslate: (() -> Unit)? = null
+    onOpenTranslate: (() -> Unit)? = null,
+    showKeyPreview: Boolean = true,
+    spaceLabel: String = "العربية"
 ) {
     // Row 1 (ض ص ث ق ف غ ع ه خ ح ج)
     Row(modifier = Modifier.fillMaxWidth()) {
@@ -893,6 +1012,7 @@ private fun ArabicKeyboardLayout(
                 colorScheme = colorScheme,
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
+                showPreview = showKeyPreview,
                 modifier = Modifier.weight(key.weight),
                 onLongClickWithCoords = { coords -> onLongPressKey(key, coords) },
                 onLongClick = { onLongPressKey(key, null) }
@@ -913,6 +1033,7 @@ private fun ArabicKeyboardLayout(
                 colorScheme = colorScheme,
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
+                showPreview = showKeyPreview,
                 modifier = Modifier.weight(key.weight),
                 onLongClickWithCoords = { coords -> onLongPressKey(key, coords) },
                 onLongClick = { onLongPressKey(key, null) }
@@ -933,6 +1054,7 @@ private fun ArabicKeyboardLayout(
                 colorScheme = colorScheme,
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
+                showPreview = showKeyPreview,
                 modifier = Modifier.weight(1f),
                 onLongClickWithCoords = { coords -> onLongPressKey(key, coords) },
                 onLongClick = { onLongPressKey(key, null) }
@@ -958,7 +1080,7 @@ private fun ArabicKeyboardLayout(
     BottomControlRow(
         modeLabel = "١٢٣",
         langLabel = "🌐",
-        spaceLabel = "العربية",
+        spaceLabel = spaceLabel,
         commaLabel = "،",
         colorScheme = colorScheme,
         keyHeight = keyHeight,
@@ -1009,7 +1131,8 @@ private fun DynamicKeyboardLayout(
     onLongPressLanguage: (() -> Unit)? = null,
     onMoveCursor: (Int) -> Unit,
     onLongPressKey: (KeyModel, LayoutCoordinates?) -> Unit,
-    onOpenTranslate: (() -> Unit)? = null
+    onOpenTranslate: (() -> Unit)? = null,
+    showKeyPreview: Boolean = true
 ) {
     val isUpper = shiftState != ShiftState.OFF
 
@@ -1025,6 +1148,7 @@ private fun DynamicKeyboardLayout(
                 colorScheme = colorScheme,
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
+                showPreview = showKeyPreview,
                 modifier = Modifier.weight(key.weight),
                 onLongClickWithCoords = { coords -> onLongPressKey(key, coords) },
                 onLongClick = { onLongPressKey(key, null) }
@@ -1045,6 +1169,7 @@ private fun DynamicKeyboardLayout(
                 colorScheme = colorScheme,
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
+                showPreview = showKeyPreview,
                 modifier = Modifier.weight(key.weight),
                 onLongClickWithCoords = { coords -> onLongPressKey(key, coords) },
                 onLongClick = { onLongPressKey(key, null) }
@@ -1084,6 +1209,7 @@ private fun DynamicKeyboardLayout(
                 colorScheme = colorScheme,
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
+                showPreview = showKeyPreview,
                 modifier = Modifier.weight(key.weight),
                 onLongClickWithCoords = { coords -> onLongPressKey(key, coords) },
                 onLongClick = { onLongPressKey(key, null) }

@@ -50,6 +50,37 @@ class KeyboardPreferences(context: Context) {
     private val _customKeyColorState = MutableStateFlow(customKeyColor)
     val customKeyColorState: StateFlow<String> = _customKeyColorState.asStateFlow()
 
+    private val _keyPreviewState = MutableStateFlow(showKeyPreview)
+    val keyPreviewState: StateFlow<Boolean> = _keyPreviewState.asStateFlow()
+
+    private val _bottomChinState = MutableStateFlow(bottomChinPadding)
+    val bottomChinState: StateFlow<String> = _bottomChinState.asStateFlow()
+    val bottomChinPaddingState: StateFlow<String> = _bottomChinState.asStateFlow()
+
+    private val _toolbarUndoRedoState = MutableStateFlow(showToolbarUndoRedo)
+    val toolbarUndoRedoState: StateFlow<Boolean> = _toolbarUndoRedoState.asStateFlow()
+
+    var showKeyPreview: Boolean
+        get() = prefs.getBoolean(KEY_SHOW_KEY_PREVIEW, true)
+        set(value) {
+            prefs.edit().putBoolean(KEY_SHOW_KEY_PREVIEW, value).apply()
+            _keyPreviewState.value = value
+        }
+
+    var bottomChinPadding: String
+        get() = prefs.getString(KEY_BOTTOM_CHIN, "AUTO") ?: "AUTO"
+        set(value) {
+            prefs.edit().putString(KEY_BOTTOM_CHIN, value).apply()
+            _bottomChinState.value = value
+        }
+
+    var showToolbarUndoRedo: Boolean
+        get() = prefs.getBoolean(KEY_TOOLBAR_UNDO_REDO, true)
+        set(value) {
+            prefs.edit().putBoolean(KEY_TOOLBAR_UNDO_REDO, value).apply()
+            _toolbarUndoRedoState.value = value
+        }
+
     var customKeyColor: String
         get() = prefs.getString(KEY_CUSTOM_KEY_COLOR, "default") ?: "default"
         set(value) {
@@ -262,6 +293,9 @@ class KeyboardPreferences(context: Context) {
         private const val KEY_CUSTOM_THEME_SUGGESTION_TEXT = "custom_theme_suggestion_text"
         private const val KEY_EMOJI_STYLE = "emoji_style_version"
         private const val KEY_RECENT_EMOJIS = "recent_emojis_list"
+        private const val KEY_SHOW_KEY_PREVIEW = "show_key_preview"
+        private const val KEY_BOTTOM_CHIN = "bottom_chin_padding"
+        private const val KEY_TOOLBAR_UNDO_REDO = "show_toolbar_undo_redo"
     }
 
     var emojiStyle: String

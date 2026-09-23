@@ -26,7 +26,7 @@ class LanguageManager(
     val currentLanguage: StateFlow<String> = _currentLanguage.asStateFlow()
 
     fun switchLanguage(targetLangId: String) {
-        val safeLang = if (cache.isInstalled(targetLangId) || targetLangId == "ar") {
+        val safeLang = if (targetLangId.startsWith("ar") || targetLangId.startsWith("en") || cache.isInstalled(targetLangId)) {
             targetLangId
         } else {
             "ar"
@@ -37,7 +37,7 @@ class LanguageManager(
 
     fun cycleNextLanguage(): String {
         val enabled = preferences.enabledLanguages.toList()
-        val installedList = enabled.filter { cache.isInstalled(it) || it == "ar" }
+        val installedList = enabled.filter { it.startsWith("ar") || it.startsWith("en") || cache.isInstalled(it) }
         val effectiveList = if (installedList.isEmpty()) listOf("ar", "en") else installedList
 
         val currentIndex = effectiveList.indexOf(preferences.currentLanguage)
@@ -54,7 +54,7 @@ class LanguageManager(
     fun getCurrentLayout(): KeyboardLayoutData {
         val langId = preferences.currentLanguage
         val langInfo = repository.getLanguageById(langId)
-        val family = langInfo?.layoutFamily ?: LayoutFamily.QWERTY
+        val family = langInfo?.layoutFamily ?: if (langId.startsWith("ar")) LayoutFamily.ARABIC else LayoutFamily.QWERTY
         return KeyboardLayoutManager.getLayout(langId, family)
     }
 
@@ -63,10 +63,10 @@ class LanguageManager(
     }
 
     fun isArabic(): Boolean {
-        return preferences.currentLanguage == "ar"
+        return preferences.currentLanguage.startsWith("ar")
     }
 
     fun isRtl(): Boolean {
-        return repository.getLanguageById(preferences.currentLanguage)?.isRtl ?: (preferences.currentLanguage == "ar")
+        return repository.getLanguageById(preferences.currentLanguage)?.isRtl ?: (preferences.currentLanguage.startsWith("ar"))
     }
 }

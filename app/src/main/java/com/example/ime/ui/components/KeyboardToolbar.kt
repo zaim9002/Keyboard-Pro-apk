@@ -7,6 +7,9 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Backspace
+import androidx.compose.material.icons.automirrored.filled.Redo
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -48,10 +51,15 @@ fun KeyboardToolbar(
     oneHandedMode: String = "OFF",
     showTermuxKeys: Boolean = false,
     showQuickSnippets: Boolean = false,
+    showUndoRedo: Boolean = true,
     colorScheme: KeyboardColorScheme,
     onPanelSelect: (KeyboardPanel) -> Unit,
     onSwitchLanguage: () -> Unit,
     onOpenSettings: () -> Unit,
+    onUndo: (() -> Unit)? = null,
+    onRedo: (() -> Unit)? = null,
+    onDelete: (() -> Unit)? = null,
+    onSearch: (() -> Unit)? = null,
     onToggleOneHanded: ((String) -> Unit)? = null,
     onToggleTermuxKeys: (() -> Unit)? = null,
     onToggleQuickSnippets: (() -> Unit)? = null
@@ -68,22 +76,9 @@ fun KeyboardToolbar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        // Settings Gear
-        item(key = "settings") {
-            ToolbarIconButton(
-                icon = Icons.Default.Settings,
-                tooltip = "إعدادات",
-                isSelected = false,
-                colorScheme = colorScheme,
-                onClick = {
-                    onOpenSettings()
-                }
-            )
-        }
-
-        // Language indicator button (ع / EN)
-        val isArabic = currentLanguage == "ar"
-        val langShort = if (isArabic) "ع" else currentLanguage.uppercase()
+        // 1. Language switcher / indicator button
+        val isArabic = currentLanguage.startsWith("ar")
+        val langShort = if (isArabic) "ع" else currentLanguage.take(2).uppercase()
         item(key = "lang") {
             Box(
                 modifier = Modifier
@@ -97,44 +92,196 @@ fun KeyboardToolbar(
                     .padding(horizontal = 10.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = langShort,
-                    color = colorScheme.keyText,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Language,
+                        contentDescription = "تغيير اللغة",
+                        tint = colorScheme.accent,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = langShort,
+                        color = colorScheme.keyText,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
 
-        // Termux / Developer Keys toggle (صف أزرار المطورين والترموكس)
-        if (onToggleTermuxKeys != null) {
-            item(key = "termux") {
+        // 2. Emoji Button
+        item(key = "emoji") {
+            ToolbarIconButton(
+                icon = Icons.Default.Mood,
+                tooltip = "إيموجي",
+                isSelected = activePanel == KeyboardPanel.EMOJI,
+                colorScheme = colorScheme,
+                onClick = {
+                    onPanelSelect(if (activePanel == KeyboardPanel.EMOJI) KeyboardPanel.NONE else KeyboardPanel.EMOJI)
+                }
+            )
+        }
+
+        // 3. Clipboard Button
+        item(key = "clipboard") {
+            ToolbarIconButton(
+                icon = Icons.Default.ContentPaste,
+                tooltip = "الحافظة",
+                isSelected = activePanel == KeyboardPanel.CLIPBOARD,
+                colorScheme = colorScheme,
+                onClick = {
+                    onPanelSelect(if (activePanel == KeyboardPanel.CLIPBOARD) KeyboardPanel.NONE else KeyboardPanel.CLIPBOARD)
+                }
+            )
+        }
+
+        // 4. Search Button
+        if (onSearch != null) {
+            item(key = "search") {
                 ToolbarIconButton(
-                    icon = Icons.Default.Terminal,
-                    tooltip = "صف مفاتيح المطورين والترموكس",
-                    isSelected = showTermuxKeys,
-                    badge = "DEV",
+                    icon = Icons.Default.Search,
+                    tooltip = "بحث",
+                    isSelected = false,
                     colorScheme = colorScheme,
-                    onClick = onToggleTermuxKeys
+                    onClick = onSearch
                 )
             }
         }
 
-        // Quick Snippets / Emoji Bar toggle (شريط العبارات والإيموجي السريع)
-        if (onToggleQuickSnippets != null) {
-            item(key = "quick_snippets") {
+        // 5. Settings Gear
+        item(key = "settings") {
+            ToolbarIconButton(
+                icon = Icons.Default.Settings,
+                tooltip = "إعدادات",
+                isSelected = false,
+                colorScheme = colorScheme,
+                onClick = onOpenSettings
+            )
+        }
+
+        // 6. Voice Input
+        item(key = "voice") {
+            ToolbarIconButton(
+                icon = Icons.Default.Mic,
+                tooltip = "كتابة بالصوت",
+                isSelected = activePanel == KeyboardPanel.VOICE,
+                colorScheme = colorScheme,
+                onClick = {
+                    onPanelSelect(if (activePanel == KeyboardPanel.VOICE) KeyboardPanel.NONE else KeyboardPanel.VOICE)
+                }
+            )
+        }
+
+        // 7. Undo (تراجع)
+        if (showUndoRedo && onUndo != null) {
+            item(key = "undo") {
                 ToolbarIconButton(
-                    icon = Icons.Default.FlashOn,
-                    tooltip = "شريط الإيموجي والعبارات السريع",
-                    isSelected = showQuickSnippets,
-                    badge = "🔥",
+                    icon = Icons.AutoMirrored.Filled.Undo,
+                    tooltip = "تراجع",
+                    isSelected = false,
                     colorScheme = colorScheme,
-                    onClick = onToggleQuickSnippets
+                    onClick = onUndo
                 )
             }
         }
 
-        // Resize Keyboard button (خيار وزر تغيير حجم الكيبورد)
+        // 8. Redo (إعادة)
+        if (showUndoRedo && onRedo != null) {
+            item(key = "redo") {
+                ToolbarIconButton(
+                    icon = Icons.AutoMirrored.Filled.Redo,
+                    tooltip = "إعادة",
+                    isSelected = false,
+                    colorScheme = colorScheme,
+                    onClick = onRedo
+                )
+            }
+        }
+
+        // 9. Delete (حذف)
+        if (onDelete != null) {
+            item(key = "delete") {
+                ToolbarIconButton(
+                    icon = Icons.AutoMirrored.Filled.Backspace,
+                    tooltip = "حذف",
+                    isSelected = false,
+                    colorScheme = colorScheme,
+                    onClick = onDelete
+                )
+            }
+        }
+
+        // 10. AI Assistant
+        item(key = "ai_assistant") {
+            ToolbarIconButton(
+                icon = Icons.Default.AutoAwesome,
+                tooltip = "الذكاء الاصطناعي وتغيير النبرة",
+                isSelected = activePanel == KeyboardPanel.AI_ASSISTANT,
+                badge = "AI",
+                colorScheme = colorScheme,
+                onClick = {
+                    onPanelSelect(if (activePanel == KeyboardPanel.AI_ASSISTANT) KeyboardPanel.NONE else KeyboardPanel.AI_ASSISTANT)
+                }
+            )
+        }
+
+        // 11. Translate
+        item(key = "translate") {
+            ToolbarIconButton(
+                icon = Icons.Default.Translate,
+                tooltip = "ترجمة فورية",
+                isSelected = activePanel == KeyboardPanel.TRANSLATE,
+                badge = if (autoTranslateOnEnter) "⚡" else null,
+                colorScheme = colorScheme,
+                onClick = {
+                    onPanelSelect(if (activePanel == KeyboardPanel.TRANSLATE) KeyboardPanel.NONE else KeyboardPanel.TRANSLATE)
+                }
+            )
+        }
+
+        // 12. Stickers
+        item(key = "stickers") {
+            ToolbarIconButton(
+                icon = Icons.Default.Palette,
+                tooltip = "ملصقات",
+                isSelected = activePanel == KeyboardPanel.STICKERS,
+                colorScheme = colorScheme,
+                onClick = {
+                    onPanelSelect(if (activePanel == KeyboardPanel.STICKERS) KeyboardPanel.NONE else KeyboardPanel.STICKERS)
+                }
+            )
+        }
+
+        // 13. GIF
+        item(key = "gifs") {
+            ToolbarIconButton(
+                icon = Icons.Default.Gif,
+                tooltip = "GIF",
+                isSelected = activePanel == KeyboardPanel.GIFS,
+                colorScheme = colorScheme,
+                onClick = {
+                    onPanelSelect(if (activePanel == KeyboardPanel.GIFS) KeyboardPanel.NONE else KeyboardPanel.GIFS)
+                }
+            )
+        }
+
+        // 14. Text Editing
+        item(key = "editing") {
+            ToolbarIconButton(
+                icon = Icons.Default.Edit,
+                tooltip = "تحديد ومؤشر",
+                isSelected = activePanel == KeyboardPanel.EDITING,
+                colorScheme = colorScheme,
+                onClick = {
+                    onPanelSelect(if (activePanel == KeyboardPanel.EDITING) KeyboardPanel.NONE else KeyboardPanel.EDITING)
+                }
+            )
+        }
+
+        // 15. Resize Keyboard
         item(key = "resize") {
             ToolbarIconButton(
                 icon = Icons.Default.Height,
@@ -147,7 +294,7 @@ fun KeyboardToolbar(
             )
         }
 
-        // One-Handed Mode toggle button (وضع اليد الواحدة)
+        // 16. One-Handed Mode
         if (onToggleOneHanded != null) {
             item(key = "one_handed") {
                 ToolbarIconButton(
@@ -168,123 +315,32 @@ fun KeyboardToolbar(
             }
         }
 
-        // AI Assistant (الذكاء الاصطناعي، تغيير نبرة الكتابة وتدقيق النصوص)
-        item(key = "ai_assistant") {
-            ToolbarIconButton(
-                icon = Icons.Default.AutoAwesome,
-                tooltip = "الذكاء الاصطناعي وتغيير النبرة",
-                isSelected = activePanel == KeyboardPanel.AI_ASSISTANT,
-                badge = "AI",
-                colorScheme = colorScheme,
-                onClick = {
-                    onPanelSelect(if (activePanel == KeyboardPanel.AI_ASSISTANT) KeyboardPanel.NONE else KeyboardPanel.AI_ASSISTANT)
-                }
-            )
+        // 17. Termux / Dev keys
+        if (onToggleTermuxKeys != null) {
+            item(key = "termux") {
+                ToolbarIconButton(
+                    icon = Icons.Default.Terminal,
+                    tooltip = "صف مفاتيح المطورين والترموكس",
+                    isSelected = showTermuxKeys,
+                    badge = "DEV",
+                    colorScheme = colorScheme,
+                    onClick = onToggleTermuxKeys
+                )
+            }
         }
 
-        // Translate
-        item(key = "translate") {
-            ToolbarIconButton(
-                icon = Icons.Default.Translate,
-                tooltip = "ترجمة فورية",
-                isSelected = activePanel == KeyboardPanel.TRANSLATE,
-                badge = if (autoTranslateOnEnter) "⚡" else null,
-                colorScheme = colorScheme,
-                onClick = {
-                    onPanelSelect(if (activePanel == KeyboardPanel.TRANSLATE) KeyboardPanel.NONE else KeyboardPanel.TRANSLATE)
-                }
-            )
-        }
-
-        // Clipboard
-        item(key = "clipboard") {
-            ToolbarIconButton(
-                icon = Icons.Default.ContentPaste,
-                tooltip = "الحافظة",
-                isSelected = activePanel == KeyboardPanel.CLIPBOARD,
-                colorScheme = colorScheme,
-                onClick = {
-                    onPanelSelect(if (activePanel == KeyboardPanel.CLIPBOARD) KeyboardPanel.NONE else KeyboardPanel.CLIPBOARD)
-                }
-            )
-        }
-
-        // Voice
-        item(key = "voice") {
-            ToolbarIconButton(
-                icon = Icons.Default.Mic,
-                tooltip = "كتابة بالصوت",
-                isSelected = activePanel == KeyboardPanel.VOICE,
-                colorScheme = colorScheme,
-                onClick = {
-                    onPanelSelect(if (activePanel == KeyboardPanel.VOICE) KeyboardPanel.NONE else KeyboardPanel.VOICE)
-                }
-            )
-        }
-
-        // Emoji
-        item(key = "emoji") {
-            ToolbarIconButton(
-                icon = Icons.Default.Mood,
-                tooltip = "إيموجي",
-                isSelected = activePanel == KeyboardPanel.EMOJI,
-                colorScheme = colorScheme,
-                onClick = {
-                    onPanelSelect(if (activePanel == KeyboardPanel.EMOJI) KeyboardPanel.NONE else KeyboardPanel.EMOJI)
-                }
-            )
-        }
-
-        // Decorations / AI
-        item(key = "decorations") {
-            ToolbarIconButton(
-                icon = Icons.Default.AutoAwesome,
-                tooltip = "زخرفة وذكاء اصطناعي",
-                isSelected = activePanel == KeyboardPanel.DECORATIONS,
-                colorScheme = colorScheme,
-                onClick = {
-                    onPanelSelect(if (activePanel == KeyboardPanel.DECORATIONS) KeyboardPanel.NONE else KeyboardPanel.DECORATIONS)
-                }
-            )
-        }
-
-        // Stickers
-        item(key = "stickers") {
-            ToolbarIconButton(
-                icon = Icons.Default.Palette,
-                tooltip = "ملصقات",
-                isSelected = activePanel == KeyboardPanel.STICKERS,
-                colorScheme = colorScheme,
-                onClick = {
-                    onPanelSelect(if (activePanel == KeyboardPanel.STICKERS) KeyboardPanel.NONE else KeyboardPanel.STICKERS)
-                }
-            )
-        }
-
-        // GIF
-        item(key = "gifs") {
-            ToolbarIconButton(
-                icon = Icons.Default.Gif,
-                tooltip = "GIF",
-                isSelected = activePanel == KeyboardPanel.GIFS,
-                colorScheme = colorScheme,
-                onClick = {
-                    onPanelSelect(if (activePanel == KeyboardPanel.GIFS) KeyboardPanel.NONE else KeyboardPanel.GIFS)
-                }
-            )
-        }
-
-        // Edit
-        item(key = "editing") {
-            ToolbarIconButton(
-                icon = Icons.Default.Edit,
-                tooltip = "تحديد ومؤشر",
-                isSelected = activePanel == KeyboardPanel.EDITING,
-                colorScheme = colorScheme,
-                onClick = {
-                    onPanelSelect(if (activePanel == KeyboardPanel.EDITING) KeyboardPanel.NONE else KeyboardPanel.EDITING)
-                }
-            )
+        // 18. Quick Snippets
+        if (onToggleQuickSnippets != null) {
+            item(key = "quick_snippets") {
+                ToolbarIconButton(
+                    icon = Icons.Default.FlashOn,
+                    tooltip = "شريط الإيموجي والعبارات السريع",
+                    isSelected = showQuickSnippets,
+                    badge = "🔥",
+                    colorScheme = colorScheme,
+                    onClick = onToggleQuickSnippets
+                )
+            }
         }
 
         // Incognito indicator
