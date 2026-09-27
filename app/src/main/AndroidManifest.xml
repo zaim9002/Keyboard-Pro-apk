@@ -30,6 +30,12 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".voice.VoiceInputActivity"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:exported="false"
+            android:windowSoftInputMode="stateAlwaysHidden" />
+
         <service
             android:name=".KeyboardInputMethodService"
             android:label="@string/ime_name"

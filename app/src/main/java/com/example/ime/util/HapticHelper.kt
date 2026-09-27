@@ -1,11 +1,13 @@
 package com.example.ime.util
 
 import android.content.Context
+import android.media.AudioManager
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.view.HapticFeedbackConstants
+import android.view.SoundEffectConstants
 import android.view.View
 
 object HapticHelper {
@@ -13,6 +15,7 @@ object HapticHelper {
     private var cachedVibrator: Vibrator? = null
     private var isVibratorInitialized = false
     private var hasVibratorHardware = true
+    private var cachedAudioManager: AudioManager? = null
 
     private fun getVibrator(context: Context?): Vibrator? {
         if (!isVibratorInitialized && context != null) {
@@ -35,7 +38,21 @@ object HapticHelper {
         return cachedVibrator
     }
 
-    fun performKeyHaptic(context: Context?, view: View?, intensity: String = "Medium") {
+    private fun getAudioManager(context: Context?): AudioManager? {
+        if (cachedAudioManager == null && context != null) {
+            try {
+                cachedAudioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+            } catch (e: Throwable) {}
+        }
+        return cachedAudioManager
+    }
+
+    fun performKeyHaptic(
+        context: Context?,
+        view: View?,
+        intensity: String = "Medium",
+        customDurationMs: Int = 20
+    ) {
         if (intensity.equals("Off", ignoreCase = true)) return
 
         try {
@@ -70,6 +87,11 @@ object HapticHelper {
                         vibrateMillis(vibrator, 35L, 255)
                     }
                 }
+                "custom" -> {
+                    if (hasVib && customDurationMs > 0) {
+                        vibrateMillis(vibrator, customDurationMs.toLong(), 180)
+                    }
+                }
                 else -> { // "medium"
                     val performed = view?.performHapticFeedback(
                         HapticFeedbackConstants.KEYBOARD_TAP,
@@ -82,6 +104,37 @@ object HapticHelper {
             }
         } catch (e: Throwable) {
             // Ignored for safety
+        }
+    }
+
+    fun performKeySound(
+        context: Context?,
+        view: View?,
+        soundType: String = "CLICK",
+        volumePercent: Int = 50
+    ) {
+        if (soundType.equals("Off", ignoreCase = true) || volumePercent <= 0) return
+
+        try {
+            val audioManager = getAudioManager(context)
+            val vol = (volumePercent / 100f).coerceIn(0.1f, 1f)
+
+            if (audioManager != null) {
+                val effect = when (soundType.uppercase()) {
+                    "TYPEWRITER" -> AudioManager.FX_KEYPRESS_SPACEBAR
+                    "WOOD" -> AudioManager.FX_KEYPRESS_DELETE
+                    "WATER_DROP" -> AudioManager.FX_KEYPRESS_RETURN
+                    "STANDARD" -> AudioManager.FX_KEYPRESS_STANDARD
+                    else -> AudioManager.FX_KEY_CLICK
+                }
+                audioManager.playSoundEffect(effect, vol)
+            } else {
+                view?.playSoundEffect(SoundEffectConstants.CLICK)
+            }
+        } catch (e: Throwable) {
+            try {
+                view?.playSoundEffect(SoundEffectConstants.CLICK)
+            } catch (t: Throwable) {}
         }
     }
 
@@ -101,4 +154,3 @@ object HapticHelper {
         }
     }
 }
-

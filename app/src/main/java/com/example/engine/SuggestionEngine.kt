@@ -135,6 +135,16 @@ class SuggestionEngine(
     private val englishDictionarySet by lazy { englishDictionary.toHashSet() }
 
     /**
+     * Pre-calculate dictionary hash sets in background coroutine to prevent any main thread jank on first keystroke
+     */
+    fun warmUp() {
+        try {
+            arabicDictionarySet.size
+            englishDictionarySet.size
+        } catch (e: Throwable) {}
+    }
+
+    /**
      * Check if a word is a known typo and get its accurate correction.
      */
     fun getAutoCorrection(word: String, isArabic: Boolean): String? {

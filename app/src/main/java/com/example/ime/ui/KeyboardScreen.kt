@@ -68,12 +68,23 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.border
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
 import com.example.ime.util.CharacterVariants
 
 data class KeyCalloutState(
     val key: KeyModel,
     val keyRect: Rect,
     val options: List<String>
+)
+
+data class KeyPreviewState(
+    val text: String,
+    val centerX: Float,
+    val topY: Float,
+    val keyWidth: Float,
+    val keyHeight: Float,
+    val visible: Boolean
 )
 
 enum class LayoutMode {
@@ -147,6 +158,22 @@ fun KeyboardScreen(
     showKeyPreview: Boolean = true,
     bottomChinPadding: String = "AUTO",
     showToolbarUndoRedo: Boolean = true,
+    heightPercent: Int = 100,
+    widthPercent: Int = 100,
+    keyFontSizeSp: Int = 19,
+    secondaryFontSizeSp: Int = 9,
+    keyCornerRadiusDp: Int = 6,
+    keyStrokeBorderEnabled: Boolean = false,
+    showArrowRow: Boolean = false,
+    soundType: String = "CLICK",
+    soundVolume: Int = 50,
+    hapticIntensity: String = "Medium",
+    hapticDurationMs: Int = 20,
+    onLaunchVoiceActivity: () -> Unit = {},
+    onChangeKeyboardHeightPercent: (Int) -> Unit = {},
+    onChangeKeyboardWidthPercent: (Int) -> Unit = {},
+    onChangeKeyFontSize: (Int) -> Unit = {},
+    onChangeSecondaryFontSize: (Int) -> Unit = {},
     onHideKeyboard: (() -> Unit)? = null,
     onSearch: (() -> Unit)? = null
 ) {
@@ -164,9 +191,12 @@ fun KeyboardScreen(
     var translateTargetLang by remember { mutableStateOf("en") }
     val coroutineScope = rememberCoroutineScope()
 
-    val keyHeight = KeyboardLayoutController.getKeyHeight(keyboardHeight)
-    val panelHeight = remember(keyboardHeight, showNumberRow) {
-        KeyboardLayoutController.getPanelHeight(keyboardHeight, showNumberRow)
+    val keyHeight = KeyboardLayoutController.getKeyHeight(keyboardHeight, heightPercent)
+    val keyFontSize = KeyboardLayoutController.getKeyFontSize("Medium", keyFontSizeSp)
+    val secondaryFontSize = KeyboardLayoutController.getSecondaryFontSize(secondaryFontSizeSp)
+    val keyCornerRadius = keyCornerRadiusDp.dp
+    val panelHeight = remember(keyboardHeight, showNumberRow, heightPercent) {
+        KeyboardLayoutController.getPanelHeight(keyboardHeight, showNumberRow, heightPercent)
     }
 
     val actionIcon = remember(imeOptions) {
@@ -181,29 +211,70 @@ fun KeyboardScreen(
         }
     }
 
-    val handleLongPressKey: (KeyModel, LayoutCoordinates?) -> Unit = { key, coords ->
-        val root = keyboardContainerCoordinates
-        val isUpper = shiftState != ShiftState.OFF
-        val effectiveChar = if (isUpper && key.primaryText.length == 1 && key.primaryText[0].isLetter()) {
-            key.primaryText.uppercase()
-        } else {
-            key.primaryText
-        }
-        val effectiveKey = key.copy(primaryText = effectiveChar)
-        val variants = CharacterVariants.getVariants(effectiveChar, key.popupOptions)
-        val decorations = DecorationEngine.getLetterDecorations(effectiveChar)
-        val allOptions = (variants + decorations + listOfNotNull(key.secondaryText)).distinct().filter { it.isNotBlank() }
+    val handleLongPressKey: (KeyModel, LayoutCoordinates?) -> Unit = remember(shiftState) {
+        { key, coords ->
+            val root = keyboardContainerCoordinates
+            val isUpper = shiftState != ShiftState.OFF
+            val effectiveChar = if (isUpper && key.primaryText.length == 1 && key.primaryText[0].isLetter()) {
+                key.primaryText.uppercase()
+            } else {
+                key.primaryText
+            }
+            val effectiveKey = key.copy(primaryText = effectiveChar)
+            val variants = CharacterVariants.getVariants(effectiveChar, key.popupOptions)
+            val decorations = DecorationEngine.getLetterDecorations(effectiveChar)
+            val allOptions = (variants + decorations + listOfNotNull(key.secondaryText)).distinct().filter { it.isNotBlank() }
 
-        if (root != null && coords != null && coords.isAttached && root.isAttached) {
-            val offset = root.localPositionOf(coords, Offset.Zero)
-            val size = coords.size
-            val rect = Rect(offset, Size(size.width.toFloat(), size.height.toFloat()))
-            activeCalloutState = KeyCalloutState(effectiveKey, rect, allOptions)
-        } else {
-            val fallbackRect = Rect(Offset(200f, 300f), Size(100f, 100f))
-            activeCalloutState = KeyCalloutState(effectiveKey, fallbackRect, allOptions)
+            if (root != null && coords != null && coords.isAttached && root.isAttached) {
+                val offset = root.localPositionOf(coords, Offset.Zero)
+                val size = coords.size
+                val rect = Rect(offset, Size(size.width.toFloat(), size.height.toFloat()))
+                activeCalloutState = KeyCalloutState(effectiveKey, rect, allOptions)
+            } else {
+                val fallbackRect = Rect(Offset(200f, 300f), Size(100f, 100f))
+                activeCalloutState = KeyCalloutState(effectiveKey, fallbackRect, allOptions)
+            }
         }
     }
+
+    var activeKeyPreview by remember { mutableStateOf<KeyPreviewState?>(null) }
+    val handleKeyPreview: (String, LayoutCoordinates?, Boolean) -> Unit = remember(showKeyPreview) {
+        { text, coords, isDown ->
+            if (!showKeyPreview || text.isBlank()) {
+                if (activeKeyPreview?.visible == true) {
+                    activeKeyPreview = activeKeyPreview?.copy(visible = false)
+                }
+            } else if (isDown && coords != null && coords.isAttached) {
+                val root = keyboardContainerCoordinates
+                if (root != null && root.isAttached) {
+                    val pos = root.localPositionOf(coords, Offset.Zero)
+                    val size = coords.size
+                    activeKeyPreview = KeyPreviewState(
+                        text = text,
+                        centerX = pos.x + size.width / 2f,
+                        topY = pos.y,
+                        keyWidth = size.width.toFloat(),
+                        keyHeight = size.height.toFloat(),
+                        visible = true
+                    )
+                }
+            } else {
+                if (activeKeyPreview?.visible == true) {
+                    activeKeyPreview = activeKeyPreview?.copy(visible = false)
+                }
+            }
+        }
+    }
+
+    val onSwitchToSymbols1 = remember { { layoutMode = LayoutMode.SYMBOLS_1 } }
+    val onSwitchToAlpha = remember { { layoutMode = LayoutMode.ALPHA } }
+    val onSwitchToSymbols2 = remember { { layoutMode = LayoutMode.SYMBOLS_2 } }
+    val onSwitchToNumpad = remember { { layoutMode = LayoutMode.NUMPAD } }
+    val onShowLanguagePicker = remember { { showLanguagePicker = true } }
+    val onOpenClipboardPanel = remember { { activePanel = KeyboardPanel.CLIPBOARD } }
+    val onOpenEmojiPanel = remember { { activePanel = KeyboardPanel.EMOJI } }
+    val onToggleInlineTranslate = remember { { isInlineTranslateOpen = !isInlineTranslateOpen } }
+    val onToggleTashkeelRow = remember { { showTashkeelRow = !showTashkeelRow } }
 
     Column(
         modifier = Modifier
@@ -305,10 +376,18 @@ fun KeyboardScreen(
                     ResizePanel(
                         modifier = Modifier.fillMaxWidth().height(panelHeight),
                         currentHeight = keyboardHeight,
+                        heightPercent = heightPercent,
+                        widthPercent = widthPercent,
+                        keyFontSizeSp = keyFontSizeSp,
+                        secondaryFontSizeSp = secondaryFontSizeSp,
                         colorScheme = colorScheme,
                         onSelectHeight = { newH ->
                             onChangeKeyboardHeight(newH)
                         },
+                        onChangeHeightPercent = onChangeKeyboardHeightPercent,
+                        onChangeWidthPercent = onChangeKeyboardWidthPercent,
+                        onChangeKeyFontSize = onChangeKeyFontSize,
+                        onChangeSecondaryFontSize = onChangeSecondaryFontSize,
                         onClose = { activePanel = KeyboardPanel.NONE }
                     )
                 }
@@ -379,6 +458,7 @@ fun KeyboardScreen(
                         colorScheme = colorScheme,
                         onStartListening = onStartVoice,
                         onStopListening = onStopVoice,
+                        onLaunchSystemVoice = onLaunchVoiceActivity,
                         onClose = { activePanel = KeyboardPanel.NONE }
                     )
                 }
@@ -533,6 +613,45 @@ fun KeyboardScreen(
                                     )
                                 }
 
+                                // Optional Arrow Keys Row for Cursor Navigation (صف الأسهم للتنقل السريع)
+                                if (showArrowRow && layoutMode == LayoutMode.ALPHA) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 2.dp, vertical = 1.dp),
+                                        horizontalArrangement = Arrangement.SpaceEvenly
+                                    ) {
+                                        val arrowButtons = listOf(
+                                            "⏮" to { onMoveCursor(-999) },
+                                            "◀" to { onMoveCursor(-1) },
+                                            "▶" to { onMoveCursor(1) },
+                                            "⏭" to { onMoveCursor(999) },
+                                            "📋" to onOpenClipboardPanel,
+                                            "⌫" to onDelete
+                                        )
+                                        for ((label, action) in arrowButtons) {
+                                            KeyButton(
+                                                text = label,
+                                                isSpecial = true,
+                                                height = (keyHeight * 0.72f).coerceAtLeast(32.dp),
+                                                fontSize = 14.sp,
+                                                cornerRadius = keyCornerRadius,
+                                                strokeBorder = keyStrokeBorderEnabled,
+                                                colorScheme = colorScheme,
+                                                hapticEnabled = hapticEnabled,
+                                                hapticIntensity = hapticIntensity,
+                                                hapticDurationMs = hapticDurationMs,
+                                                soundEnabled = soundEnabled,
+                                                soundType = soundType,
+                                                soundVolume = soundVolume,
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                action()
+                                            }
+                                        }
+                                    }
+                                }
+
                                  // Dynamic Layout Rows based on Language & Mode
                                 when (layoutMode) {
                                     LayoutMode.ALPHA -> {
@@ -549,8 +668,16 @@ fun KeyboardScreen(
                                             ArabicKeyboardLayout(
                                                 colorScheme = colorScheme,
                                                 keyHeight = keyHeight,
+                                                keyFontSize = keyFontSize,
+                                                secondaryFontSize = secondaryFontSize,
+                                                keyCornerRadius = keyCornerRadius,
+                                                keyStrokeBorder = keyStrokeBorderEnabled,
                                                 hapticEnabled = hapticEnabled,
+                                                hapticIntensity = hapticIntensity,
+                                                hapticDurationMs = hapticDurationMs,
                                                 soundEnabled = soundEnabled,
+                                                soundType = soundType,
+                                                soundVolume = soundVolume,
                                                 actionIcon = actionIcon,
                                                 autoTranslateOnEnter = autoTranslateOnEnter,
                                                 onToggleAutoTranslate = onToggleAutoTranslate,
@@ -562,16 +689,17 @@ fun KeyboardScreen(
                                                 onSpace = onSpace,
                                                 onEnter = onEnter,
                                                 onLongPressEnter = onLongPressEnter,
-                                                onSwitchMode = { layoutMode = LayoutMode.SYMBOLS_1 },
+                                                onSwitchMode = onSwitchToSymbols1,
                                                 onSwitchLanguage = onSwitchLanguage,
-                                                onLongPressLanguage = { showLanguagePicker = true },
-                                                onOpenClipboard = { activePanel = KeyboardPanel.CLIPBOARD },
-                                                onOpenEmoji = { activePanel = KeyboardPanel.EMOJI },
-                                                onOpenTranslate = { isInlineTranslateOpen = !isInlineTranslateOpen },
-                                                onToggleTashkeel = { showTashkeelRow = !showTashkeelRow },
+                                                onLongPressLanguage = onShowLanguagePicker,
+                                                onOpenClipboard = onOpenClipboardPanel,
+                                                onOpenEmoji = onOpenEmojiPanel,
+                                                onOpenTranslate = onToggleInlineTranslate,
+                                                onToggleTashkeel = onToggleTashkeelRow,
                                                 onMoveCursor = onMoveCursor,
                                                 onLongPressKey = handleLongPressKey,
                                                 showKeyPreview = showKeyPreview,
+                                                onPreviewChange = handleKeyPreview,
                                                 spaceLabel = arabicSpaceLabel
                                             )
                                         } else {
@@ -606,9 +734,9 @@ fun KeyboardScreen(
                                                 onSpace = onSpace,
                                                 onEnter = onEnter,
                                                 onLongPressEnter = onLongPressEnter,
-                                                onOpenClipboard = { activePanel = KeyboardPanel.CLIPBOARD },
-                                                onOpenTranslate = { isInlineTranslateOpen = !isInlineTranslateOpen },
-                                                onOpenEmoji = { activePanel = KeyboardPanel.EMOJI },
+                                                onOpenClipboard = onOpenClipboardPanel,
+                                                onOpenTranslate = onToggleInlineTranslate,
+                                                onOpenEmoji = onOpenEmojiPanel,
                                                 onShiftClick = {
                                                     shiftState = when (shiftState) {
                                                         ShiftState.OFF -> ShiftState.ON
@@ -616,12 +744,13 @@ fun KeyboardScreen(
                                                         ShiftState.CAPS_LOCK -> ShiftState.OFF
                                                     }
                                                 },
-                                                onSwitchMode = { layoutMode = LayoutMode.SYMBOLS_1 },
+                                                onSwitchMode = onSwitchToSymbols1,
                                                 onSwitchLanguage = onSwitchLanguage,
-                                                onLongPressLanguage = { showLanguagePicker = true },
+                                                onLongPressLanguage = onShowLanguagePicker,
                                                 onMoveCursor = onMoveCursor,
                                                 onLongPressKey = handleLongPressKey,
-                                                showKeyPreview = showKeyPreview
+                                                showKeyPreview = showKeyPreview,
+                                                onPreviewChange = handleKeyPreview
                                             )
                                         }
                                     }
@@ -641,14 +770,15 @@ fun KeyboardScreen(
                                             onSpace = onSpace,
                                             onEnter = onEnter,
                                             onLongPressEnter = onLongPressEnter,
-                                            onSwitchToAlpha = { layoutMode = LayoutMode.ALPHA },
-                                            onSwitchToSymbols2 = { layoutMode = LayoutMode.SYMBOLS_2 },
-                                            onSwitchToNumpad = { layoutMode = LayoutMode.NUMPAD },
-                                            onOpenClipboard = { activePanel = KeyboardPanel.CLIPBOARD },
-                                            onOpenTranslate = { isInlineTranslateOpen = !isInlineTranslateOpen },
-                                            onOpenEmoji = { activePanel = KeyboardPanel.EMOJI },
+                                            onSwitchToAlpha = onSwitchToAlpha,
+                                            onSwitchToSymbols2 = onSwitchToSymbols2,
+                                            onSwitchToNumpad = onSwitchToNumpad,
+                                            onOpenClipboard = onOpenClipboardPanel,
+                                            onOpenTranslate = onToggleInlineTranslate,
+                                            onOpenEmoji = onOpenEmojiPanel,
                                             onSwitchLanguage = onSwitchLanguage,
-                                            onMoveCursor = onMoveCursor
+                                            onMoveCursor = onMoveCursor,
+                                            onPreviewChange = handleKeyPreview
                                         )
                                     }
                                     LayoutMode.SYMBOLS_2 -> {
@@ -667,13 +797,14 @@ fun KeyboardScreen(
                                             onSpace = onSpace,
                                             onEnter = onEnter,
                                             onLongPressEnter = onLongPressEnter,
-                                            onSwitchToAlpha = { layoutMode = LayoutMode.ALPHA },
-                                            onSwitchToSymbols1 = { layoutMode = LayoutMode.SYMBOLS_1 },
-                                            onOpenClipboard = { activePanel = KeyboardPanel.CLIPBOARD },
-                                            onOpenTranslate = { isInlineTranslateOpen = !isInlineTranslateOpen },
-                                            onOpenEmoji = { activePanel = KeyboardPanel.EMOJI },
+                                            onSwitchToAlpha = onSwitchToAlpha,
+                                            onSwitchToSymbols1 = onSwitchToSymbols1,
+                                            onOpenClipboard = onOpenClipboardPanel,
+                                            onOpenTranslate = onToggleInlineTranslate,
+                                            onOpenEmoji = onOpenEmojiPanel,
                                             onSwitchLanguage = onSwitchLanguage,
-                                            onMoveCursor = onMoveCursor
+                                            onMoveCursor = onMoveCursor,
+                                            onPreviewChange = handleKeyPreview
                                         )
                                     }
                                     LayoutMode.NUMPAD -> {
@@ -687,8 +818,9 @@ fun KeyboardScreen(
                                             onDelete = onDelete,
                                             onDeleteWord = onDeleteWord,
                                             onEnter = onEnter,
-                                            onSwitchToAlpha = { layoutMode = LayoutMode.ALPHA },
-                                            onSwitchToSymbols = { layoutMode = LayoutMode.SYMBOLS_1 }
+                                            onSwitchToAlpha = onSwitchToAlpha,
+                                            onSwitchToSymbols = onSwitchToSymbols1,
+                                            onPreviewChange = handleKeyPreview
                                         )
                                     }
                                 }
@@ -823,6 +955,40 @@ fun KeyboardScreen(
                     },
                     onDismiss = { showLanguagePicker = false }
                 )
+            }
+
+            // Centralized Lightweight Key Preview Overlay (Zero-Window, Zero-Popup, Instantaneous)
+            if (showKeyPreview) {
+                activeKeyPreview?.let { preview ->
+                    if (preview.visible) {
+                        val density = LocalDensity.current
+                        val previewWidthDp = 50.dp
+                        val previewHeightDp = 54.dp
+                        val previewWidthPx = with(density) { previewWidthDp.toPx() }
+                        val previewHeightPx = with(density) { previewHeightDp.toPx() }
+                        val xOffset = (preview.centerX - previewWidthPx / 2f).roundToInt()
+                        val yOffset = (preview.topY - previewHeightPx - with(density) { 6.dp.toPx() }).roundToInt()
+
+                        Box(
+                            modifier = Modifier
+                                .offset { IntOffset(xOffset, yOffset) }
+                                .size(previewWidthDp, previewHeightDp)
+                                .shadow(4.dp, RoundedCornerShape(10.dp))
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(colorScheme.keyBackground)
+                                .border(1.5.dp, colorScheme.accent.copy(alpha = 0.7f), RoundedCornerShape(10.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = preview.text,
+                                color = colorScheme.keyText,
+                                fontSize = 26.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -999,20 +1165,37 @@ private fun ArabicKeyboardLayout(
     onLongPressKey: (KeyModel, LayoutCoordinates?) -> Unit,
     onOpenTranslate: (() -> Unit)? = null,
     showKeyPreview: Boolean = true,
-    spaceLabel: String = "العربية"
+    spaceLabel: String = "العربية",
+    keyFontSize: androidx.compose.ui.unit.TextUnit = 19.sp,
+    secondaryFontSize: androidx.compose.ui.unit.TextUnit = 9.sp,
+    keyCornerRadius: androidx.compose.ui.unit.Dp = 6.dp,
+    keyStrokeBorder: Boolean = false,
+    soundType: String = "CLICK",
+    soundVolume: Int = 50,
+    hapticIntensity: String = "Medium",
+    hapticDurationMs: Int = 20,
+    onPreviewChange: ((String, androidx.compose.ui.layout.LayoutCoordinates?, Boolean) -> Unit)? = null
 ) {
-    // Row 1 (ض ص ث ق ف غ ع ه خ ح ج)
+    // Row 1 (ض ص ث ق ف غ ع ه خ ح ج د)
     Row(modifier = Modifier.fillMaxWidth()) {
         for (key in KeyboardLayouts.arabicRow1) {
             KeyButton(
                 text = key.primaryText,
                 secondaryText = key.secondaryText,
                 height = keyHeight,
-                fontSize = 19.sp,
+                fontSize = keyFontSize,
+                secondaryFontSize = secondaryFontSize,
+                cornerRadius = keyCornerRadius,
+                strokeBorder = keyStrokeBorder,
                 colorScheme = colorScheme,
                 hapticEnabled = hapticEnabled,
+                hapticIntensity = hapticIntensity,
+                hapticDurationMs = hapticDurationMs,
                 soundEnabled = soundEnabled,
+                soundType = soundType,
+                soundVolume = soundVolume,
                 showPreview = showKeyPreview,
+                onPreviewChange = onPreviewChange,
                 modifier = Modifier.weight(key.weight),
                 onLongClickWithCoords = { coords -> onLongPressKey(key, coords) },
                 onLongClick = { onLongPressKey(key, null) }
@@ -1029,11 +1212,19 @@ private fun ArabicKeyboardLayout(
                 text = key.primaryText,
                 secondaryText = key.secondaryText,
                 height = keyHeight,
-                fontSize = 19.sp,
+                fontSize = keyFontSize,
+                secondaryFontSize = secondaryFontSize,
+                cornerRadius = keyCornerRadius,
+                strokeBorder = keyStrokeBorder,
                 colorScheme = colorScheme,
                 hapticEnabled = hapticEnabled,
+                hapticIntensity = hapticIntensity,
+                hapticDurationMs = hapticDurationMs,
                 soundEnabled = soundEnabled,
+                soundType = soundType,
+                soundVolume = soundVolume,
                 showPreview = showKeyPreview,
+                onPreviewChange = onPreviewChange,
                 modifier = Modifier.weight(key.weight),
                 onLongClickWithCoords = { coords -> onLongPressKey(key, coords) },
                 onLongClick = { onLongPressKey(key, null) }
@@ -1050,11 +1241,19 @@ private fun ArabicKeyboardLayout(
                 text = key.primaryText,
                 secondaryText = key.secondaryText,
                 height = keyHeight,
-                fontSize = 19.sp,
+                fontSize = keyFontSize,
+                secondaryFontSize = secondaryFontSize,
+                cornerRadius = keyCornerRadius,
+                strokeBorder = keyStrokeBorder,
                 colorScheme = colorScheme,
                 hapticEnabled = hapticEnabled,
+                hapticIntensity = hapticIntensity,
+                hapticDurationMs = hapticDurationMs,
                 soundEnabled = soundEnabled,
+                soundType = soundType,
+                soundVolume = soundVolume,
                 showPreview = showKeyPreview,
+                onPreviewChange = onPreviewChange,
                 modifier = Modifier.weight(1f),
                 onLongClickWithCoords = { coords -> onLongPressKey(key, coords) },
                 onLongClick = { onLongPressKey(key, null) }
@@ -1066,9 +1265,15 @@ private fun ArabicKeyboardLayout(
         // Repeating Delete Button on the Right with left-swipe word deletion
         RepeatingDeleteKeyButton(
             height = keyHeight,
+            cornerRadius = keyCornerRadius,
+            strokeBorder = keyStrokeBorder,
             colorScheme = colorScheme,
             hapticEnabled = hapticEnabled,
+            hapticIntensity = hapticIntensity,
+            hapticDurationMs = hapticDurationMs,
             soundEnabled = soundEnabled,
+            soundType = soundType,
+            soundVolume = soundVolume,
             modifier = Modifier.weight(1.35f),
             onDelete = onDelete,
             onDeleteWord = onDeleteWord,
@@ -1132,7 +1337,8 @@ private fun DynamicKeyboardLayout(
     onMoveCursor: (Int) -> Unit,
     onLongPressKey: (KeyModel, LayoutCoordinates?) -> Unit,
     onOpenTranslate: (() -> Unit)? = null,
-    showKeyPreview: Boolean = true
+    showKeyPreview: Boolean = true,
+    onPreviewChange: ((String, androidx.compose.ui.layout.LayoutCoordinates?, Boolean) -> Unit)? = null
 ) {
     val isUpper = shiftState != ShiftState.OFF
 
@@ -1149,6 +1355,7 @@ private fun DynamicKeyboardLayout(
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
                 showPreview = showKeyPreview,
+                onPreviewChange = onPreviewChange,
                 modifier = Modifier.weight(key.weight),
                 onLongClickWithCoords = { coords -> onLongPressKey(key, coords) },
                 onLongClick = { onLongPressKey(key, null) }
@@ -1170,6 +1377,7 @@ private fun DynamicKeyboardLayout(
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
                 showPreview = showKeyPreview,
+                onPreviewChange = onPreviewChange,
                 modifier = Modifier.weight(key.weight),
                 onLongClickWithCoords = { coords -> onLongPressKey(key, coords) },
                 onLongClick = { onLongPressKey(key, null) }
@@ -1210,6 +1418,7 @@ private fun DynamicKeyboardLayout(
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
                 showPreview = showKeyPreview,
+                onPreviewChange = onPreviewChange,
                 modifier = Modifier.weight(key.weight),
                 onLongClickWithCoords = { coords -> onLongPressKey(key, coords) },
                 onLongClick = { onLongPressKey(key, null) }
@@ -1406,7 +1615,8 @@ private fun Symbols1Layout(
     onOpenTranslate: (() -> Unit)? = null,
     onOpenEmoji: (() -> Unit)? = null,
     onSwitchLanguage: () -> Unit,
-    onMoveCursor: (Int) -> Unit
+    onMoveCursor: (Int) -> Unit,
+    onPreviewChange: ((String, androidx.compose.ui.layout.LayoutCoordinates?, Boolean) -> Unit)? = null
 ) {
     // Row 1
     Row(modifier = Modifier.fillMaxWidth()) {
@@ -1417,6 +1627,7 @@ private fun Symbols1Layout(
                 colorScheme = colorScheme,
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
+                onPreviewChange = onPreviewChange,
                 modifier = Modifier.weight(1f)
             ) { onTextInput(key.primaryText) }
         }
@@ -1431,6 +1642,7 @@ private fun Symbols1Layout(
                 colorScheme = colorScheme,
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
+                onPreviewChange = onPreviewChange,
                 modifier = Modifier.weight(1f)
             ) { onTextInput(key.primaryText) }
         }
@@ -1469,6 +1681,7 @@ private fun Symbols1Layout(
                 colorScheme = colorScheme,
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
+                onPreviewChange = onPreviewChange,
                 modifier = Modifier.weight(1f)
             ) { onTextInput(key.primaryText) }
         }
@@ -1533,7 +1746,8 @@ private fun Symbols2Layout(
     onOpenTranslate: (() -> Unit)? = null,
     onOpenEmoji: (() -> Unit)? = null,
     onSwitchLanguage: () -> Unit,
-    onMoveCursor: (Int) -> Unit
+    onMoveCursor: (Int) -> Unit,
+    onPreviewChange: ((String, androidx.compose.ui.layout.LayoutCoordinates?, Boolean) -> Unit)? = null
 ) {
     // Row 1
     Row(modifier = Modifier.fillMaxWidth()) {
@@ -1544,6 +1758,7 @@ private fun Symbols2Layout(
                 colorScheme = colorScheme,
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
+                onPreviewChange = onPreviewChange,
                 modifier = Modifier.weight(1f)
             ) { onTextInput(key.primaryText) }
         }
@@ -1558,6 +1773,7 @@ private fun Symbols2Layout(
                 colorScheme = colorScheme,
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
+                onPreviewChange = onPreviewChange,
                 modifier = Modifier.weight(1f)
             ) { onTextInput(key.primaryText) }
         }
@@ -1583,6 +1799,7 @@ private fun Symbols2Layout(
                 colorScheme = colorScheme,
                 hapticEnabled = hapticEnabled,
                 soundEnabled = soundEnabled,
+                onPreviewChange = onPreviewChange,
                 modifier = Modifier.weight(1f)
             ) { onTextInput(key.primaryText) }
         }
@@ -1637,7 +1854,8 @@ private fun NumpadKeyboardLayout(
     onDeleteWord: (() -> Unit)? = null,
     onEnter: () -> Unit,
     onSwitchToAlpha: () -> Unit,
-    onSwitchToSymbols: () -> Unit
+    onSwitchToSymbols: () -> Unit,
+    onPreviewChange: ((String, androidx.compose.ui.layout.LayoutCoordinates?, Boolean) -> Unit)? = null
 ) {
     // Row 1: ( ) 1 2 3 ABC
     Row(modifier = Modifier.fillMaxWidth()) {

@@ -53,14 +53,21 @@ fun KeyButton(
     secondaryText: String? = null,
     isSpecial: Boolean = false,
     fontSize: TextUnit = 19.sp,
+    secondaryFontSize: TextUnit = 9.sp,
     height: Dp = 48.dp,
+    cornerRadius: Dp = 6.dp,
+    strokeBorder: Boolean = false,
     colorScheme: KeyboardColorScheme,
     hapticEnabled: Boolean = true,
     hapticIntensity: String = "Medium",
+    hapticDurationMs: Int = 20,
     soundEnabled: Boolean = false,
+    soundType: String = "CLICK",
+    soundVolume: Int = 50,
     showPreview: Boolean = !isSpecial,
     onLongClickWithCoords: ((LayoutCoordinates) -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
+    onPreviewChange: ((String, LayoutCoordinates?, Boolean) -> Unit)? = null,
     onClick: () -> Unit
 ) {
     val view = LocalView.current
@@ -72,6 +79,7 @@ fun KeyButton(
     val currentOnClick by rememberUpdatedState(onClick)
     val currentOnLongClick by rememberUpdatedState(onLongClick)
     val currentOnLongClickWithCoords by rememberUpdatedState(onLongClickWithCoords)
+    val currentOnPreviewChange by rememberUpdatedState(onPreviewChange)
 
     val hasLongClick = currentOnLongClickWithCoords != null || currentOnLongClick != null
 
@@ -82,37 +90,63 @@ fun KeyButton(
     }
     val textColor = if (isSpecial) colorScheme.specialKeyText else colorScheme.keyText
 
+    val keyShape = remember(cornerRadius) { RoundedCornerShape(cornerRadius) }
+
     val baseModifier = modifier
         .padding(horizontal = 1.5.dp, vertical = 2.dp)
         .height(height)
 
-    val positionedModifier = if (hasLongClick) {
+    val positionedModifier = if (hasLongClick || (showPreview && !isSpecial)) {
         baseModifier.onGloballyPositioned { keyCoordinates = it }
     } else {
         baseModifier
     }
 
-    Box(
-        modifier = positionedModifier
+    val boxModifier = if (strokeBorder) {
+        positionedModifier
             .shadow(
                 elevation = if (isPressed) 0.5.dp else 1.2.dp,
-                shape = KeyDefaultShape,
+                shape = keyShape,
                 ambientColor = KeyShadowColor,
                 spotColor = KeyShadowColor
             )
-            .clip(KeyDefaultShape)
+            .border(
+                width = 0.8.dp,
+                color = if (isSpecial) colorScheme.borderColor.copy(alpha = 0.3f) else colorScheme.borderColor.copy(alpha = 0.45f),
+                shape = keyShape
+            )
+            .clip(keyShape)
             .background(bgColor)
-            .pointerInput(hasLongClick, hapticEnabled, soundEnabled, hapticIntensity) {
+    } else {
+        positionedModifier
+            .shadow(
+                elevation = if (isPressed) 0.5.dp else 1.2.dp,
+                shape = keyShape,
+                ambientColor = KeyShadowColor,
+                spotColor = KeyShadowColor
+            )
+            .clip(keyShape)
+            .background(bgColor)
+    }
+
+    Box(
+        modifier = boxModifier
+            .pointerInput(hasLongClick, hapticEnabled, soundEnabled, hapticIntensity, soundType, soundVolume) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
                     isPressed = true
 
+                    // Immediate preview notification to centralized overlay (zero window allocations)
+                    if (showPreview && !isSpecial && text.isNotBlank()) {
+                        currentOnPreviewChange?.invoke(text, keyCoordinates, true)
+                    }
+
                     // 1. Immediate touch feedback (haptic & audio)
                     if (hapticEnabled) {
-                        HapticHelper.performKeyHaptic(context, view, hapticIntensity)
+                        HapticHelper.performKeyHaptic(context, view, hapticIntensity, hapticDurationMs)
                     }
                     if (soundEnabled) {
-                        view.playSoundEffect(SoundEffectConstants.CLICK)
+                        HapticHelper.performKeySound(context, view, soundType, soundVolume)
                     }
 
                     var isLongTriggered = false
@@ -121,7 +155,7 @@ fun KeyButton(
                             delay(350L)
                             isLongTriggered = true
                             if (hapticEnabled) {
-                                HapticHelper.performKeyHaptic(context, view, hapticIntensity)
+                                HapticHelper.performKeyHaptic(context, view, hapticIntensity, hapticDurationMs)
                             }
                             keyCoordinates?.let { coords ->
                                 currentOnLongClickWithCoords?.invoke(coords)
@@ -149,6 +183,9 @@ fun KeyButton(
 
                     longPressJob?.cancel()
                     isPressed = false
+                    if (showPreview && !isSpecial) {
+                        currentOnPreviewChange?.invoke(text, null, false)
+                    }
 
                     // 3. Immediately emit click if not cancelled and not long-clicked
                     if (!isCancelled && !isLongTriggered) {
@@ -172,50 +209,12 @@ fun KeyButton(
             Text(
                 text = secondaryText,
                 color = textColor.copy(alpha = 0.55f),
-                fontSize = 9.sp,
+                fontSize = secondaryFontSize,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(top = 1.5.dp, end = 3.dp)
             )
-        }
-
-        // Key Preview Popup (انبثاق المفتاح أثناء الكتابة)
-        if (showPreview && isPressed && text.isNotBlank() && !isSpecial) {
-            val density = LocalDensity.current
-            val yOffsetPx = remember(height, density) {
-                with(density) { -(height + 10.dp).roundToPx() }
-            }
-            Popup(
-                alignment = Alignment.TopCenter,
-                offset = IntOffset(0, yOffsetPx),
-                properties = PopupProperties(
-                    focusable = false,
-                    dismissOnBackPress = false,
-                    dismissOnClickOutside = false,
-                    clippingEnabled = true
-                )
-            ) {
-                Box(
-                    modifier = Modifier
-                        .widthIn(min = 48.dp)
-                        .height(52.dp)
-                        .shadow(6.dp, RoundedCornerShape(10.dp))
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(colorScheme.keyBackground)
-                        .border(1.5.dp, colorScheme.accent.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
-                        .padding(horizontal = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = text,
-                        color = colorScheme.keyText,
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
         }
     }
 }
@@ -224,10 +223,15 @@ fun KeyButton(
 fun RepeatingDeleteKeyButton(
     modifier: Modifier = Modifier,
     height: Dp = 48.dp,
+    cornerRadius: Dp = 6.dp,
+    strokeBorder: Boolean = false,
     colorScheme: KeyboardColorScheme,
     hapticEnabled: Boolean = true,
     hapticIntensity: String = "Medium",
+    hapticDurationMs: Int = 20,
     soundEnabled: Boolean = false,
+    soundType: String = "CLICK",
+    soundVolume: Int = 50,
     onDelete: () -> Unit,
     onDeleteWord: (() -> Unit)? = null,
     onDeleteAll: (() -> Unit)? = null
@@ -243,29 +247,51 @@ fun RepeatingDeleteKeyButton(
 
     val bgColor = if (isPressed) colorScheme.specialKeyBackground.copy(alpha = 0.7f) else colorScheme.specialKeyBackground
     val iconColor = colorScheme.specialKeyText
+    val keyShape = remember(cornerRadius) { RoundedCornerShape(cornerRadius) }
 
-    Box(
-        modifier = modifier
+    val boxModifier = if (strokeBorder) {
+        modifier
             .padding(horizontal = 1.5.dp, vertical = 2.dp)
             .height(height)
             .shadow(
                 elevation = 1.dp,
-                shape = KeyDefaultShape,
+                shape = keyShape,
                 ambientColor = KeyShadowColor,
                 spotColor = KeyShadowColor
             )
-            .clip(KeyDefaultShape)
+            .border(
+                width = 0.8.dp,
+                color = colorScheme.borderColor.copy(alpha = 0.3f),
+                shape = keyShape
+            )
+            .clip(keyShape)
             .background(bgColor)
-            .pointerInput(hapticEnabled, soundEnabled, hapticIntensity) {
+    } else {
+        modifier
+            .padding(horizontal = 1.5.dp, vertical = 2.dp)
+            .height(height)
+            .shadow(
+                elevation = 1.dp,
+                shape = keyShape,
+                ambientColor = KeyShadowColor,
+                spotColor = KeyShadowColor
+            )
+            .clip(keyShape)
+            .background(bgColor)
+    }
+
+    Box(
+        modifier = boxModifier
+            .pointerInput(hapticEnabled, soundEnabled, hapticIntensity, soundType, soundVolume) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
                     var isWordDeleted = false
                     isPressed = true
                     if (hapticEnabled) {
-                        HapticHelper.performKeyHaptic(context, view, hapticIntensity)
+                        HapticHelper.performKeyHaptic(context, view, hapticIntensity, hapticDurationMs)
                     }
                     if (soundEnabled) {
-                        view.playSoundEffect(SoundEffectConstants.CLICK)
+                        HapticHelper.performKeySound(context, view, soundType, soundVolume)
                     }
                     // 1. Initial single delete
                     currentOnDelete()

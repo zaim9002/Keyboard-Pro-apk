@@ -40,44 +40,46 @@ object KeyboardLayouts {
     )
 
     val arabicRow1 = listOf(
-        KeyModel("ض", secondaryText = "١", popupOptions = listOf("١", "1", "ص", "ظ", "ضـ", "ضَ", "ضِ", "ضُ", "ضّ")),
-        KeyModel("ص", secondaryText = "٢", popupOptions = listOf("٢", "2", "ض", "س", "صـ", "صَ", "صِ", "صُ", "صّ")),
-        KeyModel("ث", secondaryText = "٣", popupOptions = listOf("٣", "3", "ت", "ثـ", "ٿ", "ثَ", "ثِ", "ثُ", "ثّ")),
+        KeyModel("ض", secondaryText = "١", popupOptions = listOf("١", "1", "ضـ", "ضَ", "ضِ", "ضُ", "ضّ")),
+        KeyModel("ص", secondaryText = "٢", popupOptions = listOf("٢", "2", "صـ", "صَ", "صِ", "صُ", "صّ")),
+        KeyModel("ث", secondaryText = "٣", popupOptions = listOf("٣", "3", "ثـ", "ٿ", "ثَ", "ثِ", "ثُ", "ثّ")),
         KeyModel("ق", secondaryText = "٤", popupOptions = listOf("٤", "4", "ڨ", "قـ", "قَ", "قِ", "قُ", "قّ")),
         KeyModel("ف", secondaryText = "٥", popupOptions = listOf("٥", "5", "ڤ", "فـ", "ڥ", "فَ", "فِ", "فُ", "فّ")),
-        KeyModel("غ", secondaryText = "٦", popupOptions = listOf("٦", "6", "ع", "غـ", "غَ", "غِ", "غُ", "غّ")),
-        KeyModel("ع", secondaryText = "٧", popupOptions = listOf("٧", "7", "غ", "عـ", "عَ", "عِ", "عُ", "عّ")),
-        KeyModel("ه", secondaryText = "٨", popupOptions = listOf("٨", "8", "ة", "هـ", "ھ", "هَ", "هِ", "هُ", "هّ")),
-        KeyModel("خ", secondaryText = "٩", popupOptions = listOf("٩", "9", "ح", "ج", "خـ", "خَ", "خِ", "خُ", "خّ")),
-        KeyModel("ح", secondaryText = "٠", popupOptions = listOf("٠", "0", "خ", "ج", "چ", "حـ", "حَ", "حِ", "حُ", "حّ")),
-        KeyModel("ج", popupOptions = listOf("چ", "ح", "خ", "جـ", "جَ", "جِ", "جُ", "جّ"))
+        KeyModel("غ", secondaryText = "٦", popupOptions = listOf("٦", "6", "غـ", "غَ", "غِ", "غُ", "غّ")),
+        KeyModel("ع", secondaryText = "٧", popupOptions = listOf("٧", "7", "عـ", "عَ", "عِ", "عُ", "عّ")),
+        KeyModel("ه", secondaryText = "٨", popupOptions = listOf("٨", "8", "هـ", "ھ", "هَ", "هِ", "هُ", "هّ")),
+        KeyModel("خ", secondaryText = "٩", popupOptions = listOf("٩", "9", "خـ", "خَ", "خِ", "خُ", "خّ")),
+        KeyModel("ح", secondaryText = "٠", popupOptions = listOf("٠", "0", "حـ", "حَ", "حِ", "حُ", "حّ")),
+        KeyModel("ج", secondaryText = "!", popupOptions = listOf("چ", "جـ", "جَ", "جِ", "جُ", "جّ")),
+        KeyModel("د", secondaryText = "؟", popupOptions = listOf("ڈ", "دـ", "دَ", "دِ", "دُ", "دّ"))
     )
 
     val arabicRow2 = listOf(
-        KeyModel("ش", popupOptions = listOf("س", "شـ", "شَ", "شِ", "شُ", "شّ")),
-        KeyModel("س", popupOptions = listOf("ش", "ص", "سـ", "سَ", "سِ", "سُ", "سّ")),
-        KeyModel("ي", popupOptions = listOf("ى", "ئ", "يـ", "ې", "ێ", "يَ", "يِ", "يُ", "يَّ")),
-        KeyModel("ب", popupOptions = listOf("پ", "ـ", "بـ", "ٻ", "بَ", "بِ", "بُ", "بّ")),
-        KeyModel("ل", popupOptions = listOf("لا", "لأ", "لإ", "لآ", "لـ", "ڷ", "لَ", "لِ", "لُ", "لّ")),
-        KeyModel("ا", popupOptions = listOf("أ", "إ", "آ", "ء", "ٱ", "ـ", "اٰ", "اّ", "أَ", "إِ")),
-        KeyModel("ت", popupOptions = listOf("ة", "ث", "تـ", "ٿ", "تَ", "تِ", "تُ", "تّ")),
+        KeyModel("ش", popupOptions = listOf("شـ", "شَ", "شِ", "شُ", "شّ")),
+        KeyModel("س", popupOptions = listOf("سـ", "سَ", "سِ", "سُ", "سّ")),
+        KeyModel("ي", popupOptions = listOf("ى", "يـ", "ې", "ێ", "يَ", "يِ", "يُ", "يَّ")),
+        KeyModel("ب", popupOptions = listOf("پ", "بـ", "ٻ", "بَ", "بِ", "بُ", "بّ")),
+        KeyModel("ل", popupOptions = listOf("لـ", "ڷ", "لَ", "لِ", "لُ", "لّ")),
+        KeyModel("ا", popupOptions = listOf("أ", "إ", "آ", "ء", "ٱ", "ـ", "اٰ", "اّ")),
+        KeyModel("ت", popupOptions = listOf("ة", "تـ", "ٿ", "تَ", "تِ", "تُ", "تّ")),
         KeyModel("ن", popupOptions = listOf("نـ", "ں", "ڼ", "نَ", "نِ", "نُ", "نّ")),
         KeyModel("م", popupOptions = listOf("مـ", "۾", "مَ", "مِ", "مُ", "مّ")),
-        KeyModel("ك", popupOptions = listOf("گ", "ک", "كـ", "ڪ", "ڨ", "كَ", "كِ", "كُ", "كّ")),
-        KeyModel("ط", popupOptions = listOf("ظ", "طـ", "طَ", "طِ", "طُ", "طّ"))
+        KeyModel("ك", popupOptions = listOf("گ", "ک", "كـ", "ڪ", "كَ", "كِ", "كُ", "كّ")),
+        KeyModel("ط", popupOptions = listOf("طـ", "طَ", "طِ", "طُ", "طّ"))
     )
 
     val arabicRow3 = listOf(
-        KeyModel("ذ", popupOptions = listOf("د", "ظ", "ڏ", "ذَ", "ذِ", "ذُ", "ذّ")),
-        KeyModel("ء", popupOptions = listOf("أ", "إ", "آ", "ئ", "ؤ", "ٱ", "ء")),
-        KeyModel("ؤ", popupOptions = listOf("و", "ء", "ئ", "أ", "ؤَ")),
-        KeyModel("ر", popupOptions = listOf("ز", "ژ", "ڕ", "ڑ", "رَ", "رِ", "رُ", "رّ")),
-        KeyModel("ى", popupOptions = listOf("ي", "ئ", "ىٰ", "ىَ")),
-        KeyModel("ة", popupOptions = listOf("ه", "ت", "ةً", "ةٌ", "ةٍ")),
-        KeyModel("و", popupOptions = listOf("ؤ", "و", "ۆ", "ۉ", "وَ", "وِ", "وُ", "وّ")),
-        KeyModel("ز", popupOptions = listOf("ژ", "ر", "زّ", "زَ", "زِ", "زُ")),
-        KeyModel("ظ", popupOptions = listOf("ط", "ض", "ظـ", "ظَ", "ظِ", "ظُ", "ظّ")),
-        KeyModel("د", popupOptions = listOf("ذ", "ڈ", "دـ", "دَ", "دِ", "دُ", "دّ"))
+        KeyModel("ذ", popupOptions = listOf("ڏ", "ذَ", "ذِ", "ذُ", "ذّ")),
+        KeyModel("ئ", popupOptions = listOf("ي", "ى", "ئـ")),
+        KeyModel("ء", popupOptions = listOf("أ", "إ", "آ", "ؤ", "ئ", "ٱ")),
+        KeyModel("ؤ", popupOptions = listOf("و", "ؤَ")),
+        KeyModel("ر", popupOptions = listOf("ژ", "ڕ", "ڑ", "رَ", "رِ", "رُ", "رّ")),
+        KeyModel("لا", popupOptions = listOf("لأ", "لإ", "لآ")),
+        KeyModel("ى", popupOptions = listOf("ي", "ىٰ", "ىَ")),
+        KeyModel("ة", popupOptions = listOf("ه", "ةً", "ةٌ", "ةٍ")),
+        KeyModel("و", popupOptions = listOf("ۆ", "ۉ", "وَ", "وِ", "وُ", "وّ")),
+        KeyModel("ز", popupOptions = listOf("ژ", "زّ", "زَ", "زِ", "زُ")),
+        KeyModel("ظ", popupOptions = listOf("ظـ", "ظَ", "ظِ", "ظُ", "ظّ"))
     )
 
     val englishRow1 = listOf(

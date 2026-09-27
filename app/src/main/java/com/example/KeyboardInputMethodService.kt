@@ -112,6 +112,7 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
 
     override fun onCreate() {
         super.onCreate()
+        activeInstance = this
         try {
             val db = try {
                 (applicationContext as? KeyboardProApp)?.database ?: AppDatabase.getDatabase(this)
@@ -123,6 +124,13 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
             shortcutRepo = ShortcutRepository(db.shortcutDao())
             userWordRepo = UserWordRepository(db.userWordDao())
             suggestionEngine = SuggestionEngine(userWordRepo!!, shortcutRepo!!)
+
+            // Pre-compute suggestion hash sets in background thread
+            lifecycleScope.launch(kotlinx.coroutines.Dispatchers.Default) {
+                try {
+                    suggestionEngine?.warmUp()
+                } catch (e: Throwable) {}
+            }
 
             clipManager = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
             clipManager?.addPrimaryClipChangedListener(clipListener)
@@ -152,6 +160,9 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
     }
 
     override fun onDestroy() {
+        if (activeInstance == this) {
+            activeInstance = null
+        }
         super.onDestroy()
         prefs.flushWordCount()
         try {
@@ -237,6 +248,13 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
             val showKeyPreview by prefs.keyPreviewState.collectAsState()
             val bottomChinPadding by prefs.bottomChinPaddingState.collectAsState()
             val showToolbarUndoRedo by prefs.toolbarUndoRedoState.collectAsState()
+            val heightPercent by prefs.heightPercentState.collectAsState()
+            val widthPercent by prefs.widthPercentState.collectAsState()
+            val keyFontSizeSp by prefs.keyFontSizeSpState.collectAsState()
+            val secondaryFontSizeSp by prefs.secondaryFontSizeSpState.collectAsState()
+            val keyCornerRadiusDp by prefs.keyCornerRadiusState.collectAsState()
+            val keyStrokeBorderEnabled by prefs.keyStrokeBorderState.collectAsState()
+            val showArrowRow by prefs.arrowRowState.collectAsState()
             val langManager = (applicationContext as? KeyboardProApp)?.languageManager
 
             val effectiveIncognito = isIncognitoPref || isPasswordField
@@ -352,6 +370,22 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
                 showKeyPreview = showKeyPreview,
                 bottomChinPadding = bottomChinPadding,
                 showToolbarUndoRedo = showToolbarUndoRedo,
+                heightPercent = heightPercent,
+                widthPercent = widthPercent,
+                keyFontSizeSp = keyFontSizeSp,
+                secondaryFontSizeSp = secondaryFontSizeSp,
+                keyCornerRadiusDp = keyCornerRadiusDp,
+                keyStrokeBorderEnabled = keyStrokeBorderEnabled,
+                showArrowRow = showArrowRow,
+                soundType = prefs.keySoundType,
+                soundVolume = prefs.keySoundVolume,
+                hapticIntensity = hapticSetting,
+                hapticDurationMs = prefs.hapticDurationMs,
+                onLaunchVoiceActivity = { launchVoiceInputActivity() },
+                onChangeKeyboardHeightPercent = { prefs.keyboardHeightPercent = it },
+                onChangeKeyboardWidthPercent = { prefs.keyboardWidthPercent = it },
+                onChangeKeyFontSize = { prefs.keyFontSizeSp = it },
+                onChangeSecondaryFontSize = { prefs.secondaryFontSizeSp = it },
                 onHideKeyboard = { requestHideSelf(0) },
                 onSearch = {
                     currentInputConnection?.performEditorAction(EditorInfo.IME_ACTION_SEARCH)
@@ -789,6 +823,8 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
             val engine = suggestionEngine ?: return
             suggestionJob?.cancel()
             suggestionJob = lifecycleScope.launch(kotlinx.coroutines.Dispatchers.Default) {
+                // Debounce rapid typing so individual letters are committed instantly without delay
+                kotlinx.coroutines.delay(35L)
                 try {
                     val fullText = currentWordBuffer.toString()
                     val words = fullText.split("\\s+".toRegex()).filter { it.isNotBlank() }
@@ -857,10 +893,35 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
     }
 
     // Voice Typing logic
+    fun launchVoiceInputActivity() {
+        try {
+            val voiceIntent = Intent(this, com.example.voice.VoiceInputActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
+            }
+            startActivity(voiceIntent)
+        } catch (e: Throwable) {
+            Log.e("KeyboardIME", "Failed to launch VoiceInputActivity", e)
+            voiceStatusText = "تعذر تشغيل الصوت: ${e.message}"
+        }
+    }
+
     private fun startVoiceTyping() {
         try {
+            val hasPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.RECORD_AUDIO
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+            if (!hasPermission) {
+                voiceStatusText = "جارٍ طلب إذن الميكروفون..."
+                launchVoiceInputActivity()
+                return
+            }
+
             if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-                voiceStatusText = "التعرف الصوتي غير متوفر على هذا الجهاز"
+                voiceStatusText = "التعرف الصوتي غير متوفر مدمجاً، جاري الفتح بالنظام..."
+                launchVoiceInputActivity()
                 return
             }
 
@@ -913,7 +974,13 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
 
                 override fun onError(error: Int) {
                     isVoiceListening = false
-                    voiceStatusText = "لم نتمكن من التعرف على الصوت (كود $error)"
+                    Log.w("KeyboardIME", "SpeechRecognizer onError: $error. Falling back to VoiceInputActivity.")
+                    // If background speech recognition is rejected by OS (e.g. error 5 or 9), fallback immediately
+                    if (error == SpeechRecognizer.ERROR_CLIENT || error == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS || error == SpeechRecognizer.ERROR_AUDIO) {
+                        launchVoiceInputActivity()
+                    } else {
+                        voiceStatusText = "لم نتمكن من التعرف على الصوت (كود $error)"
+                    }
                 }
 
                 override fun onResults(results: Bundle?) {
@@ -941,7 +1008,8 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
             speechRecognizer?.startListening(intent)
         } catch (e: Throwable) {
             isVoiceListening = false
-            voiceStatusText = "تعذر تشغيل التعرف الصوتي: ${e.message}"
+            Log.e("KeyboardIME", "startVoiceTyping failed, using fallback activity", e)
+            launchVoiceInputActivity()
         }
     }
 
@@ -961,5 +1029,24 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
     override fun onFinishInput() {
         super.onFinishInput()
         prefs.flushWordCount()
+    }
+
+    companion object {
+        var activeInstance: KeyboardInputMethodService? = null
+            private set
+
+        fun commitVoiceText(text: String) {
+            val instance = activeInstance ?: return
+            instance.handleTextInput(text.trim() + " ")
+            instance.voiceStatusText = "تم إدخال: ${text.trim()}"
+            instance.isVoiceListening = false
+        }
+
+        fun onVoiceError(errorMsg: String) {
+            activeInstance?.let { instance ->
+                instance.voiceStatusText = errorMsg
+                instance.isVoiceListening = false
+            }
+        }
     }
 }

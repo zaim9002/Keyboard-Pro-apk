@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -15,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -30,6 +32,7 @@ fun VoicePanel(
     colorScheme: KeyboardColorScheme,
     onStartListening: () -> Unit,
     onStopListening: () -> Unit,
+    onLaunchSystemVoice: () -> Unit = {},
     onClose: () -> Unit
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
@@ -57,7 +60,7 @@ fun VoicePanel(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "🎤 الكتابة بالصوت",
+                text = "🎤 الكتابة بالصوت (Voice Typing)",
                 color = colorScheme.accent,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
@@ -98,16 +101,16 @@ fun VoicePanel(
                     Icon(
                         imageVector = if (isListening) Icons.Default.Stop else Icons.Default.Mic,
                         contentDescription = "ميكروفون",
-                        tint = if (isListening) androidx.compose.ui.graphics.Color.White else colorScheme.keyText,
+                        tint = if (isListening) Color.White else colorScheme.keyText,
                         modifier = Modifier.size(32.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             Text(
-                text = if (isListening) "جارٍ الاستماع... تكلّم الآن" else statusText,
+                text = if (isListening) "جارٍ الاستماع... تكلّم الآن بوضوح" else statusText,
                 color = colorScheme.keyText,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
@@ -126,10 +129,11 @@ fun VoicePanel(
             }
         }
 
-        // Bottom Controls
+        // Bottom Controls: Primary start/stop + Google System Voice Recognition Launch
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Button(
                 onClick = {
@@ -138,12 +142,33 @@ fun VoicePanel(
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (isListening) colorScheme.specialKeyBackground else colorScheme.accent
                 ),
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = if (isListening) "إيقاف الاستماع" else "ابدأ التحدث",
+                    text = if (isListening) "إيقاف الاستماع" else "تحدث هنا (مدمج)",
                     fontSize = 12.sp,
-                    color = if (isListening) colorScheme.specialKeyText else androidx.compose.ui.graphics.Color.White
+                    color = if (isListening) colorScheme.specialKeyText else Color.White
+                )
+            }
+
+            OutlinedButton(
+                onClick = onLaunchSystemVoice,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = colorScheme.accent
+                ),
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.RecordVoiceOver,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "صوت Google / النظام",
+                    fontSize = 11.sp
                 )
             }
         }

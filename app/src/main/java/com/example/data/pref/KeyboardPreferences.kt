@@ -60,6 +60,108 @@ class KeyboardPreferences(context: Context) {
     private val _toolbarUndoRedoState = MutableStateFlow(showToolbarUndoRedo)
     val toolbarUndoRedoState: StateFlow<Boolean> = _toolbarUndoRedoState.asStateFlow()
 
+    private val _heightPercentState = MutableStateFlow(keyboardHeightPercent)
+    val heightPercentState: StateFlow<Int> = _heightPercentState.asStateFlow()
+
+    private val _widthPercentState = MutableStateFlow(keyboardWidthPercent)
+    val widthPercentState: StateFlow<Int> = _widthPercentState.asStateFlow()
+
+    private val _keyFontSizeSpState = MutableStateFlow(keyFontSizeSp)
+    val keyFontSizeSpState: StateFlow<Int> = _keyFontSizeSpState.asStateFlow()
+
+    private val _secondaryFontSizeSpState = MutableStateFlow(secondaryFontSizeSp)
+    val secondaryFontSizeSpState: StateFlow<Int> = _secondaryFontSizeSpState.asStateFlow()
+
+    private val _keyCornerRadiusState = MutableStateFlow(keyCornerRadiusDp)
+    val keyCornerRadiusState: StateFlow<Int> = _keyCornerRadiusState.asStateFlow()
+
+    private val _keyStrokeBorderState = MutableStateFlow(keyStrokeBorderEnabled)
+    val keyStrokeBorderState: StateFlow<Boolean> = _keyStrokeBorderState.asStateFlow()
+
+    private val _arrowRowState = MutableStateFlow(showArrowRow)
+    val arrowRowState: StateFlow<Boolean> = _arrowRowState.asStateFlow()
+
+    var keyboardHeightPercent: Int
+        get() = prefs.getInt(KEY_HEIGHT_PERCENT, 100)
+        set(value) {
+            prefs.edit().putInt(KEY_HEIGHT_PERCENT, value).apply()
+            _heightPercentState.value = value
+        }
+
+    var keyboardWidthPercent: Int
+        get() = prefs.getInt(KEY_WIDTH_PERCENT, 100)
+        set(value) {
+            prefs.edit().putInt(KEY_WIDTH_PERCENT, value).apply()
+            _widthPercentState.value = value
+        }
+
+    var keyboardWidthAlign: String
+        get() = prefs.getString(KEY_WIDTH_ALIGN, "CENTER") ?: "CENTER"
+        set(value) = prefs.edit().putString(KEY_WIDTH_ALIGN, value).apply()
+
+    var keyFontSizeSp: Int
+        get() = prefs.getInt(KEY_KEY_FONT_SIZE_SP, 19)
+        set(value) {
+            prefs.edit().putInt(KEY_KEY_FONT_SIZE_SP, value).apply()
+            _keyFontSizeSpState.value = value
+        }
+
+    var secondaryFontSizeSp: Int
+        get() = prefs.getInt(KEY_SECONDARY_FONT_SIZE_SP, 9)
+        set(value) {
+            prefs.edit().putInt(KEY_SECONDARY_FONT_SIZE_SP, value).apply()
+            _secondaryFontSizeSpState.value = value
+        }
+
+    var keyCornerRadiusDp: Int
+        get() = prefs.getInt(KEY_KEY_CORNER_RADIUS, 7)
+        set(value) {
+            prefs.edit().putInt(KEY_KEY_CORNER_RADIUS, value).apply()
+            _keyCornerRadiusState.value = value
+        }
+
+    var keyStrokeBorderEnabled: Boolean
+        get() = prefs.getBoolean(KEY_KEY_STROKE_BORDER, false)
+        set(value) {
+            prefs.edit().putBoolean(KEY_KEY_STROKE_BORDER, value).apply()
+            _keyStrokeBorderState.value = value
+        }
+
+    var keyGapDp: Int
+        get() = prefs.getInt(KEY_KEY_GAP_DP, 2)
+        set(value) = prefs.edit().putInt(KEY_KEY_GAP_DP, value).apply()
+
+    var keySoundType: String
+        get() = prefs.getString(KEY_SOUND_TYPE, "CLICK") ?: "CLICK"
+        set(value) = prefs.edit().putString(KEY_SOUND_TYPE, value).apply()
+
+    var keySoundVolume: Int
+        get() = prefs.getInt(KEY_SOUND_VOLUME, 50)
+        set(value) = prefs.edit().putInt(KEY_SOUND_VOLUME, value).apply()
+
+    var hapticDurationMs: Int
+        get() = prefs.getInt(KEY_HAPTIC_DURATION_MS, 20)
+        set(value) = prefs.edit().putInt(KEY_HAPTIC_DURATION_MS, value).apply()
+
+    var showArrowRow: Boolean
+        get() = prefs.getBoolean(KEY_SHOW_ARROW_ROW, false)
+        set(value) {
+            prefs.edit().putBoolean(KEY_SHOW_ARROW_ROW, value).apply()
+            _arrowRowState.value = value
+        }
+
+    var showBottomRowSymbols: Boolean
+        get() = prefs.getBoolean(KEY_BOTTOM_ROW_SYMBOLS, true)
+        set(value) = prefs.edit().putBoolean(KEY_BOTTOM_ROW_SYMBOLS, value).apply()
+
+    var clipboardRetentionDays: Int
+        get() = prefs.getInt(KEY_CLIPBOARD_RETENTION, 30)
+        set(value) = prefs.edit().putInt(KEY_CLIPBOARD_RETENTION, value).apply()
+
+    var clipboardAutoClean: Boolean
+        get() = prefs.getBoolean(KEY_CLIPBOARD_AUTO_CLEAN, false)
+        set(value) = prefs.edit().putBoolean(KEY_CLIPBOARD_AUTO_CLEAN, value).apply()
+
     var showKeyPreview: Boolean
         get() = prefs.getBoolean(KEY_SHOW_KEY_PREVIEW, true)
         set(value) {
@@ -296,6 +398,21 @@ class KeyboardPreferences(context: Context) {
         private const val KEY_SHOW_KEY_PREVIEW = "show_key_preview"
         private const val KEY_BOTTOM_CHIN = "bottom_chin_padding"
         private const val KEY_TOOLBAR_UNDO_REDO = "show_toolbar_undo_redo"
+        private const val KEY_HEIGHT_PERCENT = "keyboard_height_percent"
+        private const val KEY_WIDTH_PERCENT = "keyboard_width_percent"
+        private const val KEY_WIDTH_ALIGN = "keyboard_width_align"
+        private const val KEY_KEY_FONT_SIZE_SP = "key_font_size_sp"
+        private const val KEY_SECONDARY_FONT_SIZE_SP = "secondary_font_size_sp"
+        private const val KEY_KEY_CORNER_RADIUS = "key_corner_radius_dp"
+        private const val KEY_KEY_STROKE_BORDER = "key_stroke_border_enabled"
+        private const val KEY_KEY_GAP_DP = "key_gap_dp"
+        private const val KEY_SOUND_TYPE = "key_sound_type"
+        private const val KEY_SOUND_VOLUME = "key_sound_volume"
+        private const val KEY_HAPTIC_DURATION_MS = "haptic_duration_ms"
+        private const val KEY_SHOW_ARROW_ROW = "show_arrow_row"
+        private const val KEY_BOTTOM_ROW_SYMBOLS = "bottom_row_symbols"
+        private const val KEY_CLIPBOARD_RETENTION = "clipboard_retention_days"
+        private const val KEY_CLIPBOARD_AUTO_CLEAN = "clipboard_auto_clean"
     }
 
     var emojiStyle: String

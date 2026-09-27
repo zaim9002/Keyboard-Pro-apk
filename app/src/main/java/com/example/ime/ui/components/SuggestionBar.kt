@@ -36,15 +36,45 @@ fun SuggestionBar(
     onPasteClip: (String) -> Unit = {},
     onAddWordToDictionary: (String) -> Unit = {}
 ) {
-    if (suggestions.isEmpty() && latestClip.isNullOrBlank() && (isCurrentWordKnown || currentTypedWord.isNullOrBlank())) return
+    if (suggestions.isEmpty() && latestClip.isNullOrBlank() && (isCurrentWordKnown || currentTypedWord.isNullOrBlank())) {
+        // Maintain fixed 38.dp height to prevent full keyboard relayout / height shifts
+        Row(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(38.dp)
+                .background(colorScheme.suggestionBar)
+                .padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            listOf("،", "؟", "!", ".", "...", "@", "#").forEach { punct ->
+                Box(
+                    modifier = Modifier
+                        .height(28.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable { onSelectSuggestion(punct) }
+                        .padding(horizontal = 10.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = punct,
+                        color = colorScheme.suggestionText.copy(alpha = 0.6f),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+        return
+    }
 
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
-    // Smoothly scroll back to start when suggestions update
+    // Immediate scroll to start without running ongoing animation loops that freeze the UI thread
     LaunchedEffect(suggestions) {
-        if (suggestions.isNotEmpty()) {
-            listState.animateScrollToItem(0)
+        if (suggestions.isNotEmpty() && listState.firstVisibleItemIndex != 0) {
+            listState.scrollToItem(0)
         }
     }
 

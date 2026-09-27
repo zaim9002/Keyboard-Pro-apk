@@ -1,23 +1,54 @@
 package com.example.ime.util
 
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 object KeyboardLayoutController {
 
-    fun getKeyHeight(heightPref: String): Dp {
-        return when (heightPref) {
-            "Small" -> 42.dp
-            "Large" -> 54.dp
-            "ExtraLarge" -> 60.dp
-            else -> 48.dp
+    fun getKeyHeight(heightPref: String, heightPercent: Int = 100): Dp {
+        val baseHeight = when (heightPref) {
+            "VerySmall" -> 38f
+            "Small" -> 42f
+            "Medium" -> 48f
+            "Large" -> 54f
+            "ExtraLarge" -> 60f
+            else -> {
+                // If it's a numeric string like "50"
+                heightPref.toIntOrNull()?.toFloat() ?: 48f
+            }
+        }
+
+        val effectiveDp = if (heightPercent != 100 && heightPercent in 60..150) {
+            (baseHeight * (heightPercent / 100f)).coerceIn(34f, 72f)
+        } else {
+            baseHeight
+        }
+
+        return effectiveDp.dp
+    }
+
+    fun getPanelHeight(heightPref: String, showNumberRow: Boolean, heightPercent: Int = 100): Dp {
+        val keyHeight = getKeyHeight(heightPref, heightPercent)
+        val numberRowHeight = if (showNumberRow) keyHeight * 0.85f else 0.dp
+        // Standard height matching 4 rows + toolbar/suggestions + bottom chin
+        return (keyHeight * 4) + numberRowHeight + 52.dp
+    }
+
+    fun getKeyFontSize(fontSizePref: String, customSp: Int = 19): TextUnit {
+        if (customSp in 12..28 && customSp != 19) {
+            return customSp.sp
+        }
+        return when (fontSizePref) {
+            "Small" -> 16.sp
+            "Large" -> 22.sp
+            "ExtraLarge" -> 25.sp
+            else -> 19.sp
         }
     }
 
-    fun getPanelHeight(heightPref: String, showNumberRow: Boolean): Dp {
-        val keyHeight = getKeyHeight(heightPref)
-        val numberRowHeight = if (showNumberRow) keyHeight * 0.85f else 0.dp
-        // Standard height matching the 4 letter rows + suggestion bar + bottom control row + optional number row
-        return (keyHeight * 4) + numberRowHeight + 46.dp
+    fun getSecondaryFontSize(customSp: Int = 9): TextUnit {
+        return customSp.coerceIn(7, 14).sp
     }
 }
