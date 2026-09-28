@@ -6,11 +6,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Backspace
+import androidx.compose.material.icons.filled.Backspace
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -20,30 +20,22 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupProperties
 import com.example.ime.theme.KeyboardColorScheme
 import com.example.ime.util.HapticHelper
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeout
 
-import androidx.compose.ui.layout.LayoutCoordinates
-import androidx.compose.ui.layout.onGloballyPositioned
-
-private val KeyDefaultShape = RoundedCornerShape(6.dp)
 private val KeyShadowColor = Color.Black.copy(alpha = 0.15f)
 
 @Composable
@@ -136,12 +128,12 @@ fun KeyButton(
 
     Box(
         modifier = boxModifier
-            .pointerInput(Unit) {
+            .pointerInput(hasLongClick) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
                     isPressed = true
 
-                    // Immediate preview notification to centralized overlay (zero window allocations)
+                    // Immediate preview notification to centralized overlay
                     if (currentShowPreview && !currentIsSpecial && currentText.isNotBlank()) {
                         currentOnPreviewChange?.invoke(currentText, keyCoordinates, true)
                     }
@@ -177,9 +169,9 @@ fun KeyButton(
                             change.consume()
                             break
                         }
-                        // If finger moved far away from key (> 65px), cancel
+                        // Generous movement threshold (120px) to prevent accidental cancel on rapid typing
                         val delta = change.position - down.position
-                        if (delta.getDistance() > 65f) {
+                        if (delta.getDistance() > 120f) {
                             isCancelled = true
                             longPressJob?.cancel()
                             break
@@ -256,39 +248,33 @@ fun RepeatingDeleteKeyButton(
     val currentSoundType by rememberUpdatedState(soundType)
     val currentSoundVolume by rememberUpdatedState(soundVolume)
 
-    val bgColor = if (isPressed) colorScheme.specialKeyBackground.copy(alpha = 0.7f) else colorScheme.specialKeyBackground
-    val iconColor = colorScheme.specialKeyText
     val keyShape = remember(cornerRadius) { RoundedCornerShape(cornerRadius) }
 
+    val baseModifier = modifier
+        .padding(horizontal = 1.5.dp, vertical = 2.dp)
+        .height(height)
+
     val boxModifier = if (strokeBorder) {
-        modifier
-            .padding(horizontal = 1.5.dp, vertical = 2.dp)
-            .height(height)
+        baseModifier
             .shadow(
-                elevation = 1.dp,
+                elevation = if (isPressed) 0.5.dp else 1.2.dp,
                 shape = keyShape,
                 ambientColor = KeyShadowColor,
                 spotColor = KeyShadowColor
             )
-            .border(
-                width = 0.8.dp,
-                color = colorScheme.borderColor.copy(alpha = 0.3f),
-                shape = keyShape
-            )
+            .border(0.8.dp, colorScheme.borderColor.copy(alpha = 0.35f), keyShape)
             .clip(keyShape)
-            .background(bgColor)
+            .background(if (isPressed) colorScheme.specialKeyBackground.copy(alpha = 0.8f) else colorScheme.specialKeyBackground)
     } else {
-        modifier
-            .padding(horizontal = 1.5.dp, vertical = 2.dp)
-            .height(height)
+        baseModifier
             .shadow(
-                elevation = 1.dp,
+                elevation = if (isPressed) 0.5.dp else 1.2.dp,
                 shape = keyShape,
                 ambientColor = KeyShadowColor,
                 spotColor = KeyShadowColor
             )
             .clip(keyShape)
-            .background(bgColor)
+            .background(if (isPressed) colorScheme.specialKeyBackground.copy(alpha = 0.8f) else colorScheme.specialKeyBackground)
     }
 
     Box(
@@ -296,73 +282,51 @@ fun RepeatingDeleteKeyButton(
             .pointerInput(Unit) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
-                    var isWordDeleted = false
-                    var isAllDeleted = false
                     isPressed = true
+
                     if (currentHapticEnabled) {
                         HapticHelper.performKeyHaptic(context, view, currentHapticIntensity, currentHapticDurationMs)
                     }
                     if (currentSoundEnabled) {
                         HapticHelper.performKeySound(context, view, currentSoundType, currentSoundVolume)
                     }
-                    // 1. Initial single delete
-                    currentOnDelete()
-                    val startTime = System.currentTimeMillis()
 
-                    // Accelerated deletion loop: accelerates after 1.8s, and turbo accelerates after 4s!
-                    val repeatJob: Job = coroutineScope.launch {
-                        delay(320L) // initial hold delay before repeating
-                        while (isActive) {
-                            if (isWordDeleted || isAllDeleted) break
-                            val elapsed = System.currentTimeMillis() - startTime
-                            if (elapsed >= 4000L) {
-                                // AFTER 4 SECONDS: SUPER FAST TURBO ACCELERATED DELETE!
-                                currentOnDeleteWord?.invoke() ?: run {
-                                    repeat(4) { currentOnDelete() }
-                                }
-                                if (currentHapticEnabled) {
-                                    HapticHelper.performKeyHaptic(context, view, "Light")
-                                }
-                                delay(25L)
-                            } else if (elapsed >= 1800L) {
-                                // FAST DELETE (between 1.8s and 4s)
+                    currentOnDelete()
+
+                    var isSwipedWord = false
+                    var totalDragX = 0f
+
+                    val repeatJob = coroutineScope.launch {
+                        delay(380L)
+                        var interval = 80L
+                        while (true) {
+                            if (!isSwipedWord) {
                                 currentOnDelete()
                                 if (currentHapticEnabled) {
-                                    HapticHelper.performKeyHaptic(context, view, "Light")
+                                    HapticHelper.performKeyHaptic(context, view, "Light", 10)
                                 }
-                                delay(50L)
-                            } else {
-                                // NORMAL REPEAT (first 1.8s)
-                                currentOnDelete()
-                                if (currentHapticEnabled) {
-                                    HapticHelper.performKeyHaptic(context, view, "Light")
-                                }
-                                delay(85L)
                             }
+                            delay(interval)
+                            if (interval > 40L) interval -= 5L
                         }
                     }
 
-                    // Listen for release or left-swipe to delete full word or entire line
                     while (true) {
                         val event = awaitPointerEvent()
                         val change = event.changes.firstOrNull { it.id == down.id } ?: break
                         if (!change.pressed) {
+                            change.consume()
                             break
                         }
-                        val dragX = change.position.x - down.position.x
-                        // Swipe far to the left by 120+ pixels: delete all!
-                        if (dragX < -120f && !isAllDeleted) {
-                            isAllDeleted = true
+                        val dragAmountX = change.position.x - down.position.x
+                        totalDragX = dragAmountX
+
+                        // Left swipe on backspace deletes full word
+                        if (!isSwipedWord && dragAmountX < -60f) {
+                            isSwipedWord = true
                             repeatJob.cancel()
                             if (currentHapticEnabled) {
-                                HapticHelper.performKeyHaptic(context, view, "Heavy")
-                            }
-                            currentOnDeleteAll?.invoke() ?: currentOnDeleteWord?.invoke()
-                        } else if (dragX < -36f && !isWordDeleted && !isAllDeleted) {
-                            isWordDeleted = true
-                            repeatJob.cancel()
-                            if (currentHapticEnabled) {
-                                HapticHelper.performKeyHaptic(context, view, "Strong")
+                                HapticHelper.performKeyHaptic(context, view, "Heavy", 30)
                             }
                             currentOnDeleteWord?.invoke() ?: currentOnDelete()
                         }
@@ -374,12 +338,132 @@ fun RepeatingDeleteKeyButton(
             },
         contentAlignment = Alignment.Center
     ) {
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.Backspace,
+        androidx.compose.material3.Icon(
+            imageVector = androidx.compose.material.icons.Icons.AutoMirrored.Filled.Backspace,
             contentDescription = "حذف",
-            tint = iconColor,
+            tint = colorScheme.specialKeyText,
             modifier = Modifier.size(20.dp)
         )
     }
 }
 
+@Composable
+fun EnterKeyButton(
+    modifier: Modifier = Modifier,
+    keyHeight: Dp = 48.dp,
+    actionIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    colorScheme: KeyboardColorScheme,
+    cornerRadius: Dp = 6.dp,
+    strokeBorder: Boolean = false,
+    hapticEnabled: Boolean,
+    soundEnabled: Boolean,
+    soundType: String = "CLICK",
+    soundVolume: Int = 50,
+    hapticIntensity: String = "Medium",
+    hapticDurationMs: Int = 20,
+    onEnter: () -> Unit,
+    onLongPressEnter: (() -> Unit)? = null
+) {
+    val view = LocalView.current
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    var isPressed by remember { mutableStateOf(false) }
+
+    val currentOnEnter by rememberUpdatedState(onEnter)
+    val currentOnLongPressEnter by rememberUpdatedState(onLongPressEnter)
+    val currentHapticEnabled by rememberUpdatedState(hapticEnabled)
+    val currentHapticIntensity by rememberUpdatedState(hapticIntensity)
+    val currentHapticDurationMs by rememberUpdatedState(hapticDurationMs)
+    val currentSoundEnabled by rememberUpdatedState(soundEnabled)
+    val currentSoundType by rememberUpdatedState(soundType)
+    val currentSoundVolume by rememberUpdatedState(soundVolume)
+
+    val keyShape = remember(cornerRadius) { RoundedCornerShape(cornerRadius) }
+
+    val baseModifier = modifier
+        .padding(horizontal = 1.5.dp, vertical = 2.dp)
+        .height(keyHeight)
+
+    val boxModifier = if (strokeBorder) {
+        baseModifier
+            .shadow(
+                elevation = if (isPressed) 0.5.dp else 1.2.dp,
+                shape = keyShape,
+                ambientColor = KeyShadowColor,
+                spotColor = KeyShadowColor
+            )
+            .border(0.8.dp, colorScheme.borderColor.copy(alpha = 0.4f), keyShape)
+            .clip(keyShape)
+            .background(if (isPressed) colorScheme.accent.copy(alpha = 0.8f) else colorScheme.accent)
+    } else {
+        baseModifier
+            .shadow(
+                elevation = if (isPressed) 0.5.dp else 1.2.dp,
+                shape = keyShape,
+                ambientColor = KeyShadowColor,
+                spotColor = KeyShadowColor
+            )
+            .clip(keyShape)
+            .background(if (isPressed) colorScheme.accent.copy(alpha = 0.8f) else colorScheme.accent)
+    }
+
+    Box(
+        modifier = boxModifier
+            .pointerInput(currentOnLongPressEnter != null) {
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    isPressed = true
+
+                    if (currentHapticEnabled) {
+                        HapticHelper.performKeyHaptic(context, view, currentHapticIntensity, currentHapticDurationMs)
+                    }
+                    if (currentSoundEnabled) {
+                        HapticHelper.performKeySound(context, view, currentSoundType, currentSoundVolume)
+                    }
+
+                    var isLongTriggered = false
+                    val longJob = if (currentOnLongPressEnter != null) {
+                        coroutineScope.launch {
+                            delay(400L)
+                            isLongTriggered = true
+                            if (currentHapticEnabled) {
+                                HapticHelper.performKeyHaptic(context, view, "Heavy")
+                            }
+                            currentOnLongPressEnter?.invoke()
+                        }
+                    } else null
+
+                    var isCancelled = false
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                        if (!change.pressed) {
+                            change.consume()
+                            break
+                        }
+                        val delta = change.position - down.position
+                        if (delta.getDistance() > 100f) {
+                            isCancelled = true
+                            longJob?.cancel()
+                            break
+                        }
+                    }
+
+                    longJob?.cancel()
+                    isPressed = false
+
+                    if (!isCancelled && !isLongTriggered) {
+                        currentOnEnter()
+                    }
+                }
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        androidx.compose.material3.Icon(
+            imageVector = actionIcon,
+            contentDescription = "إدخال",
+            tint = Color.White,
+            modifier = Modifier.size(20.dp)
+        )
+    }
+}

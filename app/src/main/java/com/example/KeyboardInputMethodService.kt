@@ -117,6 +117,17 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
         }
     }
 
+    private var backInterceptor: (() -> Boolean)? = null
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            if (backInterceptor?.invoke() == true) {
+                return true
+            }
+        }
+        return super.onKeyDown(keyCode, event)
+    }
+
     override fun onCreate() {
         super.onCreate()
         activeInstance = this
@@ -419,6 +430,9 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
                 },
                 onCommitGif = { gifItem ->
                     commitGifMedia(gifItem)
+                },
+                onRegisterBackHandler = { handler ->
+                    backInterceptor = handler
                 }
             )
         }

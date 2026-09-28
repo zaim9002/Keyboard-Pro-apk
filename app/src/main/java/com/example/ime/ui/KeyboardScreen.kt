@@ -181,7 +181,8 @@ fun KeyboardScreen(
     onChangeSecondaryFontSize: (Int) -> Unit = {},
     onHideKeyboard: (() -> Unit)? = null,
     onSearch: (() -> Unit)? = null,
-    onCommitGif: ((com.example.engine.GifItem) -> Unit)? = null
+    onCommitGif: ((com.example.engine.GifItem) -> Unit)? = null,
+    onRegisterBackHandler: (((() -> Boolean)) -> Unit)? = null
 ) {
     val defaultMode = remember(inputType, initialLayoutMode) {
         if (initialLayoutMode != null) {
@@ -215,6 +216,41 @@ fun KeyboardScreen(
     var translateSourceLang by remember { mutableStateOf("ar") }
     var translateTargetLang by remember { mutableStateOf("en") }
     val coroutineScope = rememberCoroutineScope()
+
+    val handleBackAction: () -> Boolean = {
+        when {
+            activeCalloutState != null -> {
+                activeCalloutState = null
+                true
+            }
+            showLanguagePicker -> {
+                showLanguagePicker = false
+                true
+            }
+            isInlineTranslateOpen -> {
+                isInlineTranslateOpen = false
+                true
+            }
+            activePanel != KeyboardPanel.NONE -> {
+                activePanel = KeyboardPanel.NONE
+                true
+            }
+            layoutMode != LayoutMode.ALPHA -> {
+                layoutMode = LayoutMode.ALPHA
+                true
+            }
+            else -> false
+        }
+    }
+
+    LaunchedEffect(handleBackAction) {
+        onRegisterBackHandler?.invoke(handleBackAction)
+    }
+
+    val canInterceptBack = activePanel != KeyboardPanel.NONE || layoutMode != LayoutMode.ALPHA || activeCalloutState != null || showLanguagePicker || isInlineTranslateOpen
+    androidx.activity.compose.BackHandler(enabled = canInterceptBack) {
+        handleBackAction()
+    }
 
     val keyHeight = KeyboardLayoutController.getKeyHeight(keyboardHeight, heightPercent)
     val keyFontSize = KeyboardLayoutController.getKeyFontSize("Medium", keyFontSizeSp)
@@ -1190,9 +1226,6 @@ fun KeyboardScreen(
                 )
             }
         }
-
-        // Bottom Navigation Bar Spacing
-        Spacer(modifier = Modifier.navigationBarsPadding())
     }
     }
 }
@@ -2464,9 +2497,9 @@ private fun BottomControlRow(
         // 1. Symbols Key (?123 / ١٢٣ / ABC / أبت)
         KeyButton(
             text = modeLabel,
-            secondaryText = if (modeLabel.contains("123") || modeLabel.contains("١٢٣")) "⚙" else null,
+            secondaryText = if (modeLabel.contains("123") || modeLabel.contains("١٢٣") || modeLabel.contains("Sym")) "⚙" else null,
             isSpecial = true,
-            fontSize = 12.sp,
+            fontSize = 13.sp,
             secondaryFontSize = 8.sp,
             height = keyHeight,
             cornerRadius = keyCornerRadius,
@@ -2479,7 +2512,7 @@ private fun BottomControlRow(
             hapticIntensity = hapticIntensity,
             hapticDurationMs = hapticDurationMs,
             modifier = Modifier.weight(1.05f),
-            onLongClick = onLongPressLanguage
+            onLongClick = null
         ) {
             onSwitchMode()
         }

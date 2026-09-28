@@ -94,11 +94,24 @@ fun KeyboardToolbar(
             item(key = "emoji") {
                 ToolbarIconButton(
                     icon = Icons.Default.Mood,
-                    tooltip = "إيموجي و GIF",
-                    isSelected = activePanel == KeyboardPanel.EMOJI || activePanel == KeyboardPanel.GIFS,
+                    tooltip = "إيموجي",
+                    isSelected = activePanel == KeyboardPanel.EMOJI,
                     colorScheme = colorScheme,
                     onClick = {
                         onPanelSelect(if (activePanel == KeyboardPanel.EMOJI) KeyboardPanel.NONE else KeyboardPanel.EMOJI)
+                    }
+                )
+            }
+
+            // 1.5. GIF Library Button (GIF)
+            item(key = "gif_panel") {
+                ToolbarIconButtonWithText(
+                    text = "GIF",
+                    tooltip = "مكتبة GIF المتحركة",
+                    isSelected = activePanel == KeyboardPanel.GIFS,
+                    colorScheme = colorScheme,
+                    onClick = {
+                        onPanelSelect(if (activePanel == KeyboardPanel.GIFS) KeyboardPanel.NONE else KeyboardPanel.GIFS)
                     }
                 )
             }
