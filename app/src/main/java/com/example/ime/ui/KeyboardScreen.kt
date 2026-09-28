@@ -170,6 +170,7 @@ fun KeyboardScreen(
     hapticIntensity: String = "Medium",
     hapticDurationMs: Int = 20,
     applyNavigationBarsPadding: Boolean = true,
+    onSwitchIme: (() -> Unit)? = null,
     onLaunchVoiceActivity: () -> Unit = {},
     onChangeKeyboardHeightPercent: (Int) -> Unit = {},
     onChangeKeyboardWidthPercent: (Int) -> Unit = {},
@@ -572,6 +573,7 @@ fun KeyboardScreen(
                         onOpenInstaFonts = { activePanel = KeyboardPanel.INSTA_FONTS },
                         onOpenHandwriting = { activePanel = KeyboardPanel.HANDWRITING },
                         onOpenToolbarEditor = { activePanel = KeyboardPanel.TOOLBAR_EDITOR },
+                        onSwitchIme = onSwitchIme,
                         onClose = { activePanel = KeyboardPanel.NONE }
                     )
                 }

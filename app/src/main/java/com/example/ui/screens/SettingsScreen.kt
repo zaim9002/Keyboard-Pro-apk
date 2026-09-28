@@ -1,6 +1,9 @@
 package com.example.ui.screens
 
+import android.content.Context
 import android.content.Intent
+import android.provider.Settings
+import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
@@ -20,16 +23,64 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.example.KeyboardProApp
+
+fun checkIsKeyboardEnabled(context: Context): Boolean {
+    return try {
+        val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager ?: return false
+        val enabledMethods = imm.enabledInputMethodList
+        val pkg = context.packageName
+        enabledMethods.any { it.packageName == pkg }
+    } catch (e: Exception) {
+        false
+    }
+}
+
+fun checkIsKeyboardSelected(context: Context): Boolean {
+    return try {
+        val currentIme = Settings.Secure.getString(
+            context.contentResolver,
+            Settings.Secure.DEFAULT_INPUT_METHOD
+        )
+        val pkg = context.packageName
+        currentIme != null && currentIme.contains(pkg)
+    } catch (e: Exception) {
+        false
+    }
+}
+
+fun openSystemInputMethodSettings(context: Context) {
+    try {
+        val intent = Intent(Settings.ACTION_INPUT_METHOD_SETTINGS).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        Toast.makeText(context, "تعذر فتح إعدادات الإدخال", Toast.LENGTH_SHORT).show()
+    }
+}
+
+fun openSystemInputMethodPicker(context: Context) {
+    try {
+        val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+        imm?.showInputMethodPicker()
+    } catch (e: Exception) {
+        Toast.makeText(context, "تعذر فتح قائمة اختيار لوحة المفاتيح", Toast.LENGTH_SHORT).show()
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,7 +90,24 @@ fun SettingsScreen(
     onBack: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val prefs = remember { KeyboardProApp.instance.preferences }
+
+    var isEnabled by remember { mutableStateOf(checkIsKeyboardEnabled(context)) }
+    var isSelected by remember { mutableStateOf(checkIsKeyboardSelected(context)) }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                isEnabled = checkIsKeyboardEnabled(context)
+                isSelected = checkIsKeyboardSelected(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     var hideEmojiKey by remember { mutableStateOf(!prefs.showBottomRowSymbols) }
     var showNumbers by remember { mutableStateOf(prefs.showNumberRow) }
@@ -133,6 +201,131 @@ fun SettingsScreen(
                     .padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // ================= HERO CARD: تفعيل واختيار كيبورد محمد =================
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1C1C24)),
+                    border = CardDefaults.outlinedCardBorder().copy(
+                        brush = Brush.horizontalGradient(
+                            listOf(Color(0xFF6366F1), Color(0xFF8B5CF6))
+                        )
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(42.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (isEnabled && isSelected) Color(0xFF10B981).copy(alpha = 0.2f)
+                                        else Color(0xFF6366F1).copy(alpha = 0.2f)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = if (isEnabled && isSelected) Icons.Default.CheckCircle else Icons.Default.KeyboardAlt,
+                                    contentDescription = null,
+                                    tint = if (isEnabled && isSelected) Color(0xFF34D399) else Color(0xFF818CF8),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "تفعيل واختيار كيبورد محمد",
+                                    color = Color.White,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+
+                                Text(
+                                    text = when {
+                                        !isEnabled -> "⚠️ الخطوة 1: يلزم تفعيل لوحة المفاتيح في إعدادات الهاتف"
+                                        !isSelected -> "ℹ️ الخطوة 2: لوحة المفاتيح مفعّلة، اضغط لاختيارها كافتراضية"
+                                        else -> "✓ كيبورد محمد v1 مفعّلة وتعمل كلوحة افتراضية حالياً"
+                                    },
+                                    color = when {
+                                        !isEnabled -> Color(0xFFFBBF24)
+                                        !isSelected -> Color(0xFF60A5FA)
+                                        else -> Color(0xFF34D399)
+                                    },
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+
+                        // Action Buttons Row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // Button 1: تفعيل في النظام
+                            OutlinedButton(
+                                onClick = { openSystemInputMethodSettings(context) },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = if (isEnabled) Color(0xFF34D399) else Color.White
+                                ),
+                                border = ButtonDefaults.outlinedButtonBorder.copy(
+                                    brush = Brush.horizontalGradient(
+                                        if (isEnabled) listOf(Color(0xFF10B981), Color(0xFF059669))
+                                        else listOf(Color(0xFF6366F1), Color(0xFF8B5CF6))
+                                    )
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = if (isEnabled) Icons.Default.Check else Icons.Default.Settings,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = if (isEnabled) "مفعّلة ✓" else "1. تفعيل في النظام",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            // Button 2: اختيار كيبورد محمد (Input Method Picker)
+                            Button(
+                                onClick = { openSystemInputMethodPicker(context) },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isSelected) Color(0xFF10B981) else Color(0xFF6366F1)
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.TouchApp,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = if (isSelected) "الافتراضية ✓" else "2. اختيار الكيبورد",
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+
                 // ================= SECTION 1: العرض (Display) =================
                 SettingsSectionCard(title = "العرض") {
                     // 1. سمة لوحة المفاتيح
@@ -227,7 +420,32 @@ fun SettingsScreen(
                 }
 
                 // ================= SECTION 2: إعدادات الميزة (Feature Settings) =================
-                SettingsSectionCard(title = "إعدادات الميزة") {
+                SettingsSectionCard(title = "إعدادات الميزة وطرق الإدخال") {
+                    // اختيار كيبورد محمد / التبديل الفوري (NEW & PROMINENT)
+                    SettingRowItem(
+                        icon = Icons.Default.TouchApp,
+                        iconBgColor = Color(0xFF6366F1),
+                        title = "اختيار لوحة المفاتيح الافتراضية",
+                        isNew = true,
+                        subtitle = "التبديل الفوري بين كيبورد محمد ولوحات المفاتيح الأخرى في هاتفك.",
+                        subtitleColor = Color(0xFF818CF8),
+                        onClick = { openSystemInputMethodPicker(context) }
+                    )
+
+                    HorizontalDivider(color = Color(0xFF2E2E36), thickness = 0.6.dp)
+
+                    // إدارة لوحات الإدخال في النظام (NEW)
+                    SettingRowItem(
+                        icon = Icons.Default.Tune,
+                        iconBgColor = Color(0xFF06B6D4),
+                        title = "إدارة لوحات المفاتيح في النظام",
+                        subtitle = "فتح إعدادات أندرويد لتفعيل كيبورد محمد وإدارتها.",
+                        subtitleColor = Color(0xFF818CF8),
+                        onClick = { openSystemInputMethodSettings(context) }
+                    )
+
+                    HorizontalDivider(color = Color(0xFF2E2E36), thickness = 0.6.dp)
+
                     // اللغة والنوع (NEW)
                     SettingRowItem(
                         icon = Icons.Default.Language,
@@ -243,7 +461,7 @@ fun SettingsScreen(
 
                     // إعدادات الإدخال (NEW)
                     SettingRowItem(
-                        icon = Icons.Default.TouchApp,
+                        icon = Icons.Default.Edit,
                         iconBgColor = Color(0xFFF97316),
                         title = "إعدادات الإدخال الذكي",
                         isNew = true,

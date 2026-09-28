@@ -371,6 +371,14 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
                         Log.e("KeyboardIME", "Error opening settings activity", e)
                     }
                 },
+                onSwitchIme = {
+                    try {
+                        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? android.view.inputmethod.InputMethodManager
+                        imm?.showInputMethodPicker()
+                    } catch (e: Throwable) {
+                        Log.e("KeyboardIME", "Error showing IME picker", e)
+                    }
+                },
                 onToggleOneHanded = { mode ->
                     prefs.oneHandedMode = mode
                 },

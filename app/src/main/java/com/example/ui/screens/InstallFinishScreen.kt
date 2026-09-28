@@ -31,6 +31,7 @@ fun InstallFinishScreen(
     onNavigateToSettings: () -> Unit,
     onNavigateToThemes: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val prefs = KeyboardProApp.instance.preferences
     var testText by remember { mutableStateOf("") }
     var currentLanguage by remember { mutableStateOf(prefs.currentLanguage) }
@@ -212,6 +213,7 @@ fun InstallFinishScreen(
                 onUndo = { if (testText.isNotEmpty()) testText = testText.dropLast(1) },
                 onRedo = {},
                 onOpenSettings = onNavigateToSettings,
+                onSwitchIme = { openSystemInputMethodPicker(context) },
                 onToggleOneHanded = {},
                 currentDraftText = testText
             )

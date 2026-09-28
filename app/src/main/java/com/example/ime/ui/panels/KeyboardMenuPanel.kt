@@ -54,10 +54,12 @@ fun KeyboardMenuPanel(
     onOpenInstaFonts: () -> Unit,
     onOpenHandwriting: () -> Unit,
     onOpenToolbarEditor: () -> Unit,
+    onSwitchIme: (() -> Unit)? = null,
     onClose: () -> Unit
 ) {
     val menuItems = listOf(
-        MenuItemData("theme", "السمة", icon = Icons.Default.Checkroom, hasBadge = true),
+        MenuItemData("switch_ime", "اختيار الكيبورد", icon = Icons.Default.KeyboardAlt, hasBadge = true),
+        MenuItemData("theme", "السمة", icon = Icons.Default.Checkroom),
         MenuItemData("voice", "إدخال صوتي", icon = Icons.Default.Mic),
         MenuItemData("game", "لعبة صغيرة", icon = Icons.Default.SportsEsports, hasBadge = true),
         MenuItemData("translate", "ترجمة", icon = Icons.Default.Translate),
@@ -140,6 +142,9 @@ fun KeyboardMenuPanel(
                             .background(colorScheme.keyBackground)
                             .clickable {
                                 when (item.id) {
+                                    "switch_ime" -> {
+                                        if (onSwitchIme != null) onSwitchIme() else onOpenSettings()
+                                    }
                                     "theme" -> onOpenThemes()
                                     "voice" -> onOpenVoice()
                                     "game" -> onOpenMiniGame()
