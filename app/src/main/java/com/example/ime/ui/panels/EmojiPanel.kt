@@ -20,6 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
@@ -40,6 +41,8 @@ fun EmojiPanel(
     colorScheme: KeyboardColorScheme,
     onEmojiClick: (String) -> Unit,
     onBackspace: () -> Unit,
+    onSwitchToGifs: (() -> Unit)? = null,
+    onSwitchToStickers: (() -> Unit)? = null,
     onClose: () -> Unit
 ) {
     val context = LocalContext.current
@@ -71,7 +74,7 @@ fun EmojiPanel(
             .background(colorScheme.background)
             .padding(top = 4.dp, bottom = 4.dp, start = 6.dp, end = 6.dp)
     ) {
-        // Top row: Search Bar & Actions
+        // Media Switcher Row (Emojis, Stickers, GIFs)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -79,35 +82,55 @@ fun EmojiPanel(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            // Search / Title Pill with Emoji Style badge
             Box(
                 modifier = Modifier
-                    .weight(1f)
-                    .height(34.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(colorScheme.keyBackground)
-                    .padding(horizontal = 10.dp),
-                contentAlignment = Alignment.CenterStart
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(colorScheme.accent)
+                    .padding(horizontal = 10.dp, vertical = 4.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                Text(
+                    text = "😊 فيسات",
+                    color = Color.White,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            if (onSwitchToStickers != null) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(colorScheme.keyBackground)
+                        .clickable { onSwitchToStickers() }
+                        .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = if (selectedCategoryId == CATEGORY_RECENT) "🕒 أحدث الفيسات المستخدمة" else "✨ الرموز التعبيرية والفيسات",
-                        color = colorScheme.keyText.copy(alpha = 0.8f),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = prefs.emojiStyle,
-                        color = colorScheme.accent,
+                        text = "🏷️ ملصقات",
+                        color = colorScheme.keyText,
                         fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
+
+            if (onSwitchToGifs != null) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(colorScheme.keyBackground)
+                        .clickable { onSwitchToGifs() }
+                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "🎬 صور GIF",
+                        color = colorScheme.keyText,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.weight(1f))
 
             // Backspace Button
             IconButton(
@@ -115,13 +138,13 @@ fun EmojiPanel(
                     HapticHelper.performKeyHaptic(context, view)
                     onBackspace()
                 },
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(30.dp)
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Backspace,
                     contentDescription = "حذف",
                     tint = colorScheme.keyText,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(18.dp)
                 )
             }
 
@@ -131,13 +154,13 @@ fun EmojiPanel(
                     HapticHelper.performKeyHaptic(context, view)
                     onClose()
                 },
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(30.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "رجوع",
                     tint = colorScheme.accent,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(18.dp)
                 )
             }
         }

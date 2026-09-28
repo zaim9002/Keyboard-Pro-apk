@@ -1,6 +1,7 @@
 package com.example.ime.theme
 
 import androidx.compose.ui.graphics.Color
+import com.example.data.pref.KeyboardPreferences
 
 data class KeyboardColorScheme(
     val name: String,
@@ -13,55 +14,16 @@ data class KeyboardColorScheme(
     val accent: Color,
     val suggestionBar: Color,
     val suggestionText: Color,
-    val borderColor: Color = Color.Transparent
+    val borderColor: Color = Color.Transparent,
+    val backgroundImageUri: String? = null,
+    val category: String = "لون"
 )
 
 object KeyboardThemes {
 
-    val GboardDark = KeyboardColorScheme(
-        name = "Gboard Dark",
-        isDark = true,
-        background = Color(0xFF1F2125),
-        keyBackground = Color(0xFF33353A),
-        keyText = Color(0xFFE8EAED),
-        specialKeyBackground = Color(0xFF282A2E),
-        specialKeyText = Color(0xFFE8EAED),
-        accent = Color(0xFF8AB4F8),
-        suggestionBar = Color(0xFF1F2125),
-        suggestionText = Color(0xFFE8EAED),
-        borderColor = Color(0x15FFFFFF)
-    )
-
-    val GboardLight = KeyboardColorScheme(
-        name = "Gboard Light",
-        isDark = false,
-        background = Color(0xFFECEFF1),
-        keyBackground = Color(0xFFFFFFFF),
-        keyText = Color(0xFF202124),
-        specialKeyBackground = Color(0xFFDFE3E8),
-        specialKeyText = Color(0xFF202124),
-        accent = Color(0xFF1A73E8),
-        suggestionBar = Color(0xFFECEFF1),
-        suggestionText = Color(0xFF202124),
-        borderColor = Color(0x18000000)
-    )
-
-    val SwiftKeyDark = KeyboardColorScheme(
-        name = "SwiftKey Dark",
-        isDark = true,
-        background = Color(0xFF13171F),
-        keyBackground = Color(0xFF242F3E),
-        keyText = Color(0xFFF8FAFC),
-        specialKeyBackground = Color(0xFF1A222E),
-        specialKeyText = Color(0xFFF8FAFC),
-        accent = Color(0xFF38BDF8),
-        suggestionBar = Color(0xFF13171F),
-        suggestionText = Color(0xFFE2E8F0),
-        borderColor = Color(0x1AFFFFFF)
-    )
-
-    val Midnight = KeyboardColorScheme(
-        name = "Midnight",
+    // === 24 Official Color Themes from "سمة الألوان" (Screenshot 3) ===
+    val Asasi = KeyboardColorScheme(
+        name = "أساسي",
         isDark = true,
         background = Color(0xFF141921),
         keyBackground = Color(0xFF38465B),
@@ -71,451 +33,462 @@ object KeyboardThemes {
         accent = Color(0xFF435670),
         suggestionBar = Color(0xFF141921),
         suggestionText = Color(0xFFE2E8F0),
-        borderColor = Color(0x18FFFFFF)
+        borderColor = Color(0x18FFFFFF),
+        category = "لون"
     )
 
-    val ProSlateDark = KeyboardColorScheme(
-        name = "ProSlateDark",
-        isDark = true,
-        background = Color(0xFF141921),
-        keyBackground = Color(0xFF38465B),
-        keyText = Color(0xFFFFFFFF),
-        specialKeyBackground = Color(0xFF2A3647),
-        specialKeyText = Color(0xFFFFFFFF),
-        accent = Color(0xFF435670),
-        suggestionBar = Color(0xFF141921),
-        suggestionText = Color(0xFFE2E8F0),
-        borderColor = Color(0x18FFFFFF)
-    )
-
-    val Dark = KeyboardColorScheme(
-        name = "Dark",
-        isDark = true,
-        background = Color(0xFF18181B),
-        keyBackground = Color(0xFF27272A),
-        keyText = Color(0xFFFAFAFA),
-        specialKeyBackground = Color(0xFF3F3F46),
-        specialKeyText = Color(0xFFE4E4E7),
-        accent = Color(0xFF6366F1),
-        suggestionBar = Color(0xFF27272A),
-        suggestionText = Color(0xFFE4E4E7)
-    )
-
-    val Ocean = KeyboardColorScheme(
-        name = "Ocean",
-        isDark = true,
-        background = Color(0xFF0B192C),
-        keyBackground = Color(0xFF1E3E62),
-        keyText = Color(0xFFF1F5F9),
-        specialKeyBackground = Color(0xFF000000).copy(alpha = 0.4f),
-        specialKeyText = Color(0xFF00ADB5),
-        accent = Color(0xFF00ADB5),
-        suggestionBar = Color(0xFF1E3E62),
-        suggestionText = Color(0xFFE0F2FE),
-        borderColor = Color(0x3300ADB5)
-    )
-
-    val Purple = KeyboardColorScheme(
-        name = "Purple",
-        isDark = true,
-        background = Color(0xFF1A102F),
-        keyBackground = Color(0xFF2C1B4D),
-        keyText = Color(0xFFFDF4FF),
-        specialKeyBackground = Color(0xFF442B75),
-        specialKeyText = Color(0xFFD946EF),
-        accent = Color(0xFFD946EF),
-        suggestionBar = Color(0xFF2C1B4D),
-        suggestionText = Color(0xFFF5D0FE),
-        borderColor = Color(0x33D946EF)
-    )
-
-    val Red = KeyboardColorScheme(
-        name = "Red",
-        isDark = true,
-        background = Color(0xFF230D0D),
-        keyBackground = Color(0xFF3B1515),
-        keyText = Color(0xFFFFF1F2),
-        specialKeyBackground = Color(0xFF571C1C),
-        specialKeyText = Color(0xFFF43F5E),
-        accent = Color(0xFFF43F5E),
-        suggestionBar = Color(0xFF3B1515),
-        suggestionText = Color(0xFFFFE4E6),
-        borderColor = Color(0x33F43F5E)
-    )
-
-    val Green = KeyboardColorScheme(
-        name = "Green",
-        isDark = true,
-        background = Color(0xFF062016),
-        keyBackground = Color(0xFF0F3927),
-        keyText = Color(0xFFECFDF5),
-        specialKeyBackground = Color(0xFF155339),
-        specialKeyText = Color(0xFF10B981),
-        accent = Color(0xFF10B981),
-        suggestionBar = Color(0xFF0F3927),
-        suggestionText = Color(0xFFD1FAE5),
-        borderColor = Color(0x3310B981)
-    )
-
-    val Neon = KeyboardColorScheme(
-        name = "Neon",
-        isDark = true,
-        background = Color(0xFF030712),
-        keyBackground = Color(0xFF111827),
-        keyText = Color(0xFF22D3EE),
-        specialKeyBackground = Color(0xFF1F2937),
-        specialKeyText = Color(0xFFA855F7),
-        accent = Color(0xFF22D3EE),
-        suggestionBar = Color(0xFF111827),
-        suggestionText = Color(0xFF67E8F9),
-        borderColor = Color(0x5522D3EE)
-    )
-
-    val Amoled = KeyboardColorScheme(
-        name = "AMOLED",
-        isDark = true,
-        background = Color(0xFF000000),
-        keyBackground = Color(0xFF121212),
-        keyText = Color(0xFFFFFFFF),
-        specialKeyBackground = Color(0xFF1E1E1E),
-        specialKeyText = Color(0xFF3B82F6),
-        accent = Color(0xFF3B82F6),
-        suggestionBar = Color(0xFF121212),
-        suggestionText = Color(0xFFE5E7EB),
-        borderColor = Color(0x22FFFFFF)
-    )
-
-    val CleanLight = KeyboardColorScheme(
-        name = "Clean Light",
+    val GhazalBanat = KeyboardColorScheme(
+        name = "غزل بنات",
         isDark = false,
-        background = Color(0xFFECEFF1),
-        keyBackground = Color(0xFFFFFFFF),
-        keyText = Color(0xFF1E293B),
-        specialKeyBackground = Color(0xFFCFD8DC),
-        specialKeyText = Color(0xFF0284C7),
-        accent = Color(0xFF0284C7),
-        suggestionBar = Color(0xFFF1F5F9),
-        suggestionText = Color(0xFF334155),
-        borderColor = Color(0x1E000000)
+        background = Color(0xFFFDF2F8),
+        keyBackground = Color(0xFFFCE7F3),
+        keyText = Color(0xFF831843),
+        specialKeyBackground = Color(0xFFFBCFE8),
+        specialKeyText = Color(0xFF9D174D),
+        accent = Color(0xFFF472B6),
+        suggestionBar = Color(0xFFFDF2F8),
+        suggestionText = Color(0xFF9D174D),
+        borderColor = Color(0x33F472B6),
+        category = "لون"
     )
 
-    val Transparent = KeyboardColorScheme(
-        name = "Transparent",
-        isDark = true,
-        background = Color(0x55000000),
-        keyBackground = Color(0x44FFFFFF),
-        keyText = Color(0xFFFFFFFF),
-        specialKeyBackground = Color(0x33000000),
-        specialKeyText = Color(0xFF38BDF8),
-        accent = Color(0xFF38BDF8),
-        suggestionBar = Color(0x55000000),
-        suggestionText = Color(0xFFF1F5F9),
-        borderColor = Color(0x44FFFFFF)
+    val Wardi = KeyboardColorScheme(
+        name = "وردي",
+        isDark = false,
+        background = Color(0xFFFFF1F2),
+        keyBackground = Color(0xFFFFE4E6),
+        keyText = Color(0xFF9F1239),
+        specialKeyBackground = Color(0xFFFECDD3),
+        specialKeyText = Color(0xFFBE123C),
+        accent = Color(0xFFFB7185),
+        suggestionBar = Color(0xFFFFF1F2),
+        suggestionText = Color(0xFF9F1239),
+        borderColor = Color(0x33FB7185),
+        category = "لون"
     )
 
-    val MatrixTerminal = KeyboardColorScheme(
-        name = "Matrix Terminal",
-        isDark = true,
-        background = Color(0xFF0D1117),
-        keyBackground = Color(0xFF161B22),
-        keyText = Color(0xFF39D353),
-        specialKeyBackground = Color(0xFF21262D),
-        specialKeyText = Color(0xFF58A6FF),
-        accent = Color(0xFF39D353),
-        suggestionBar = Color(0xFF161B22),
-        suggestionText = Color(0xFF7EE787),
-        borderColor = Color(0x4439D353)
+    val Morjani = KeyboardColorScheme(
+        name = "مرجاني",
+        isDark = false,
+        background = Color(0xFFFFF7ED),
+        keyBackground = Color(0xFFFFEDD5),
+        keyText = Color(0xFF9A3412),
+        specialKeyBackground = Color(0xFFFED7AA),
+        specialKeyText = Color(0xFFC2410C),
+        accent = Color(0xFFFB923C),
+        suggestionBar = Color(0xFFFFF7ED),
+        suggestionText = Color(0xFF9A3412),
+        borderColor = Color(0x33FB923C),
+        category = "لون"
     )
 
-    val EmeraldDark = KeyboardColorScheme(
-        name = "Emerald Dark",
-        isDark = true,
-        background = Color(0xFF062016),
-        keyBackground = Color(0xFF0E3D2A),
-        keyText = Color(0xFFECFDF5),
-        specialKeyBackground = Color(0xFF134E36),
-        specialKeyText = Color(0xFF34D399),
-        accent = Color(0xFF10B981),
-        suggestionBar = Color(0xFF0E3D2A),
-        suggestionText = Color(0xFFA7F3D0),
-        borderColor = Color(0x3310B981)
+    val Lavender = KeyboardColorScheme(
+        name = "لافندر",
+        isDark = false,
+        background = Color(0xFFFAF5FF),
+        keyBackground = Color(0xFFF3E8FF),
+        keyText = Color(0xFF581C87),
+        specialKeyBackground = Color(0xFFE9D5FF),
+        specialKeyText = Color(0xFF6B21A8),
+        accent = Color(0xFFC084FC),
+        suggestionBar = Color(0xFFFAF5FF),
+        suggestionText = Color(0xFF581C87),
+        borderColor = Color(0x33C084FC),
+        category = "لون"
     )
 
-    val RoseGold = KeyboardColorScheme(
-        name = "Rose Gold",
-        isDark = true,
-        background = Color(0xFF24151C),
-        keyBackground = Color(0xFF3A212D),
-        keyText = Color(0xFFFFF1F2),
-        specialKeyBackground = Color(0xFF522F3F),
-        specialKeyText = Color(0xFFFB7185),
-        accent = Color(0xFFF43F5E),
-        suggestionBar = Color(0xFF3A212D),
-        suggestionText = Color(0xFFFECDD3),
-        borderColor = Color(0x33F43F5E)
+    val QaranfiliAsfar = KeyboardColorScheme(
+        name = "قرنفلي أصفر",
+        isDark = false,
+        background = Color(0xFFFEF3C7),
+        keyBackground = Color(0xFFFDE68A),
+        keyText = Color(0xFF78350F),
+        specialKeyBackground = Color(0xFFFCD34D),
+        specialKeyText = Color(0xFF92400E),
+        accent = Color(0xFFF59E0B),
+        suggestionBar = Color(0xFFFEF3C7),
+        suggestionText = Color(0xFF78350F),
+        borderColor = Color(0x33F59E0B),
+        category = "لون"
     )
 
-    val Cyberpunk = KeyboardColorScheme(
-        name = "Cyberpunk",
+    val AhmarMango = KeyboardColorScheme(
+        name = "أحمر مانجو",
         isDark = true,
-        background = Color(0xFF100B2B),
-        keyBackground = Color(0xFF201648),
-        keyText = Color(0xFFFACC15),
-        specialKeyBackground = Color(0xFF321A6B),
-        specialKeyText = Color(0xFF22D3EE),
-        accent = Color(0xFF22D3EE),
-        suggestionBar = Color(0xFF201648),
-        suggestionText = Color(0xFFFDE047),
-        borderColor = Color(0x55FACC15)
-    )
-
-    val RoyalLavender = KeyboardColorScheme(
-        name = "Royal Lavender",
-        isDark = true,
-        background = Color(0xFF1E1B2E),
-        keyBackground = Color(0xFF2E294A),
-        keyText = Color(0xFFF3E8FF),
-        specialKeyBackground = Color(0xFF433C68),
-        specialKeyText = Color(0xFFC084FC),
-        accent = Color(0xFFA855F7),
-        suggestionBar = Color(0xFF2E294A),
-        suggestionText = Color(0xFFE9D5FF),
-        borderColor = Color(0x33A855F7)
-    )
-
-    val SunsetCrimson = KeyboardColorScheme(
-        name = "Sunset Crimson",
-        isDark = true,
-        background = Color(0xFF210E14),
-        keyBackground = Color(0xFF3D1A25),
+        background = Color(0xFF3B1506),
+        keyBackground = Color(0xFF60210A),
         keyText = Color(0xFFFFEDD5),
-        specialKeyBackground = Color(0xFF592636),
+        specialKeyBackground = Color(0xFF7C2D12),
         specialKeyText = Color(0xFFFB923C),
         accent = Color(0xFFF97316),
-        suggestionBar = Color(0xFF3D1A25),
-        suggestionText = Color(0xFFFED7AA),
-        borderColor = Color(0x33F97316)
+        suggestionBar = Color(0xFF3B1506),
+        suggestionText = Color(0xFFFFEDD5),
+        borderColor = Color(0x33F97316),
+        category = "لون"
     )
 
-    val IOSGlass = KeyboardColorScheme(
-        name = "iOS Glass",
+    val Ahmar = KeyboardColorScheme(
+        name = "أحمر",
         isDark = true,
-        background = Color(0xFF1C1C1E),
-        keyBackground = Color(0xFF3A3A3C),
-        keyText = Color(0xFFFFFFFF),
-        specialKeyBackground = Color(0xFF2C2C2E),
-        specialKeyText = Color(0xFF0A84FF),
-        accent = Color(0xFF0A84FF),
-        suggestionBar = Color(0xFF1C1C1E),
-        suggestionText = Color(0xFFE5E5EA),
-        borderColor = Color(0x33FFFFFF)
-    )
-
-    val IOS26 = KeyboardColorScheme(
-        name = "iOS 26",
-        isDark = false,
-        background = Color(0xFFD1D5DB),
-        keyBackground = Color(0xFFFFFFFF),
-        keyText = Color(0xFF000000),
-        specialKeyBackground = Color(0xFFB0B7C3),
-        specialKeyText = Color(0xFF007AFF),
-        accent = Color(0xFF007AFF),
-        suggestionBar = Color(0xFFD1D5DB),
-        suggestionText = Color(0xFF1F2937),
-        borderColor = Color(0x449CA3AF)
-    )
-
-    val IOS27 = KeyboardColorScheme(
-        name = "iOS 27",
-        isDark = true,
-        background = Color(0xFF121316),
-        keyBackground = Color(0xFF24272D),
-        keyText = Color(0xFFF9FAFB),
-        specialKeyBackground = Color(0xFF191B20),
-        specialKeyText = Color(0xFF38BDF8),
-        accent = Color(0xFF0EA5E9),
-        suggestionBar = Color(0xFF121316),
-        suggestionText = Color(0xFFE2E8F0),
-        borderColor = Color(0x3338BDF8)
-    )
-
-    val TitaniumDark = KeyboardColorScheme(
-        name = "Titanium Pro",
-        isDark = true,
-        background = Color(0xFF181A1D),
-        keyBackground = Color(0xFF2B2E33),
-        keyText = Color(0xFFF0F3F6),
-        specialKeyBackground = Color(0xFF22252A),
-        specialKeyText = Color(0xFF8E95A2),
-        accent = Color(0xFF64748B),
-        suggestionBar = Color(0xFF181A1D),
-        suggestionText = Color(0xFFCBD5E1),
-        borderColor = Color(0x228E95A2)
-    )
-
-    val ObsidianGold = KeyboardColorScheme(
-        name = "Obsidian Gold",
-        isDark = true,
-        background = Color(0xFF0D0D0D),
-        keyBackground = Color(0xFF1C1A14),
-        keyText = Color(0xFFFFDF73),
-        specialKeyBackground = Color(0xFF2A2415),
-        specialKeyText = Color(0xFFFFC72C),
-        accent = Color(0xFFFFD700),
-        suggestionBar = Color(0xFF0D0D0D),
-        suggestionText = Color(0xFFFFE899),
-        borderColor = Color(0x44FFD700)
-    )
-
-    val AuroraBorealis = KeyboardColorScheme(
-        name = "Aurora Borealis",
-        isDark = true,
-        background = Color(0xFF08131E),
-        keyBackground = Color(0xFF0E273C),
-        keyText = Color(0xFF7DF9FF),
-        specialKeyBackground = Color(0xFF143753),
-        specialKeyText = Color(0xFF2DD4BF),
-        accent = Color(0xFF06B6D4),
-        suggestionBar = Color(0xFF08131E),
-        suggestionText = Color(0xFFA5F3FC),
-        borderColor = Color(0x332DD4BF)
-    )
-
-    val SakuraPastel = KeyboardColorScheme(
-        name = "Sakura Blossom",
-        isDark = false,
-        background = Color(0xFFFFF0F5),
-        keyBackground = Color(0xFFFFFFFF),
-        keyText = Color(0xFF831843),
-        specialKeyBackground = Color(0xFFFCE7F3),
-        specialKeyText = Color(0xFFDB2777),
-        accent = Color(0xFFEC4899),
-        suggestionBar = Color(0xFFFFF0F5),
-        suggestionText = Color(0xFF9D174D),
-        borderColor = Color(0x22EC4899)
-    )
-
-    val CrimsonRuby = KeyboardColorScheme(
-        name = "Crimson Ruby",
-        isDark = true,
-        background = Color(0xFF1F0B11),
-        keyBackground = Color(0xFF3B121F),
-        keyText = Color(0xFFFFE4E6),
-        specialKeyBackground = Color(0xFF50182A),
+        background = Color(0xFF350610),
+        keyBackground = Color(0xFF5E0D21),
+        keyText = Color(0xFFFFF1F2),
+        specialKeyBackground = Color(0xFF801430),
         specialKeyText = Color(0xFFFB7185),
+        accent = Color(0xFFF43F5E),
+        suggestionBar = Color(0xFF350610),
+        suggestionText = Color(0xFFFFF1F2),
+        borderColor = Color(0x33F43F5E),
+        category = "لون"
+    )
+
+    val Vanillia = KeyboardColorScheme(
+        name = "فانيليا",
+        isDark = false,
+        background = Color(0xFFFEFCE8),
+        keyBackground = Color(0xFFFEF9C3),
+        keyText = Color(0xFF713F12),
+        specialKeyBackground = Color(0xFFFEF08A),
+        specialKeyText = Color(0xFF854D0E),
+        accent = Color(0xFFEAB308),
+        suggestionBar = Color(0xFFFEFCE8),
+        suggestionText = Color(0xFF713F12),
+        borderColor = Color(0x33EAB308),
+        category = "لون"
+    )
+
+    val Enabi = KeyboardColorScheme(
+        name = "عنبي",
+        isDark = true,
+        background = Color(0xFF1E0A3C),
+        keyBackground = Color(0xFF341366),
+        keyText = Color(0xFFFAF5FF),
+        specialKeyBackground = Color(0xFF4C1D95),
+        specialKeyText = Color(0xFFC084FC),
+        accent = Color(0xFFA855F7),
+        suggestionBar = Color(0xFF1E0A3C),
+        suggestionText = Color(0xFFFAF5FF),
+        borderColor = Color(0x33A855F7),
+        category = "لون"
+    )
+
+    val Barghandi = KeyboardColorScheme(
+        name = "برغندي",
+        isDark = true,
+        background = Color(0xFF2C0A15),
+        keyBackground = Color(0xFF4A1224),
+        keyText = Color(0xFFFFF1F2),
+        specialKeyBackground = Color(0xFF6B1B36),
+        specialKeyText = Color(0xFFFDA4AF),
         accent = Color(0xFFE11D48),
-        suggestionBar = Color(0xFF1F0B11),
-        suggestionText = Color(0xFFFECDD3),
-        borderColor = Color(0x33E11D48)
+        suggestionBar = Color(0xFF2C0A15),
+        suggestionText = Color(0xFFFFF1F2),
+        borderColor = Color(0x33E11D48),
+        category = "لون"
     )
 
-    val MochaCoffee = KeyboardColorScheme(
-        name = "Mocha Coffee",
+    val Arjuwani = KeyboardColorScheme(
+        name = "أرجواني",
         isDark = true,
-        background = Color(0xFF1A1412),
-        keyBackground = Color(0xFF2C221E),
-        keyText = Color(0xFFEDE0D4),
-        specialKeyBackground = Color(0xFF3D302A),
-        specialKeyText = Color(0xFFDDB892),
-        accent = Color(0xFFB08968),
-        suggestionBar = Color(0xFF1A1412),
-        suggestionText = Color(0xFFE6CCB2),
-        borderColor = Color(0x22DDB892)
+        background = Color(0xFF3B0764),
+        keyBackground = Color(0xFF581C87),
+        keyText = Color(0xFFFDF4FF),
+        specialKeyBackground = Color(0xFF701A75),
+        specialKeyText = Color(0xFFE879F9),
+        accent = Color(0xFFD946EF),
+        suggestionBar = Color(0xFF3B0764),
+        suggestionText = Color(0xFFFDF4FF),
+        borderColor = Color(0x33D946EF),
+        category = "لون"
     )
 
-    val ForestZen = KeyboardColorScheme(
-        name = "Forest Zen",
+    val Bunni = KeyboardColorScheme(
+        name = "بني",
         isDark = true,
-        background = Color(0xFF0D1B13),
-        keyBackground = Color(0xFF173022),
-        keyText = Color(0xFFE6F4EA),
-        specialKeyBackground = Color(0xFF20422F),
-        specialKeyText = Color(0xFF6EE7B7),
+        background = Color(0xFF23140D),
+        keyBackground = Color(0xFF3D2318),
+        keyText = Color(0xFFFEF3C7),
+        specialKeyBackground = Color(0xFF563222),
+        specialKeyText = Color(0xFFFBBF24),
+        accent = Color(0xFFD97706),
+        suggestionBar = Color(0xFF23140D),
+        suggestionText = Color(0xFFFEF3C7),
+        borderColor = Color(0x33D97706),
+        category = "لون"
+    )
+
+    val Bortuqali = KeyboardColorScheme(
+        name = "برتقالي",
+        isDark = true,
+        background = Color(0xFF331306),
+        keyBackground = Color(0xFF5C230C),
+        keyText = Color(0xFFFFEDD5),
+        specialKeyBackground = Color(0xFF7C2D12),
+        specialKeyText = Color(0xFFFB923C),
+        accent = Color(0xFFEA580C),
+        suggestionBar = Color(0xFF331306),
+        suggestionText = Color(0xFFFFEDD5),
+        borderColor = Color(0x33EA580C),
+        category = "لون"
+    )
+
+    val Mostarda = KeyboardColorScheme(
+        name = "مستردة",
+        isDark = true,
+        background = Color(0xFF301B05),
+        keyBackground = Color(0xFF532F09),
+        keyText = Color(0xFFFEFCE8),
+        specialKeyBackground = Color(0xFF713F12),
+        specialKeyText = Color(0xFFFDE047),
+        accent = Color(0xFFCA8A04),
+        suggestionBar = Color(0xFF301B05),
+        suggestionText = Color(0xFFFEFCE8),
+        borderColor = Color(0x33CA8A04),
+        category = "لون"
+    )
+
+    val Moz = KeyboardColorScheme(
+        name = "موز",
+        isDark = true,
+        background = Color(0xFF2E2204),
+        keyBackground = Color(0xFF553F09),
+        keyText = Color(0xFFFEF08A),
+        specialKeyBackground = Color(0xFF71540C),
+        specialKeyText = Color(0xFFFACC15),
+        accent = Color(0xFFEAB308),
+        suggestionBar = Color(0xFF2E2204),
+        suggestionText = Color(0xFFFEF08A),
+        borderColor = Color(0x33EAB308),
+        category = "لون"
+    )
+
+    val AkhdarGreenland = KeyboardColorScheme(
+        name = "أخضر جرينلاند",
+        isDark = true,
+        background = Color(0xFF04211A),
+        keyBackground = Color(0xFF0A3B2E),
+        keyText = Color(0xFFECFDF5),
+        specialKeyBackground = Color(0xFF0F5241),
+        specialKeyText = Color(0xFF34D399),
         accent = Color(0xFF10B981),
-        suggestionBar = Color(0xFF0D1B13),
-        suggestionText = Color(0xFFA7F3D0),
-        borderColor = Color(0x2210B981)
+        suggestionBar = Color(0xFF04211A),
+        suggestionText = Color(0xFFECFDF5),
+        borderColor = Color(0x3310B981),
+        category = "لون"
     )
 
-    val DeepSapphire = KeyboardColorScheme(
-        name = "Royal Sapphire",
+    val Zomorodi = KeyboardColorScheme(
+        name = "زمردي",
         isDark = true,
-        background = Color(0xFF0A1128),
-        keyBackground = Color(0xFF1C2D5A),
-        keyText = Color(0xFFE0E7FF),
-        specialKeyBackground = Color(0xFF131F43),
+        background = Color(0xFF063327),
+        keyBackground = Color(0xFF0C5642),
+        keyText = Color(0xFFECFDF5),
+        specialKeyBackground = Color(0xFF117359),
+        specialKeyText = Color(0xFF6EE7B7),
+        accent = Color(0xFF059669),
+        suggestionBar = Color(0xFF063327),
+        suggestionText = Color(0xFFECFDF5),
+        borderColor = Color(0x33059669),
+        category = "لون"
+    )
+
+    val Laymooni = KeyboardColorScheme(
+        name = "ليموني",
+        isDark = true,
+        background = Color(0xFF152605),
+        keyBackground = Color(0xFF2B460D),
+        keyText = Color(0xFFF7FEE7),
+        specialKeyBackground = Color(0xFF3C6114),
+        specialKeyText = Color(0xFFA3E635),
+        accent = Color(0xFF84CC16),
+        suggestionBar = Color(0xFF152605),
+        suggestionText = Color(0xFFF7FEE7),
+        borderColor = Color(0x3384CC16),
+        category = "لون"
+    )
+
+    val ChocolateNana = KeyboardColorScheme(
+        name = "شوكولاتة نعناع",
+        isDark = true,
+        background = Color(0xFF161A19),
+        keyBackground = Color(0xFF25332F),
+        keyText = Color(0xFFF0FDFA),
+        specialKeyBackground = Color(0xFF32453F),
+        specialKeyText = Color(0xFF5EEAD4),
+        accent = Color(0xFF2DD4BF),
+        suggestionBar = Color(0xFF161A19),
+        suggestionText = Color(0xFFF0FDFA),
+        borderColor = Color(0x332DD4BF),
+        category = "لون"
+    )
+
+    val Nani = KeyboardColorScheme(
+        name = "نعناعي",
+        isDark = true,
+        background = Color(0xFF032625),
+        keyBackground = Color(0xFF0B4644),
+        keyText = Color(0xFFF0FDFA),
+        specialKeyBackground = Color(0xFF11605E),
+        specialKeyText = Color(0xFF2DD4BF),
+        accent = Color(0xFF14B8A6),
+        suggestionBar = Color(0xFF032625),
+        suggestionText = Color(0xFFF0FDFA),
+        borderColor = Color(0x3314B8A6),
+        category = "لون"
+    )
+
+    val AzraqSilmi = KeyboardColorScheme(
+        name = "الأزرق السلمي",
+        isDark = true,
+        background = Color(0xFF06253A),
+        keyBackground = Color(0xFF0B4267),
+        keyText = Color(0xFFF0F9FF),
+        specialKeyBackground = Color(0xFF0F5A8C),
+        specialKeyText = Color(0xFF7DD3FC),
+        accent = Color(0xFF38BDF8),
+        suggestionBar = Color(0xFF06253A),
+        suggestionText = Color(0xFFF0F9FF),
+        borderColor = Color(0x3338BDF8),
+        category = "لون"
+    )
+
+    val AzraqDakin = KeyboardColorScheme(
+        name = "أزرق داكن",
+        isDark = true,
+        background = Color(0xFF051026),
+        keyBackground = Color(0xFF0E2250),
+        keyText = Color(0xFFEFF6FF),
+        specialKeyBackground = Color(0xFF153375),
         specialKeyText = Color(0xFF60A5FA),
         accent = Color(0xFF3B82F6),
-        suggestionBar = Color(0xFF0A1128),
-        suggestionText = Color(0xFFBFDBFE),
-        borderColor = Color(0x333B82F6)
+        suggestionBar = Color(0xFF051026),
+        suggestionText = Color(0xFFEFF6FF),
+        borderColor = Color(0x333B82F6),
+        category = "لون"
     )
 
-    val CustomThemeDefault = KeyboardColorScheme(
-        name = "Custom",
+    val ShayAkhdar = KeyboardColorScheme(
+        name = "شاي أخضر",
         isDark = true,
-        background = Color(0xFF121824),
-        keyBackground = Color(0xFF1F293D),
-        keyText = Color(0xFFFFFFFF),
-        specialKeyBackground = Color(0xFF162032),
-        specialKeyText = Color(0xFF60A5FA),
-        accent = Color(0xFF38BDF8),
-        suggestionBar = Color(0xFF121824),
-        suggestionText = Color(0xFFE2E8F0),
-        borderColor = Color(0x4438BDF8)
+        background = Color(0xFF131D16),
+        keyBackground = Color(0xFF223528),
+        keyText = Color(0xFFECFDF5),
+        specialKeyBackground = Color(0xFF304838),
+        specialKeyText = Color(0xFF86EFAC),
+        accent = Color(0xFF4ADE80),
+        suggestionBar = Color(0xFF131D16),
+        suggestionText = Color(0xFFECFDF5),
+        borderColor = Color(0x334ADE80),
+        category = "لون"
     )
 
+    // === Design Themes (Screenshot 2) ===
+    val CrunchyAppleBite = KeyboardColorScheme(
+        name = "Crunchy Apple Bite",
+        isDark = false,
+        background = Color(0xFFFFF7ED),
+        keyBackground = Color(0xFFFFEDD5),
+        keyText = Color(0xFF9A3412),
+        specialKeyBackground = Color(0xFFFED7AA),
+        specialKeyText = Color(0xFFC2410C),
+        accent = Color(0xFFEA580C),
+        suggestionBar = Color(0xFFFFF7ED),
+        suggestionText = Color(0xFF9A3412),
+        borderColor = Color(0x44EA580C),
+        category = "تصميم"
+    )
+
+    val PuddingTime = KeyboardColorScheme(
+        name = "Pudding time",
+        isDark = false,
+        background = Color(0xFFFEFCE8),
+        keyBackground = Color(0xFFFEF08A),
+        keyText = Color(0xFF713F12),
+        specialKeyBackground = Color(0xFFFDE047),
+        specialKeyText = Color(0xFF854D0E),
+        accent = Color(0xFFCA8A04),
+        suggestionBar = Color(0xFFFEFCE8),
+        suggestionText = Color(0xFF713F12),
+        borderColor = Color(0x44CA8A04),
+        category = "تصميم"
+    )
+
+    val SuitcaseFullOfJoy = KeyboardColorScheme(
+        name = "Suitcase Full of Joy",
+        isDark = false,
+        background = Color(0xFFF0F9FF),
+        keyBackground = Color(0xFFE0F2FE),
+        keyText = Color(0xFF0369A1),
+        specialKeyBackground = Color(0xFFBAE6FD),
+        specialKeyText = Color(0xFF0284C7),
+        accent = Color(0xFF0284C7),
+        suggestionBar = Color(0xFFF0F9FF),
+        suggestionText = Color(0xFF0369A1),
+        borderColor = Color(0x440284C7),
+        category = "تصميم"
+    )
+
+    val ChihuahuasNeverHoldBack = KeyboardColorScheme(
+        name = "Chihuahuas never hold back",
+        isDark = false,
+        background = Color(0xFFFDFBF7),
+        keyBackground = Color(0xFFF5EBE1),
+        keyText = Color(0xFF523624),
+        specialKeyBackground = Color(0xFFEADBCE),
+        specialKeyText = Color(0xFF6B4730),
+        accent = Color(0xFF96684B),
+        suggestionBar = Color(0xFFFDFBF7),
+        suggestionText = Color(0xFF523624),
+        borderColor = Color(0x4496684B),
+        category = "تصميم"
+    )
+
+    val IceCreamSelection = KeyboardColorScheme(
+        name = "Ice cream selection",
+        isDark = false,
+        background = Color(0xFFFDF4FF),
+        keyBackground = Color(0xFFFAE8FF),
+        keyText = Color(0xFF701A75),
+        specialKeyBackground = Color(0xFFF5D0FE),
+        specialKeyText = Color(0xFF86198F),
+        accent = Color(0xFFD946EF),
+        suggestionBar = Color(0xFFFDF4FF),
+        suggestionText = Color(0xFF701A75),
+        borderColor = Color(0x44D946EF),
+        category = "تصميم"
+    )
+
+    val SummerForestFireflies = KeyboardColorScheme(
+        name = "Summer forest fireflies",
+        isDark = true,
+        background = Color(0xFF0B1924),
+        keyBackground = Color(0xFF162D3E),
+        keyText = Color(0xFFFEF08A),
+        specialKeyBackground = Color(0xFF1F4259),
+        specialKeyText = Color(0xFFFACC15),
+        accent = Color(0xFFFDE047),
+        suggestionBar = Color(0xFF0B1924),
+        suggestionText = Color(0xFFFEF08A),
+        borderColor = Color(0x44FDE047),
+        category = "تصميم"
+    )
+
+    // Master list of all available themes
     val allThemes = listOf(
-        IOS27,
-        IOS26,
-        IOSGlass,
-        GboardDark,
-        TitaniumDark,
-        ObsidianGold,
-        DeepSapphire,
-        AuroraBorealis,
-        SwiftKeyDark,
-        GboardLight,
-        Amoled,
-        Midnight,
-        ProSlateDark,
-        SakuraPastel,
-        CrimsonRuby,
-        MochaCoffee,
-        ForestZen,
-        Cyberpunk,
-        RoyalLavender,
-        MatrixTerminal,
-        EmeraldDark,
-        RoseGold,
-        SunsetCrimson,
-        Ocean,
-        Purple,
-        Green,
-        Red,
-        Neon,
-        CleanLight,
-        Transparent,
-        Dark
+        Asasi, GhazalBanat, Wardi, Morjani, Lavender, QaranfiliAsfar,
+        AhmarMango, Ahmar, Vanillia, Enabi, Barghandi, Arjuwani,
+        Bunni, Bortuqali, Mostarda, Moz, AkhdarGreenland, Zomorodi,
+        Laymooni, ChocolateNana, Nani, AzraqSilmi, AzraqDakin, ShayAkhdar,
+        CrunchyAppleBite, PuddingTime, SuitcaseFullOfJoy,
+        ChihuahuasNeverHoldBack, IceCreamSelection, SummerForestFireflies
     )
 
-    fun getTheme(
-        name: String,
-        customKeyColor: String? = null,
-        prefs: com.example.data.pref.KeyboardPreferences? = null
-    ): KeyboardColorScheme {
-        if (name.equals("Custom", ignoreCase = true)) {
-            return prefs?.getCustomColorScheme() ?: CustomThemeDefault
-        }
-        val base = allThemes.find { it.name.equals(name, ignoreCase = true) } ?: Midnight
-        if (!customKeyColor.isNullOrEmpty() && customKeyColor != "default") {
-            try {
-                val parsed = Color(android.graphics.Color.parseColor(customKeyColor))
-                return base.copy(keyBackground = parsed)
-            } catch (e: Throwable) {
-                // Fallback
-            }
-        }
-        return base
+    fun getTheme(name: String, prefs: KeyboardPreferences? = null): KeyboardColorScheme {
+        return allThemes.find { it.name.equals(name, ignoreCase = true) }
+            ?: Asasi
+    }
+
+    fun getColorScheme(name: String): KeyboardColorScheme {
+        return getTheme(name)
     }
 }

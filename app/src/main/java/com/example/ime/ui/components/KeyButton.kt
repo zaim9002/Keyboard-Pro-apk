@@ -96,11 +96,7 @@ fun KeyButton(
         .padding(horizontal = 1.5.dp, vertical = 2.dp)
         .height(height)
 
-    val positionedModifier = if (hasLongClick || (showPreview && !isSpecial)) {
-        baseModifier.onGloballyPositioned { keyCoordinates = it }
-    } else {
-        baseModifier
-    }
+    val positionedModifier = baseModifier.onGloballyPositioned { keyCoordinates = it }
 
     val boxModifier = if (strokeBorder) {
         positionedModifier

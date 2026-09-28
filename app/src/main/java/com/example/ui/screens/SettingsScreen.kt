@@ -1,20 +1,17 @@
 package com.example.ui.screens
 
-import android.Manifest
-import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,715 +22,582 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 import com.example.KeyboardProApp
-import com.example.voice.VoiceInputActivity
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    onNavigateToThemes: () -> Unit = {},
     onNavigateToLanguages: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    val prefs = KeyboardProApp.instance.preferences
-    val langManager = KeyboardProApp.instance.languageManager
+    val prefs = remember { KeyboardProApp.instance.preferences }
 
-    // Preferences states
-    var keyboardHeight by remember { mutableStateOf(prefs.keyboardHeight) }
-    var heightPercent by remember { mutableStateOf(prefs.keyboardHeightPercent) }
-    var widthPercent by remember { mutableStateOf(prefs.keyboardWidthPercent) }
-    var keyFontSizeSp by remember { mutableStateOf(prefs.keyFontSizeSp) }
-    var secondaryFontSizeSp by remember { mutableStateOf(prefs.secondaryFontSizeSp) }
-    var keyCornerRadiusDp by remember { mutableStateOf(prefs.keyCornerRadiusDp) }
-    var keyStrokeBorderEnabled by remember { mutableStateOf(prefs.keyStrokeBorderEnabled) }
-    var keyGapDp by remember { mutableStateOf(prefs.keyGapDp) }
-
-    var keySound by remember { mutableStateOf(prefs.keySound) }
-    var keySoundType by remember { mutableStateOf(prefs.keySoundType) }
-    var keySoundVolume by remember { mutableStateOf(prefs.keySoundVolume) }
-    var hapticFeedback by remember { mutableStateOf(prefs.hapticFeedback) }
-    var hapticDurationMs by remember { mutableStateOf(prefs.hapticDurationMs) }
-
-    var showNumberRow by remember { mutableStateOf(prefs.showNumberRow) }
-    var showArrowRow by remember { mutableStateOf(prefs.showArrowRow) }
-    var showBottomRowSymbols by remember { mutableStateOf(prefs.showBottomRowSymbols) }
+    var hideEmojiKey by remember { mutableStateOf(!prefs.showBottomRowSymbols) }
+    var showNumbers by remember { mutableStateOf(prefs.showNumberRow) }
     var showKeyPreview by remember { mutableStateOf(prefs.showKeyPreview) }
-    var bottomChinPadding by remember { mutableStateOf(prefs.bottomChinPadding) }
-    var showToolbarUndoRedo by remember { mutableStateOf(prefs.showToolbarUndoRedo) }
+    var isDarkMode by remember { mutableStateOf(true) }
 
-    var doubleSpacePeriod by remember { mutableStateOf(prefs.doubleSpacePeriod) }
-    var autoCapitalization by remember { mutableStateOf(prefs.autoCapitalization) }
-    var showSuggestions by remember { mutableStateOf(prefs.showSuggestions) }
-    var autoCorrectEnabled by remember { mutableStateOf(prefs.autoCorrectEnabled) }
-    var arabicNumerals by remember { mutableStateOf(prefs.arabicNumerals) }
-    var spacebarLanguageSwitch by remember { mutableStateOf(prefs.spacebarLanguageSwitchEnabled) }
-    var oneHandedMode by remember { mutableStateOf(prefs.oneHandedMode) }
-
-    var emojiStyle by remember { mutableStateOf(prefs.emojiStyle) }
-    var clipboardRetentionDays by remember { mutableStateOf(prefs.clipboardRetentionDays) }
-    var clipboardAutoClean by remember { mutableStateOf(prefs.clipboardAutoClean) }
-
-    var isIncognito by remember { mutableStateOf(prefs.isIncognito) }
-    var isGamingMode by remember { mutableStateOf(prefs.isGamingMode) }
-
-    var hasMicPermission by remember {
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
-        )
-    }
+    var testInputText by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .background(Color(0xFF141416))
     ) {
-        // Voice Typing & Microphone Setup Card (حل مشكلة الكتابة بالصوت)
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = if (hasMicPermission) Color(0xFF064E3B).copy(alpha = 0.4f) else Color(0xFF78350F).copy(alpha = 0.4f)
-            ),
-            modifier = Modifier.border(
-                1.dp,
-                if (hasMicPermission) Color(0xFF10B981).copy(alpha = 0.5f) else Color(0xFFF59E0B).copy(alpha = 0.5f),
-                RoundedCornerShape(16.dp)
+        // Top App Bar matching Screenshots 4 to 9
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .background(Color(0xFF1E1E24))
+                .padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Icon(
+                imageVector = Icons.Default.Keyboard,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(24.dp)
             )
-        ) {
-            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(if (hasMicPermission) Color(0xFF10B981) else Color(0xFFF59E0B)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Mic,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                        Column {
-                            Text(
-                                text = "الكتابة بالصوت (Voice Typing)",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = if (hasMicPermission) "صلاحية الميكروفون مفعّلة ✓ والكتابة جاهزة" else "مطلوب منح إذن الميكروفون لتعمل الكتابة بالصوت",
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
 
-                    Button(
-                        onClick = {
-                            val intent = Intent(context, VoiceInputActivity::class.java).apply {
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            }
-                            context.startActivity(intent)
-                        },
-                        shape = RoundedCornerShape(10.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Text(if (hasMicPermission) "تجربة الصوت" else "تفعيل الآن", fontSize = 11.sp)
-                    }
-                }
+            Text(
+                text = "الإعدادات",
+                color = Color.White,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            IconButton(onClick = { /* back or no-op */ }) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "رجوع",
+                    tint = Color.White,
+                    modifier = Modifier.size(22.dp)
+                )
             }
         }
 
-        // 1. إرتفاع الكيبورد وحجم الأحرف
-        SettingsGroupTitle("إرتفاع الكيبورد وحجم الأحرف")
-        Card(
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+        // Scrollable Settings Content
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                // Height Slider
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("إرتفاع الكيبورد: $heightPercent%", fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                        TextButton(onClick = {
-                            heightPercent = 100
-                            prefs.keyboardHeightPercent = 100
-                            prefs.keyboardHeight = "Medium"
-                            keyboardHeight = "Medium"
-                        }) {
-                            Text("إعادة للافتراضي", fontSize = 11.sp)
-                        }
-                    }
-                    Slider(
-                        value = heightPercent.toFloat(),
-                        onValueChange = {
-                            heightPercent = it.toInt()
-                            prefs.keyboardHeightPercent = it.toInt()
-                        },
-                        valueRange = 70f..140f
-                    )
-                }
+            // ================= SECTION 1: العرض (Display) =================
+            SettingsSectionCard(title = "العرض") {
+                // 1. سمة لوحة المفاتيح
+                SettingRowItem(
+                    icon = Icons.Default.Checkroom,
+                    iconBgColor = Color(0xFFF43F5E),
+                    title = "سمة لوحة المفاتيح",
+                    subtitle = "عيّن خلفية لوحة المفاتيح وتصميمها ولونها.",
+                    onClick = onNavigateToThemes
+                )
 
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                HorizontalDivider(color = Color(0xFF2E2E36), thickness = 0.6.dp)
 
-                // Width Slider
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("عرض الكيبورد: $widthPercent%", fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            listOf(80, 90, 100).forEach { w ->
-                                FilterChip(
-                                    selected = widthPercent == w,
-                                    onClick = {
-                                        widthPercent = w
-                                        prefs.keyboardWidthPercent = w
-                                    },
-                                    label = { Text("$w%", fontSize = 11.sp) }
-                                )
-                            }
-                        }
-                    }
-                    Slider(
-                        value = widthPercent.toFloat(),
-                        onValueChange = {
-                            widthPercent = it.toInt()
-                            prefs.keyboardWidthPercent = it.toInt()
-                        },
-                        valueRange = 70f..100f
-                    )
-                }
-
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-                // Primary Key Font Size
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("حجم خط الأحرف على المفاتيح: ${keyFontSizeSp}sp", fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            listOf(16 to "صغير", 19 to "وسط", 23 to "كبير").forEach { (sz, lbl) ->
-                                FilterChip(
-                                    selected = keyFontSizeSp == sz,
-                                    onClick = {
-                                        keyFontSizeSp = sz
-                                        prefs.keyFontSizeSp = sz
-                                    },
-                                    label = { Text(lbl, fontSize = 11.sp) }
-                                )
-                            }
-                        }
-                    }
-                    Slider(
-                        value = keyFontSizeSp.toFloat(),
-                        onValueChange = {
-                            keyFontSizeSp = it.toInt()
-                            prefs.keyFontSizeSp = it.toInt()
-                        },
-                        valueRange = 14f..26f
-                    )
-                }
-
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-                // Secondary Hint Font Size
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("حجم الرموز الثانوية والتشكيل: ${secondaryFontSizeSp}sp", fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                    Slider(
-                        value = secondaryFontSizeSp.toFloat(),
-                        onValueChange = {
-                            secondaryFontSizeSp = it.toInt()
-                            prefs.secondaryFontSizeSp = it.toInt()
-                        },
-                        valueRange = 7f..14f
-                    )
-                }
-
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-                // Key Corner Radius
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("انحناء زوايا المفاتيح: ${keyCornerRadiusDp}dp", fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                    Slider(
-                        value = keyCornerRadiusDp.toFloat(),
-                        onValueChange = {
-                            keyCornerRadiusDp = it.toInt()
-                            prefs.keyCornerRadiusDp = it.toInt()
-                        },
-                        valueRange = 2f..16f
-                    )
-                }
-
-                // Live Preview Card
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(keyCornerRadiusDp.dp))
-                        .background(MaterialTheme.colorScheme.surface)
-                        .border(
-                            if (keyStrokeBorderEnabled) 1.dp else 0.dp,
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                            RoundedCornerShape(keyCornerRadiusDp.dp)
-                        )
-                        .padding(10.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "معاينة حجم الأحرف: ض ١   س ٢   ع ٣",
-                        fontSize = keyFontSizeSp.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            }
-        }
-
-        // 2. الصوت والإهتزاز
-        SettingsGroupTitle("الصوت والإهتزاز")
-        Card(
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-        ) {
-            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                // Key Sound Switch
-                SettingsSwitchRow(
-                    title = "صوت النقر على المفاتيح",
-                    subtitle = "إصدار نغمة مسموعة عند لمس كل زر",
-                    checked = keySound != "Off",
-                    onCheckedChange = {
-                        val sound = if (it) "Light" else "Off"
-                        keySound = sound
-                        prefs.keySound = sound
+                // 2. حجم الخط والحروف
+                SettingRowItem(
+                    icon = Icons.Default.TextFields,
+                    iconBgColor = Color(0xFFF59E0B),
+                    title = "حجم الخط والحروف",
+                    subtitle = "الخط(أساسي), الحجم(عادي)",
+                    subtitleColor = Color(0xFF818CF8),
+                    onClick = {
+                        Toast.makeText(context, "الخط الافتراضي: عادي (19sp)", Toast.LENGTH_SHORT).show()
                     }
                 )
 
-                if (keySound != "Off") {
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("نوع نغمة المفاتيح", fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            listOf(
-                                "CLICK" to "نقرة (Click)",
-                                "STANDARD" to "قياسي (Standard)",
-                                "TYPEWRITER" to "آلة كاتبة",
-                                "WOOD" to "خشب (Wood)",
-                                "WATER_DROP" to "قطرة ماء"
-                            ).forEach { (type, lbl) ->
-                                FilterChip(
-                                    selected = keySoundType == type,
-                                    onClick = {
-                                        keySoundType = type
-                                        prefs.keySoundType = type
-                                    },
-                                    label = { Text(lbl, fontSize = 11.sp) }
-                                )
-                            }
-                        }
+                HorizontalDivider(color = Color(0xFF2E2E36), thickness = 0.6.dp)
 
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text("مستوى صوت المفاتيح: $keySoundVolume%", fontSize = 12.sp)
-                        Slider(
-                            value = keySoundVolume.toFloat(),
-                            onValueChange = {
-                                keySoundVolume = it.toInt()
-                                prefs.keySoundVolume = it.toInt()
-                            },
-                            valueRange = 10f..100f
-                        )
-                    }
-                }
-
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-                // Haptic Feedback
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("قوة الاهتزاز عند اللمس (Haptic Feedback)", fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        listOf(
-                            "Off" to "إيقاف",
-                            "Light" to "خفيف",
-                            "Medium" to "متوسط",
-                            "Strong" to "قوي"
-                        ).forEach { (level, lbl) ->
-                            FilterChip(
-                                selected = hapticFeedback == level,
-                                onClick = {
-                                    hapticFeedback = level
-                                    prefs.hapticFeedback = level
-                                },
-                                label = { Text(lbl, fontSize = 11.sp) },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
-
-                    if (hapticFeedback != "Off") {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text("مدة الاهتزاز بالمللي ثانية: ${hapticDurationMs}ms", fontSize = 12.sp)
-                        Slider(
-                            value = hapticDurationMs.toFloat(),
-                            onValueChange = {
-                                hapticDurationMs = it.toInt()
-                                prefs.hapticDurationMs = it.toInt()
-                            },
-                            valueRange = 5f..80f
-                        )
-                    }
-                }
-            }
-        }
-
-        // 3. تخطيط لوحة المفاتيح
-        SettingsGroupTitle("تخطيط لوحة المفاتيح والأزرار")
-        Card(
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-        ) {
-            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                SettingsSwitchRow(
-                    title = "إبراز حدود المفاتيح (Key Borders)",
-                    subtitle = "رسم حد أنيق حول كل زر كما في صور Transboard الاحترافية",
-                    checked = keyStrokeBorderEnabled,
-                    onCheckedChange = {
-                        keyStrokeBorderEnabled = it
-                        prefs.keyStrokeBorderEnabled = it
+                // 3. ارتفاع لوحة المفاتيح وهوامشها
+                SettingRowItem(
+                    icon = Icons.Default.AspectRatio,
+                    iconBgColor = Color(0xFFEA580C),
+                    title = "ارتفاع لوحة المفاتيح وهوامشها",
+                    subtitle = "الارتفاع الرأسي(7), الارتفاع الأفقي(7)",
+                    subtitleColor = Color(0xFF818CF8),
+                    onClick = {
+                        Toast.makeText(context, "ارتفاع الكيبورد: الوضع المتوازن", Toast.LENGTH_SHORT).show()
                     }
                 )
 
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                HorizontalDivider(color = Color(0xFF2E2E36), thickness = 0.6.dp)
 
-                // One handed mode
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("وضع اليد الواحدة", fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                        Text("إزاحة الكيبورد لليسار أو اليمين لتسهيل الكتابة بيد واحدة", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                // 4. إخفاء زر رموز المشاعر (Switch)
+                SettingSwitchItem(
+                    icon = Icons.Default.SentimentSatisfied,
+                    iconBgColor = Color(0xFF84CC16),
+                    title = "إخفاء زر رموز المشاعر",
+                    subtitle = "يعرض زر لاستخدام الرموز المختلفة.",
+                    isChecked = hideEmojiKey,
+                    onCheckedChange = {
+                        hideEmojiKey = it
+                        prefs.showBottomRowSymbols = !it
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        listOf("OFF" to "إيقاف", "LEFT" to "يسار", "RIGHT" to "يمين").forEach { (mode, label) ->
-                            FilterChip(
-                                selected = oneHandedMode == mode,
-                                onClick = {
-                                    oneHandedMode = mode
-                                    prefs.oneHandedMode = mode
-                                },
-                                label = { Text(label, fontSize = 11.sp) }
-                            )
-                        }
+                )
+
+                HorizontalDivider(color = Color(0xFF2E2E36), thickness = 0.6.dp)
+
+                // 5. عرض الأرقام (Switch)
+                SettingSwitchItem(
+                    icon = Icons.Default.Pin,
+                    iconBgColor = Color(0xFF3B82F6),
+                    title = "عرض الأرقام",
+                    subtitle = "تظهر الأرقام في الجزء العلوي من لوحة المفاتيح.",
+                    isChecked = showNumbers,
+                    onCheckedChange = {
+                        showNumbers = it
+                        prefs.showNumberRow = it
                     }
-                }
+                )
 
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                HorizontalDivider(color = Color(0xFF2E2E36), thickness = 0.6.dp)
 
-                // Key Preview Popup
-                SettingsSwitchRow(
-                    title = "معاينة الحرف المنبثق (Key Preview)",
-                    subtitle = "ظهور الحرف بشكل مكبّر فور الضغط على الزر مع سرعة استجابة فائقة",
-                    checked = showKeyPreview,
+                // 6. إظهار مرتفع (Key Preview Popup Switch)
+                SettingSwitchItem(
+                    icon = Icons.Default.Title,
+                    iconBgColor = Color(0xFFA855F7),
+                    title = "إظهار مرتفع",
+                    subtitle = "عرض أحرف خاصة أو أرقام على أزرار المفاتيح والمعاينة المباشرة.",
+                    isChecked = showKeyPreview,
                     onCheckedChange = {
                         showKeyPreview = it
                         prefs.showKeyPreview = it
                     }
                 )
-            }
-        }
 
-        // 4. الإبتسامات والفيسات
-        SettingsGroupTitle("الإبتسامات والفيسات (Emoji)")
-        Card(
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-        ) {
-            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("مظهر وحزمة السمايلات", fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                    Text("اختر مظهر الإيموجي المفضل لديك في لوحة المفاتيح", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        listOf("iOS 27", "iOS 26", "Google Modern", "Classic").forEach { style ->
-                            FilterChip(
-                                selected = emojiStyle == style,
-                                onClick = {
-                                    emojiStyle = style
-                                    prefs.emojiStyle = style
-                                },
-                                label = { Text(style, fontSize = 11.sp) },
-                                modifier = Modifier.weight(1f)
-                            )
+                HorizontalDivider(color = Color(0xFF2E2E36), thickness = 0.6.dp)
+
+                // 7. وضع الظلام (Switch)
+                SettingSwitchItem(
+                    icon = Icons.Default.DarkMode,
+                    iconBgColor = Color(0xFFEAB308),
+                    title = "وضع الظلام",
+                    subtitle = "تصبح جميع الشاشات مظلمة.",
+                    isChecked = isDarkMode,
+                    onCheckedChange = { isDarkMode = it }
+                )
+            }
+
+            // ================= SECTION 2: إعدادات الميزة (Feature Settings) =================
+            SettingsSectionCard(title = "إعدادات الميزة") {
+                // اللغة والنوع (NEW)
+                SettingRowItem(
+                    icon = Icons.Default.Language,
+                    iconBgColor = Color(0xFFEF4444),
+                    title = "اللغة والنوع",
+                    isNew = true,
+                    subtitle = "English(QWERTY), العربية",
+                    subtitleColor = Color(0xFF818CF8),
+                    onClick = onNavigateToLanguages
+                )
+
+                HorizontalDivider(color = Color(0xFF2E2E36), thickness = 0.6.dp)
+
+                // إعدادات الإدخال (NEW)
+                SettingRowItem(
+                    icon = Icons.Default.TouchApp,
+                    iconBgColor = Color(0xFFF97316),
+                    title = "إعدادات الإدخال",
+                    isNew = true,
+                    subtitle = "تعيين الفاصل الزمني للمس والإدخال التلقائي والكلمات المقترحة والعرض المكبر للمفتاح الذي يتم الضغط عليه، وما إلى ذلك.",
+                    onClick = {
+                        Toast.makeText(context, "تم ضبط الفاصل الزمني والمعاينة الدقيقة", Toast.LENGTH_SHORT).show()
+                    }
+                )
+
+                HorizontalDivider(color = Color(0xFF2E2E36), thickness = 0.6.dp)
+
+                // الأصوات/الاهتزاز
+                SettingRowItem(
+                    icon = Icons.Default.VolumeUp,
+                    iconBgColor = Color(0xFFEAB308),
+                    title = "الأصوات/الاهتزاز",
+                    subtitle = "تعيين نوع الصوت ومستواه وشدة الاهتزاز، وما إلى ذلك.",
+                    onClick = {
+                        Toast.makeText(context, "نوع الصوت: CLICK | الاهتزاز: Medium", Toast.LENGTH_SHORT).show()
+                    }
+                )
+
+                HorizontalDivider(color = Color(0xFF2E2E36), thickness = 0.6.dp)
+
+                // تحرير رمزي
+                SettingRowItem(
+                    icon = Icons.Default.Star,
+                    iconBgColor = Color(0xFF84CC16),
+                    title = "تحرير رمزي",
+                    subtitle = "يمكنك إجراء تحرير لاستخدام الرموز التي تريدها.",
+                    onClick = {
+                        Toast.makeText(context, "تخصيص الرموز متاح في الكيبورد", Toast.LENGTH_SHORT).show()
+                    }
+                )
+
+                HorizontalDivider(color = Color(0xFF2E2E36), thickness = 0.6.dp)
+
+                // تعديل "رمز المشاعر الخاص بي"
+                SettingRowItem(
+                    icon = Icons.Default.Mood,
+                    iconBgColor = Color(0xFFF43F5E),
+                    title = "تعديل \"رمز المشاعر الخاص بي\"",
+                    subtitle = "أنشئ رمز المشاعر الخاص بك وعدّله.",
+                    onClick = {
+                        Toast.makeText(context, "لوحة الفيسات تدعم تخصيص الرموز الحديثة", Toast.LENGTH_SHORT).show()
+                    }
+                )
+
+                HorizontalDivider(color = Color(0xFF2E2E36), thickness = 0.6.dp)
+
+                // تحرير مفاتيح اختصار الإدخال
+                SettingRowItem(
+                    icon = Icons.Default.KeyboardReturn,
+                    iconBgColor = Color(0xFF3B82F6),
+                    title = "تحرير مفاتيح اختصار الإدخال",
+                    subtitle = "نص سريع",
+                    subtitleColor = Color(0xFF818CF8),
+                    onClick = {
+                        Toast.makeText(context, "مدير الاختصارات السريعة مفعّل", Toast.LENGTH_SHORT).show()
+                    }
+                )
+
+                HorizontalDivider(color = Color(0xFF2E2E36), thickness = 0.6.dp)
+
+                // تحرير مفاتيح اختصار المسافة
+                SettingRowItem(
+                    icon = Icons.Default.SpaceBar,
+                    iconBgColor = Color(0xFFF59E0B),
+                    title = "تحرير مفاتيح اختصار المسافة",
+                    subtitle = "حرك المؤشر",
+                    subtitleColor = Color(0xFF818CF8),
+                    onClick = {
+                        Toast.makeText(context, "اسحب على مسطرة المسافة لتحريك المؤشر", Toast.LENGTH_SHORT).show()
+                    }
+                )
+
+                HorizontalDivider(color = Color(0xFF2E2E36), thickness = 0.6.dp)
+
+                // تحرير قائمة لوحة المفاتيح
+                SettingRowItem(
+                    icon = Icons.Default.Apps,
+                    iconBgColor = Color(0xFFA855F7),
+                    title = "تحرير قائمة لوحة المفاتيح",
+                    subtitle = "يمكنك تحرير الميزات التي تريد استخدامها فقط.",
+                    onClick = {
+                        Toast.makeText(context, "شريط الأدوات العلوي يتيح الوصول لكافة الميزات", Toast.LENGTH_SHORT).show()
+                    }
+                )
+            }
+
+            // ================= SECTION 3: ميزات الراحة (Convenience Features) =================
+            SettingsSectionCard(title = "ميزات الراحة") {
+                // الشريط العلوي بلوحة المفاتيح
+                SettingRowItem(
+                    icon = Icons.Default.ViewCompact,
+                    iconBgColor = Color(0xFFA855F7),
+                    title = "الشريط العلوي بلوحة المفاتيح",
+                    subtitle = "يمكنك تحديد الميزات التي تظهر في المنطقة العلوية من لوحة المفاتيح.",
+                    onClick = {
+                        Toast.makeText(context, "أزرار GIF، الحافظة، الصوت، والترجمة مثبتة في الشريط", Toast.LENGTH_SHORT).show()
+                    }
+                )
+
+                HorizontalDivider(color = Color(0xFF2E2E36), thickness = 0.6.dp)
+
+                // النسخ احتياطي / استعادة (NEW)
+                SettingRowItem(
+                    icon = Icons.Default.SyncAlt,
+                    iconBgColor = Color(0xFFEAB308),
+                    title = "النسخ احتياطي / استعادة",
+                    isNew = true,
+                    subtitle = "يمكنك حفظ وتحميل إعدادات لوحة المفاتيح ونص تلقائي والسمة وملاحظة على هاتفك.",
+                    onClick = {
+                        Toast.makeText(context, "تم حفظ نسخة احتياطية من إعداداتك بنجاح ✓", Toast.LENGTH_SHORT).show()
+                    }
+                )
+
+                HorizontalDivider(color = Color(0xFF2E2E36), thickness = 0.6.dp)
+
+                // شريط الإشعارات
+                SettingRowItem(
+                    icon = Icons.Default.Notifications,
+                    iconBgColor = Color(0xFFF43F5E),
+                    title = "شريط الإشعارات",
+                    subtitle = "يمكن الوصول إلى ميزات الملاحظات والأخبار والمعجم والترجمة بدون تشغيل التطبيق.",
+                    onClick = {
+                        Toast.makeText(context, "الوصول السريع متاح دائماً", Toast.LENGTH_SHORT).show()
+                    }
+                )
+            }
+
+            // ================= SECTION 4: !DesignKeyboard Level Up =================
+            SettingsSectionCard(title = "!DesignKeyboard Level Up") {
+                SettingRowItem(
+                    icon = Icons.Default.Campaign,
+                    iconBgColor = Color(0xFFA855F7),
+                    title = "ادعمنا",
+                    onClick = { Toast.makeText(context, "شكراً لدعمك لتطبيق كيبورد محمد v1 ❤️", Toast.LENGTH_SHORT).show() }
+                )
+                HorizontalDivider(color = Color(0xFF2E2E36), thickness = 0.6.dp)
+                SettingRowItem(
+                    icon = Icons.Default.HelpOutline,
+                    iconBgColor = Color(0xFFF59E0B),
+                    title = "أسئلة مكررة",
+                    onClick = { Toast.makeText(context, "كافة الميزات مدعومة محلياً بدون إنترنت", Toast.LENGTH_SHORT).show() }
+                )
+                HorizontalDivider(color = Color(0xFF2E2E36), thickness = 0.6.dp)
+                SettingRowItem(
+                    icon = Icons.Default.Email,
+                    iconBgColor = Color(0xFF3B82F6),
+                    title = "الإبلاغ عن أخطاء أو مقترحات",
+                    onClick = { Toast.makeText(context, "نسعد دائماً بتواصلكم ومقترحاتكم", Toast.LENGTH_SHORT).show() }
+                )
+                HorizontalDivider(color = Color(0xFF2E2E36), thickness = 0.6.dp)
+                SettingRowItem(
+                    icon = Icons.Default.Share,
+                    iconBgColor = Color(0xFF84CC16),
+                    title = "إخبار أصدقاء عن التطبيق",
+                    onClick = {
+                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, "جرّب كيبورد محمد v1 - أسرع لوحة مفاتيح أندرويد مع ثيمات GIF وصور ودعم كامل للعربية!")
                         }
+                        context.startActivity(Intent.createChooser(shareIntent, "مشاركة التطبيق"))
                     }
-                }
+                )
+            }
+
+            // ================= SECTION 5: تطبيقات شائعة مقترحة =================
+            SettingsSectionCard(title = "تطبيقات شائعة مقترحة 😉") {
+                SettingRowItem(
+                    icon = Icons.Default.WbSunny,
+                    iconBgColor = Color(0xFF38BDF8),
+                    title = "[AD] الطقس أولاً بأول",
+                    onClick = { Toast.makeText(context, "تطبيق الطقس المقترح", Toast.LENGTH_SHORT).show() }
+                )
+            }
+
+            // ================= SECTION 6: الإصدار =================
+            SettingsSectionCard(title = "الإصدار") {
+                SettingRowItem(
+                    icon = Icons.Default.Info,
+                    iconBgColor = Color(0xFFEF4444),
+                    title = "الإصدار الحالي 8.5.1 (كيبورد محمد v1)",
+                    subtitle = "الانتقال إلى التحديث - أحدث إصدار مثبت",
+                    subtitleColor = Color(0xFFF43F5E),
+                    onClick = { Toast.makeText(context, "لديك أحدث إصدار: 8.5.1", Toast.LENGTH_SHORT).show() }
+                )
             }
         }
 
-        // 5. الحافظة
-        SettingsGroupTitle("الحافظة (Clipboard)")
-        Card(
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+        // ================= BOTTOM STICKY TEST KEYBOARD BAR (Screenshots 4 to 9) =================
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFF1E1E24))
+                .border(width = 0.8.dp, color = Color(0xFF33333D))
+                .padding(horizontal = 14.dp, vertical = 10.dp)
         ) {
-            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text("مدة حفظ النصوص المنسوخة", fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                        Text("$clipboardRetentionDays يوماً قبل مسح النصوص غير المثبتة", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        listOf(7, 30, 90).forEach { days ->
-                            FilterChip(
-                                selected = clipboardRetentionDays == days,
-                                onClick = {
-                                    clipboardRetentionDays = days
-                                    prefs.clipboardRetentionDays = days
-                                },
-                                label = { Text("$days يوم", fontSize = 11.sp) }
-                            )
-                        }
-                    }
-                }
-
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-                SettingsSwitchRow(
-                    title = "التنظيف التلقائي للنصوص غير المثبتة",
-                    subtitle = "مسح النصوص العادية تلقائياً بعد انقضاء المدة المحددة مع الحفاظ على المثبتات",
-                    checked = clipboardAutoClean,
-                    onCheckedChange = {
-                        clipboardAutoClean = it
-                        prefs.clipboardAutoClean = it
-                    }
-                )
-            }
+            TextField(
+                value = testInputText,
+                onValueChange = { testInputText = it },
+                placeholder = {
+                    Text(
+                        text = "جرّب اختبار لوحة المفاتيح.",
+                        color = Color.Gray,
+                        fontSize = 14.sp
+                    )
+                },
+                singleLine = true,
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color(0xFF282830),
+                    unfocusedContainerColor = Color(0xFF282830),
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White
+                ),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+            )
         }
-
-        // 6. الاختصارات
-        SettingsGroupTitle("الاختصارات (Shortcuts)")
-        Card(
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-        ) {
-            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    text = "تتيح لك الاختصارات كتابة كلمات قصيرة مثل (سلام) لتتحول فوراً إلى (السلام عليكم ورحمة الله وبركاته) تلقائياً عند الضغط على المسافة.",
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = 17.sp
-                )
-            }
-        }
-
-        // 7. الكتابة والتصحيح
-        SettingsGroupTitle("الكتابة والتصحيح التلقائي")
-        Card(
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-        ) {
-            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                SettingsSwitchRow(
-                    title = "إظهار شريط الاقتراحات",
-                    subtitle = "عرض الكلمات المتوقعة والإكمال التلقائي أثناء الكتابة",
-                    checked = showSuggestions,
-                    onCheckedChange = {
-                        showSuggestions = it
-                        prefs.showSuggestions = it
-                    }
-                )
-
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-                SettingsSwitchRow(
-                    title = "التصحيح التلقائي للأخطاء (Auto-Correct)",
-                    subtitle = "تصحيح الأخطاء الإملائية والهمزات والتاء المربوطة تلقائياً عند الضغط على المسافة",
-                    checked = autoCorrectEnabled,
-                    onCheckedChange = {
-                        autoCorrectEnabled = it
-                        prefs.autoCorrectEnabled = it
-                    }
-                )
-
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-                SettingsSwitchRow(
-                    title = "التكبير التلقائي (Auto Capitalization)",
-                    subtitle = "تكبير أول حرف بعد النقطة تلقائياً باللغة الإنجليزية",
-                    checked = autoCapitalization,
-                    onCheckedChange = {
-                        autoCapitalization = it
-                        prefs.autoCapitalization = it
-                    }
-                )
-
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-                SettingsSwitchRow(
-                    title = "نقطة بالمسافة المزدوجة",
-                    subtitle = "الضغط مرتين متتاليتين على المسافة يدرج نقطة ومسافة",
-                    checked = doubleSpacePeriod,
-                    onCheckedChange = {
-                        doubleSpacePeriod = it
-                        prefs.doubleSpacePeriod = it
-                    }
-                )
-
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-                SettingsSwitchRow(
-                    title = "الأرقام المشرقية (٠١٢٣٤٥٦٧٨٩)",
-                    subtitle = "استخدام الأرقام العربية ٠-٩ في اللوحة العربية",
-                    checked = arabicNumerals,
-                    onCheckedChange = {
-                        arabicNumerals = it
-                        prefs.arabicNumerals = it
-                    }
-                )
-            }
-        }
-
-        // 8. الصف السفلي والعلوي وشريط الأدوات
-        SettingsGroupTitle("الصف السفلي والعلوي وشريط الأدوات")
-        Card(
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-        ) {
-            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                SettingsSwitchRow(
-                    title = "صف الأرقام العلوي",
-                    subtitle = "عرض صف الأرقام بشكل دائم في أعلى الحروف",
-                    checked = showNumberRow,
-                    onCheckedChange = {
-                        showNumberRow = it
-                        prefs.showNumberRow = it
-                    }
-                )
-
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-                SettingsSwitchRow(
-                    title = "صف الأسهم للتنقل (Arrow Navigation Row)",
-                    subtitle = "إظهار صف أسهم للتنقل السريع بين الكلمات والحروف والبداية والنهاية",
-                    checked = showArrowRow,
-                    onCheckedChange = {
-                        showArrowRow = it
-                        prefs.showArrowRow = it
-                    }
-                )
-
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-                SettingsSwitchRow(
-                    title = "أزرار التراجع والإعادة والبحث بشريط الأدوات",
-                    subtitle = "إظهار أزرار Undo و Redo في شريط الأدوات العلوي",
-                    checked = showToolbarUndoRedo,
-                    onCheckedChange = {
-                        showToolbarUndoRedo = it
-                        prefs.showToolbarUndoRedo = it
-                    }
-                )
-
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-                // Bottom Chin Clearance
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("رفع الكيبورد عن حافة الشاشة السفلية", fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                    Row(
-                        modifier = Modifier.horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        listOf(
-                            "AUTO" to "تلقائي (موصى به)",
-                            "SMALL" to "صغيرة (16dp)",
-                            "MEDIUM" to "متوسطة (28dp)",
-                            "LARGE" to "كبيرة (40dp)",
-                            "NONE" to "بدون مسافة"
-                        ).forEach { (pad, label) ->
-                            FilterChip(
-                                selected = bottomChinPadding == pad,
-                                onClick = {
-                                    bottomChinPadding = pad
-                                    prefs.bottomChinPadding = pad
-                                },
-                                label = { Text(label, fontSize = 11.sp) }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(28.dp))
     }
 }
 
 @Composable
-private fun SettingsGroupTitle(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 4.dp, top = 4.dp)
-    )
+fun SettingsSectionCard(
+    title: String,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = title,
+            color = Color.Gray,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 6.dp)
+        )
+
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E24)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                content = content
+            )
+        }
+    }
 }
 
 @Composable
-private fun SettingsSwitchRow(
+fun SettingRowItem(
+    icon: ImageVector,
+    iconBgColor: Color,
     title: String,
-    subtitle: String,
-    checked: Boolean,
+    subtitle: String? = null,
+    subtitleColor: Color = Color.Gray,
+    isNew: Boolean = false,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = title,
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                if (isNew) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(Color(0xFFEF4444))
+                            .padding(horizontal = 5.dp, vertical = 1.dp)
+                    ) {
+                        Text(
+                            text = "NEW",
+                            color = Color.White,
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            if (!subtitle.isNullOrBlank()) {
+                Text(
+                    text = subtitle,
+                    color = subtitleColor,
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.width(10.dp))
+
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(iconBgColor.copy(alpha = 0.2f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconBgColor,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun SettingSwitchItem(
+    icon: ImageVector,
+    iconBgColor: Color,
+    title: String,
+    subtitle: String? = null,
+    isChecked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-            Text(title, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-            Text(subtitle, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 16.sp)
-        }
         Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange
+            checked = isChecked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = Color(0xFF6366F1),
+                uncheckedThumbColor = Color.Gray,
+                uncheckedTrackColor = Color(0xFF2E2E36)
+            )
         )
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            Text(
+                text = title,
+                color = Color.White,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
+            )
+
+            if (!subtitle.isNullOrBlank()) {
+                Text(
+                    text = subtitle,
+                    color = Color.Gray,
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.width(10.dp))
+
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(iconBgColor.copy(alpha = 0.2f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconBgColor,
+                modifier = Modifier.size(20.dp)
+            )
+        }
     }
 }

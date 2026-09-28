@@ -41,7 +41,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.util.Locale
+import android.net.Uri
+import android.content.ClipDescription
+import androidx.core.content.FileProvider
+import androidx.core.view.inputmethod.EditorInfoCompat
+import androidx.core.view.inputmethod.InputConnectionCompat
+import androidx.core.view.inputmethod.InputContentInfoCompat
 
 open class KeyboardInputMethodService : ComposeInputMethodService() {
 
@@ -389,6 +396,9 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
                 onHideKeyboard = { requestHideSelf(0) },
                 onSearch = {
                     currentInputConnection?.performEditorAction(EditorInfo.IME_ACTION_SEARCH)
+                },
+                onCommitGif = { gifItem ->
+                    commitGifMedia(gifItem)
                 }
             )
         }
@@ -480,6 +490,81 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
             updateSuggestions()
         } catch (e: Throwable) {
             Log.e("KeyboardIME", "Error in handleTextInput", e)
+        }
+    }
+
+    private fun commitGifMedia(gifItem: com.example.engine.GifItem) {
+        val ic = currentInputConnection ?: return
+        val info = currentEditorInfo ?: return
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                // Check if target app supports image/gif or rich content
+                val supportedMimes = EditorInfoCompat.getContentMimeTypes(info)
+                val supportsGif = supportedMimes.any {
+                    it.equals("image/gif", ignoreCase = true) || it.equals("image/*", ignoreCase = true)
+                }
+
+                if (supportsGif) {
+                    val cacheGifsDir = File(cacheDir, "gifs").apply { mkdirs() }
+                    val file = File(cacheGifsDir, "${gifItem.id}.gif")
+
+                    if (!file.exists() || file.length() == 0L) {
+                        val client = okhttp3.OkHttpClient()
+                        val req = okhttp3.Request.Builder().url(gifItem.gifUrl).build()
+                        val res = client.newCall(req).execute()
+                        if (res.isSuccessful) {
+                            res.body?.byteStream()?.use { input ->
+                                file.outputStream().use { output -> input.copyTo(output) }
+                            }
+                        }
+                    }
+
+                    if (file.exists() && file.length() > 0) {
+                        val contentUri: Uri = FileProvider.getUriForFile(
+                            this@KeyboardInputMethodService,
+                            "${packageName}.fileprovider",
+                            file
+                        )
+
+                        val description = ClipDescription(gifItem.title, arrayOf("image/gif"))
+                        val contentInfo = InputContentInfoCompat(
+                            contentUri,
+                            description,
+                            Uri.parse(gifItem.gifUrl)
+                        )
+
+                        var flags = 0
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N_MR1) {
+                            flags = InputConnectionCompat.INPUT_CONTENT_GRANT_READ_URI_PERMISSION
+                        }
+
+                        withContext(Dispatchers.Main) {
+                            val committed = InputConnectionCompat.commitContent(
+                                ic,
+                                info,
+                                contentInfo,
+                                flags,
+                                null
+                            )
+                            if (!committed) {
+                                handleTextInput(gifItem.gifUrl)
+                            }
+                        }
+                        return@launch
+                    }
+                }
+
+                // If target app does not accept rich media, insert direct URL
+                withContext(Dispatchers.Main) {
+                    handleTextInput(gifItem.gifUrl)
+                }
+            } catch (e: Throwable) {
+                Log.e("KeyboardIME", "Failed commitGifMedia", e)
+                withContext(Dispatchers.Main) {
+                    handleTextInput(gifItem.gifUrl)
+                }
+            }
         }
     }
 

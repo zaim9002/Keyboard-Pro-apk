@@ -175,7 +175,8 @@ fun KeyboardScreen(
     onChangeKeyFontSize: (Int) -> Unit = {},
     onChangeSecondaryFontSize: (Int) -> Unit = {},
     onHideKeyboard: (() -> Unit)? = null,
-    onSearch: (() -> Unit)? = null
+    onSearch: (() -> Unit)? = null,
+    onCommitGif: ((com.example.engine.GifItem) -> Unit)? = null
 ) {
     var layoutMode by remember { mutableStateOf(LayoutMode.ALPHA) }
     var shiftState by remember { mutableStateOf(ShiftState.OFF) }
@@ -276,13 +277,23 @@ fun KeyboardScreen(
     val onToggleInlineTranslate = remember { { isInlineTranslateOpen = !isInlineTranslateOpen } }
     val onToggleTashkeelRow = remember { { showTashkeelRow = !showTashkeelRow } }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .wrapContentHeight(align = Alignment.Bottom)
-            .background(colorScheme.background)
-            .navigationBarsPadding()
-    ) {
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight(align = Alignment.Bottom)
+                .background(colorScheme.background)
+                .navigationBarsPadding()
+        ) {
+        // 0. News & Trend Ticker Bar with Menu Button (⊞)
+        if (activePanel == KeyboardPanel.NONE) {
+            KeyboardTickerBar(
+                colorScheme = colorScheme,
+                onOpenMenu = { activePanel = KeyboardPanel.MENU },
+                onHeadlineClick = { headline -> onTextInput(headline) }
+            )
+        }
+
         // 1. Toolbar (always on top)
         KeyboardToolbar(
             activePanel = activePanel,
@@ -304,6 +315,7 @@ fun KeyboardScreen(
             },
             onSwitchLanguage = onSwitchLanguage,
             onOpenSettings = onOpenSettings,
+            onOpenThemes = onOpenSettings,
             onUndo = onUndo,
             onRedo = onRedo,
             onDelete = onDelete,
@@ -412,6 +424,8 @@ fun KeyboardScreen(
                         colorScheme = colorScheme,
                         onEmojiClick = { emoji -> onTextInput(emoji) },
                         onBackspace = onDelete,
+                        onSwitchToGifs = { activePanel = KeyboardPanel.GIFS },
+                        onSwitchToStickers = { activePanel = KeyboardPanel.STICKERS },
                         onClose = { activePanel = KeyboardPanel.NONE }
                     )
                 }
@@ -430,8 +444,12 @@ fun KeyboardScreen(
                     GifsPanel(
                         modifier = Modifier.fillMaxWidth().height(panelHeight),
                         colorScheme = colorScheme,
-                        onGifSelect = { gifText ->
-                            onTextInput(gifText)
+                        onGifSelect = { gifItem ->
+                            if (onCommitGif != null) {
+                                onCommitGif(gifItem)
+                            } else {
+                                onTextInput(gifItem.gifUrl)
+                            }
                             activePanel = KeyboardPanel.NONE
                         },
                         onClose = { activePanel = KeyboardPanel.NONE }
@@ -519,6 +537,105 @@ fun KeyboardScreen(
                         onDeleteUserWord = onDeleteUserWord,
                         onClose = { activePanel = KeyboardPanel.NONE }
                     )
+                }
+                KeyboardPanel.MENU -> {
+                    KeyboardMenuPanel(
+                        modifier = Modifier.fillMaxWidth().height(panelHeight),
+                        colorScheme = colorScheme,
+                        onOpenThemes = onOpenSettings,
+                        onOpenVoice = { activePanel = KeyboardPanel.VOICE },
+                        onOpenMiniGame = { activePanel = KeyboardPanel.GAME },
+                        onOpenTranslate = {
+                            isInlineTranslateOpen = true
+                            activePanel = KeyboardPanel.NONE
+                        },
+                        onOpenQuickText = { activePanel = KeyboardPanel.CLIPBOARD },
+                        onOpenTextEditing = { activePanel = KeyboardPanel.EDITING },
+                        onOpenCalculator = { activePanel = KeyboardPanel.CALCULATOR },
+                        onOpenNotes = { activePanel = KeyboardPanel.NOTES },
+                        onToggleOneHanded = {
+                            val nextMode = if (oneHandedMode == "OFF") "RIGHT" else "OFF"
+                            onToggleOneHanded?.invoke(nextMode)
+                            activePanel = KeyboardPanel.NONE
+                        },
+                        onOpenNews = {
+                            onTextInput("«كفاية إنهم كلموني».. سماح أنور تعتذر عن مغادرتها")
+                            activePanel = KeyboardPanel.NONE
+                        },
+                        onOpenFonts = { activePanel = KeyboardPanel.INSTA_FONTS },
+                        onToggleNumberRow = {
+                            // Toggle number row
+                            activePanel = KeyboardPanel.NONE
+                        },
+                        onOpenSettings = onOpenSettings,
+                        onOpenInstaFonts = { activePanel = KeyboardPanel.INSTA_FONTS },
+                        onOpenHandwriting = { activePanel = KeyboardPanel.HANDWRITING },
+                        onOpenToolbarEditor = { activePanel = KeyboardPanel.TOOLBAR_EDITOR },
+                        onClose = { activePanel = KeyboardPanel.NONE }
+                    )
+                }
+                KeyboardPanel.TOOLBAR_EDITOR -> {
+                    ToolbarEditorPanel(
+                        modifier = Modifier.fillMaxWidth().height(panelHeight),
+                        colorScheme = colorScheme,
+                        onClose = { activePanel = KeyboardPanel.MENU }
+                    )
+                }
+                KeyboardPanel.GAME -> {
+                    MiniGamePanel(
+                        modifier = Modifier.fillMaxWidth().height(panelHeight),
+                        colorScheme = colorScheme,
+                        onClose = { activePanel = KeyboardPanel.NONE }
+                    )
+                }
+                KeyboardPanel.CALCULATOR -> {
+                    CalculatorPanel(
+                        modifier = Modifier.fillMaxWidth().height(panelHeight),
+                        colorScheme = colorScheme,
+                        onInsertResult = { res ->
+                            onTextInput(res)
+                            activePanel = KeyboardPanel.NONE
+                        },
+                        onClose = { activePanel = KeyboardPanel.NONE }
+                    )
+                }
+                KeyboardPanel.NOTES -> {
+                    NotesPanel(
+                        modifier = Modifier.fillMaxWidth().height(panelHeight),
+                        colorScheme = colorScheme,
+                        onInsertNote = { note ->
+                            onTextInput(note)
+                            activePanel = KeyboardPanel.NONE
+                        },
+                        onClose = { activePanel = KeyboardPanel.NONE }
+                    )
+                }
+                KeyboardPanel.HANDWRITING -> {
+                    HandwritingPanel(
+                        modifier = Modifier.fillMaxWidth().height(panelHeight),
+                        colorScheme = colorScheme,
+                        onTextInput = { text ->
+                            onTextInput(text)
+                            activePanel = KeyboardPanel.NONE
+                        },
+                        onClose = { activePanel = KeyboardPanel.NONE }
+                    )
+                }
+                KeyboardPanel.INSTA_FONTS -> {
+                    InstaFontPanel(
+                        modifier = Modifier.fillMaxWidth().height(panelHeight),
+                        draftText = currentDraftText,
+                        colorScheme = colorScheme,
+                        onInsertText = { text ->
+                            onTextInput(text)
+                            activePanel = KeyboardPanel.NONE
+                        },
+                        onClose = { activePanel = KeyboardPanel.NONE }
+                    )
+                }
+                KeyboardPanel.NEWS -> {
+                    onTextInput("«كفاية إنهم كلموني».. سماح أنور")
+                    activePanel = KeyboardPanel.NONE
                 }
                 KeyboardPanel.NONE -> {
                     // Actual Keyboard layout with One-Handed Mode support
@@ -957,32 +1074,34 @@ fun KeyboardScreen(
                 )
             }
 
-            // Centralized Lightweight Key Preview Overlay (Zero-Window, Zero-Popup, Instantaneous)
+            // Centralized Lightweight Key Preview Overlay (Zero-Window, Zero-Popup, Instantaneous, Pixel-Perfect)
             if (showKeyPreview) {
                 activeKeyPreview?.let { preview ->
                     if (preview.visible) {
                         val density = LocalDensity.current
-                        val previewWidthDp = 50.dp
-                        val previewHeightDp = 54.dp
+                        val previewWidthDp = (preview.keyWidth / density.density).dp.coerceIn(52.dp, 66.dp)
+                        val previewHeightDp = 58.dp
                         val previewWidthPx = with(density) { previewWidthDp.toPx() }
                         val previewHeightPx = with(density) { previewHeightDp.toPx() }
-                        val xOffset = (preview.centerX - previewWidthPx / 2f).roundToInt()
-                        val yOffset = (preview.topY - previewHeightPx - with(density) { 6.dp.toPx() }).roundToInt()
+                        val rootWidthPx = keyboardContainerCoordinates?.size?.width?.toFloat() ?: 1080f
+                        val rawX = preview.centerX - (previewWidthPx / 2f)
+                        val clampedX = rawX.coerceIn(6f, (rootWidthPx - previewWidthPx - 6f).coerceAtLeast(6f)).roundToInt()
+                        val targetY = (preview.topY - previewHeightPx - with(density) { 8.dp.toPx() }).roundToInt()
 
                         Box(
                             modifier = Modifier
-                                .offset { IntOffset(xOffset, yOffset) }
+                                .offset { IntOffset(clampedX, targetY) }
                                 .size(previewWidthDp, previewHeightDp)
-                                .shadow(4.dp, RoundedCornerShape(10.dp))
-                                .clip(RoundedCornerShape(10.dp))
+                                .shadow(8.dp, RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(12.dp))
                                 .background(colorScheme.keyBackground)
-                                .border(1.5.dp, colorScheme.accent.copy(alpha = 0.7f), RoundedCornerShape(10.dp)),
+                                .border(1.5.dp, colorScheme.accent, RoundedCornerShape(12.dp)),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = preview.text,
                                 color = colorScheme.keyText,
-                                fontSize = 26.sp,
+                                fontSize = 28.sp,
                                 fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center
                             )
@@ -1086,6 +1205,7 @@ fun KeyboardScreen(
                 }
             }
         }
+    }
     }
 }
 

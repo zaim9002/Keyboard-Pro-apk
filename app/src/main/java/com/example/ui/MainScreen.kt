@@ -1,12 +1,14 @@
 package com.example.ui
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -14,44 +16,24 @@ import androidx.compose.ui.unit.sp
 import com.example.ui.screens.*
 
 enum class AppDestination(val title: String, val icon: ImageVector) {
-    DASHBOARD("الرئيسية", Icons.Default.Home),
-    LANGUAGES("اللغات", Icons.Default.Language),
-    THEMES("الثيمات", Icons.Default.Palette),
-    CLIPBOARD("الحافظة", Icons.Default.ContentPaste),
-    SHORTCUTS("الاختصارات", Icons.Default.FlashOn),
-    DICTIONARY("القاموس", Icons.Default.MenuBook),
-    SETTINGS("الإعدادات", Icons.Default.Settings)
+    TEST("معاينة واختبار", Icons.Default.Keyboard),
+    SETTINGS("الإعدادات", Icons.Default.Settings),
+    MY_THEMES("سماتي", Icons.Default.Person),
+    COLOR("لون", Icons.Default.Palette),
+    DESIGN("تصميم", Icons.Default.Favorite),
+    PHOTO_GIF("صورة فوتوغرافية/GIF", Icons.Default.Collections)
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
-    var currentDestination by remember { mutableStateOf(AppDestination.DASHBOARD) }
+    var currentDestination by remember { mutableStateOf(AppDestination.TEST) }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "⌨️ ${currentDestination.title}",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
-            )
-        },
         bottomBar = {
             NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                tonalElevation = 6.dp
+                containerColor = Color(0xFF18181C),
+                tonalElevation = 8.dp,
+                modifier = Modifier.height(68.dp)
             ) {
                 AppDestination.values().forEach { destination ->
                     val isSelected = currentDestination == destination
@@ -61,16 +43,25 @@ fun MainScreen() {
                         icon = {
                             Icon(
                                 imageVector = destination.icon,
-                                contentDescription = destination.title
+                                contentDescription = destination.title,
+                                tint = if (isSelected) Color(0xFF818CF8) else Color.Gray,
+                                modifier = Modifier.size(22.dp)
                             )
                         },
                         label = {
                             Text(
                                 text = destination.title,
-                                fontSize = 10.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                fontSize = 9.5.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                color = if (isSelected) Color(0xFF818CF8) else Color.Gray,
+                                maxLines = 1
                             )
-                        }
+                        },
+                        colors = NavigationBarItemDefaults.colors(
+                            indicatorColor = Color(0xFF818CF8).copy(alpha = 0.15f),
+                            selectedIconColor = Color(0xFF818CF8),
+                            unselectedIconColor = Color.Gray
+                        )
                     )
                 }
             }
@@ -79,24 +70,22 @@ fun MainScreen() {
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .background(Color(0xFF141416))
                 .padding(paddingValues)
         ) {
             Crossfade(targetState = currentDestination, label = "screen_transition") { destination ->
                 when (destination) {
-                    AppDestination.DASHBOARD -> DashboardScreen(
-                        onNavigateToThemes = { currentDestination = AppDestination.THEMES },
-                        onNavigateToClipboard = { currentDestination = AppDestination.CLIPBOARD },
-                        onNavigateToShortcuts = { currentDestination = AppDestination.SHORTCUTS },
+                    AppDestination.TEST -> InstallFinishScreen(
                         onNavigateToSettings = { currentDestination = AppDestination.SETTINGS },
-                        onNavigateToLanguages = { currentDestination = AppDestination.LANGUAGES }
+                        onNavigateToThemes = { currentDestination = AppDestination.COLOR }
                     )
-                    AppDestination.LANGUAGES -> LanguagesScreen()
-                    AppDestination.THEMES -> ThemesScreen()
-                    AppDestination.CLIPBOARD -> ClipboardScreen()
-                    AppDestination.SHORTCUTS -> ShortcutsScreen()
-                    AppDestination.DICTIONARY -> DictionaryScreen()
+                    AppDestination.PHOTO_GIF -> PhotoGifThemesScreen()
+                    AppDestination.DESIGN -> DesignThemesScreen()
+                    AppDestination.COLOR -> ColorThemesScreen()
+                    AppDestination.MY_THEMES -> MyThemesScreen()
                     AppDestination.SETTINGS -> SettingsScreen(
-                        onNavigateToLanguages = { currentDestination = AppDestination.LANGUAGES }
+                        onNavigateToThemes = { currentDestination = AppDestination.COLOR },
+                        onNavigateToLanguages = { /* Language selection */ }
                     )
                 }
             }
