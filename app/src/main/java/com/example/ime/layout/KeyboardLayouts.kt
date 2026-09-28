@@ -39,47 +39,75 @@ object KeyboardLayouts {
         KeyModel("خاص")
     )
 
+    // Numbers Row (١ ٢ ٣ ٤ ٥ ٦ ٧ ٨ ٩ ٠)
+    val arabicNumbersRow = listOf(
+        KeyModel("١", secondaryText = "1"),
+        KeyModel("٢", secondaryText = "2"),
+        KeyModel("٣", secondaryText = "3"),
+        KeyModel("٤", secondaryText = "4"),
+        KeyModel("٥", secondaryText = "5"),
+        KeyModel("٦", secondaryText = "6"),
+        KeyModel("٧", secondaryText = "7"),
+        KeyModel("٨", secondaryText = "8"),
+        KeyModel("٩", secondaryText = "9"),
+        KeyModel("٠", secondaryText = "0")
+    )
+
+    val englishNumbersRow = listOf(
+        KeyModel("1", secondaryText = "١"),
+        KeyModel("2", secondaryText = "٢"),
+        KeyModel("3", secondaryText = "٣"),
+        KeyModel("4", secondaryText = "٤"),
+        KeyModel("5", secondaryText = "٥"),
+        KeyModel("6", secondaryText = "٦"),
+        KeyModel("7", secondaryText = "٧"),
+        KeyModel("8", secondaryText = "٨"),
+        KeyModel("9", secondaryText = "٩"),
+        KeyModel("0", secondaryText = "٠")
+    )
+
+    // Row 1 (ض ص ث ق ف غ ع ه خ ح ج) - 11 Keys matching Design Keyboard (Screenshot 1)
     val arabicRow1 = listOf(
-        KeyModel("ض", secondaryText = "١", popupOptions = listOf("١", "1", "ضـ", "ضَ", "ضِ", "ضُ", "ضّ")),
-        KeyModel("ص", secondaryText = "٢", popupOptions = listOf("٢", "2", "صـ", "صَ", "صِ", "صُ", "صّ")),
-        KeyModel("ث", secondaryText = "٣", popupOptions = listOf("٣", "3", "ثـ", "ٿ", "ثَ", "ثِ", "ثُ", "ثّ")),
-        KeyModel("ق", secondaryText = "٤", popupOptions = listOf("٤", "4", "ڨ", "قـ", "قَ", "قِ", "قُ", "قّ")),
-        KeyModel("ف", secondaryText = "٥", popupOptions = listOf("٥", "5", "ڤ", "فـ", "ڥ", "فَ", "فِ", "فُ", "فّ")),
-        KeyModel("غ", secondaryText = "٦", popupOptions = listOf("٦", "6", "غـ", "غَ", "غِ", "غُ", "غّ")),
-        KeyModel("ع", secondaryText = "٧", popupOptions = listOf("٧", "7", "عـ", "عَ", "عِ", "عُ", "عّ")),
-        KeyModel("ه", secondaryText = "٨", popupOptions = listOf("٨", "8", "هـ", "ھ", "هَ", "هِ", "هُ", "هّ")),
-        KeyModel("خ", secondaryText = "٩", popupOptions = listOf("٩", "9", "خـ", "خَ", "خِ", "خُ", "خّ")),
-        KeyModel("ح", secondaryText = "٠", popupOptions = listOf("٠", "0", "حـ", "حَ", "حِ", "حُ", "حّ")),
-        KeyModel("ج", secondaryText = "!", popupOptions = listOf("چ", "جـ", "جَ", "جِ", "جُ", "جّ")),
-        KeyModel("د", secondaryText = "؟", popupOptions = listOf("ڈ", "دـ", "دَ", "دِ", "دُ", "دّ"))
+        KeyModel("ض", secondaryText = "+", popupOptions = listOf("+", "ضـ", "ضَ", "ضِ", "ضُ", "ضّ")),
+        KeyModel("ص", secondaryText = "×", popupOptions = listOf("×", "صـ", "صَ", "صِ", "صُ", "صّ")),
+        KeyModel("ث", secondaryText = "÷", popupOptions = listOf("÷", "ثـ", "ٿ", "ثَ", "ثِ", "ثُ", "ثّ")),
+        KeyModel("ق", secondaryText = "=", popupOptions = listOf("=", "ڨ", "قـ", "قَ", "قِ", "قُ", "قّ")),
+        KeyModel("ف", secondaryText = "/", popupOptions = listOf("/", "ڤ", "فـ", "ڥ", "فَ", "فِ", "فُ", "فّ")),
+        KeyModel("غ", secondaryText = "-", popupOptions = listOf("-", "غـ", "غَ", "غِ", "غُ", "غّ")),
+        KeyModel("ع", secondaryText = "<", popupOptions = listOf("<", "عـ", "عَ", "عِ", "عُ", "عّ")),
+        KeyModel("ه", secondaryText = ">", popupOptions = listOf(">", "هـ", "ھ", "هَ", "هِ", "هُ", "هّ")),
+        KeyModel("خ", secondaryText = "[", popupOptions = listOf("[", "خـ", "خَ", "خِ", "خُ", "خّ")),
+        KeyModel("ح", secondaryText = "]", popupOptions = listOf("]", "حـ", "حَ", "حِ", "حُ", "حّ")),
+        KeyModel("ج", secondaryText = "~", popupOptions = listOf("~", "چ", "جـ", "جَ", "جِ", "جُ", "جّ"))
     )
 
+    // Row 2 (ش س ي ب ل ا ت ن م ك ط) - 11 Keys matching Design Keyboard (Screenshot 1)
     val arabicRow2 = listOf(
-        KeyModel("ش", popupOptions = listOf("شـ", "شَ", "شِ", "شُ", "شّ")),
-        KeyModel("س", popupOptions = listOf("سـ", "سَ", "سِ", "سُ", "سّ")),
-        KeyModel("ي", popupOptions = listOf("ى", "يـ", "ې", "ێ", "يَ", "يِ", "يُ", "يَّ")),
-        KeyModel("ب", popupOptions = listOf("پ", "بـ", "ٻ", "بَ", "بِ", "بُ", "بّ")),
-        KeyModel("ل", popupOptions = listOf("لـ", "ڷ", "لَ", "لِ", "لُ", "لّ")),
-        KeyModel("ا", popupOptions = listOf("أ", "إ", "آ", "ء", "ٱ", "ـ", "اٰ", "اّ")),
-        KeyModel("ت", popupOptions = listOf("ة", "تـ", "ٿ", "تَ", "تِ", "تُ", "تّ")),
-        KeyModel("ن", popupOptions = listOf("نـ", "ں", "ڼ", "نَ", "نِ", "نُ", "نّ")),
-        KeyModel("م", popupOptions = listOf("مـ", "۾", "مَ", "مِ", "مُ", "مّ")),
-        KeyModel("ك", popupOptions = listOf("گ", "ک", "كـ", "ڪ", "كَ", "كِ", "كُ", "كّ")),
-        KeyModel("ط", popupOptions = listOf("طـ", "طَ", "طِ", "طُ", "طّ"))
+        KeyModel("ش", secondaryText = "!", popupOptions = listOf("!", "شـ", "شَ", "شِ", "شُ", "شّ")),
+        KeyModel("س", secondaryText = "@", popupOptions = listOf("@", "سـ", "سَ", "سِ", "سُ", "سّ")),
+        KeyModel("ي", secondaryText = "#", popupOptions = listOf("#", "ى", "يـ", "ې", "ێ", "يَ", "يِ", "يُ", "يَّ")),
+        KeyModel("ب", secondaryText = "$", popupOptions = listOf("$", "پ", "بـ", "ٻ", "بَ", "بِ", "بُ", "بّ")),
+        KeyModel("ل", secondaryText = "%", popupOptions = listOf("%", "لـ", "ڷ", "لَ", "لِ", "لُ", "لّ")),
+        KeyModel("ا", secondaryText = "أ", popupOptions = listOf("أ", "إ", "آ", "ء", "ٱ", "ـ", "اٰ", "اّ")),
+        KeyModel("ت", secondaryText = "^", popupOptions = listOf("^", "ة", "تـ", "ٿ", "تَ", "تِ", "تُ", "تّ")),
+        KeyModel("ن", secondaryText = "&", popupOptions = listOf("&", "نـ", "ں", "ڼ", "نَ", "نِ", "نُ", "نّ")),
+        KeyModel("م", secondaryText = "*", popupOptions = listOf("*", "مـ", "۾", "مَ", "مِ", "مُ", "مّ")),
+        KeyModel("ك", secondaryText = ")", popupOptions = listOf(")", "گ", "ک", "كـ", "ڪ", "كَ", "كِ", "كُ", "كّ")),
+        KeyModel("ط", secondaryText = "(", popupOptions = listOf("(", "طـ", "طَ", "طِ", "طُ", "طّ"))
     )
 
+    // Row 3 (ذ ء ؤ ر ى ة و ز ظ د + ⌫) - 10 keys + Backspace matching Design Keyboard (Screenshot 1)
     val arabicRow3 = listOf(
-        KeyModel("ذ", popupOptions = listOf("ڏ", "ذَ", "ذِ", "ذُ", "ذّ")),
-        KeyModel("ئ", popupOptions = listOf("ي", "ى", "ئـ")),
-        KeyModel("ء", popupOptions = listOf("أ", "إ", "آ", "ؤ", "ئ", "ٱ")),
-        KeyModel("ؤ", popupOptions = listOf("و", "ؤَ")),
-        KeyModel("ر", popupOptions = listOf("ژ", "ڕ", "ڑ", "رَ", "رِ", "رُ", "رّ")),
-        KeyModel("لا", popupOptions = listOf("لأ", "لإ", "لآ")),
-        KeyModel("ى", popupOptions = listOf("ي", "ىٰ", "ىَ")),
-        KeyModel("ة", popupOptions = listOf("ه", "ةً", "ةٌ", "ةٍ")),
-        KeyModel("و", popupOptions = listOf("ۆ", "ۉ", "وَ", "وِ", "وُ", "وّ")),
-        KeyModel("ز", popupOptions = listOf("ژ", "زّ", "زَ", "زِ", "زُ")),
-        KeyModel("ظ", popupOptions = listOf("ظـ", "ظَ", "ظِ", "ظُ", "ظّ"))
+        KeyModel("ذ", secondaryText = "-", popupOptions = listOf("-", "ڏ", "ذَ", "ذِ", "ذُ", "ذّ")),
+        KeyModel("ء", secondaryText = "'", popupOptions = listOf("'", "أ", "إ", "آ", "ؤ", "ئ", "ٱ")),
+        KeyModel("ؤ", secondaryText = "\"", popupOptions = listOf("\"", "و", "ؤَ")),
+        KeyModel("ر", secondaryText = ";", popupOptions = listOf(";", "ژ", "ڕ", "ڑ", "رَ", "رِ", "رُ", "رّ")),
+        KeyModel("ى", secondaryText = "ى", popupOptions = listOf("ى", "ي", "ىٰ", "ىَ")),
+        KeyModel("ة", secondaryText = "ة", popupOptions = listOf("ة", "ه", "ةً", "ةٌ", "ةٍ")),
+        KeyModel("و", secondaryText = "؟", popupOptions = listOf("؟", "ۆ", "ۉ", "وَ", "وِ", "وُ", "وّ")),
+        KeyModel("ز", secondaryText = ":", popupOptions = listOf(":", "ژ", "زّ", "زَ", "زِ", "زُ")),
+        KeyModel("ظ", secondaryText = "\\", popupOptions = listOf("\\", "ظـ", "ظَ", "ظِ", "ظُ", "ظّ")),
+        KeyModel("د", secondaryText = ",", popupOptions = listOf(",", "ڈ", "دـ", "دَ", "دِ", "دُ", "دّ"))
     )
 
     val englishRow1 = listOf(
@@ -125,71 +153,58 @@ object KeyboardLayouts {
     )
 
     val symbols1Row2 = listOf(
-        KeyModel("@"), KeyModel("#"), KeyModel("$"), KeyModel("%"), KeyModel("&"),
+        KeyModel("@"), KeyModel("#"), KeyModel("$"), KeyModel("_"), KeyModel("&"),
         KeyModel("-"), KeyModel("+"), KeyModel("("), KeyModel(")"), KeyModel("/")
     )
 
     val symbols1Row3 = listOf(
-        KeyModel("#+=", type = KeyType.SWITCH_MODE, weight = 1.3f),
-        KeyModel("*"), KeyModel("\""), KeyModel("'"), KeyModel(":"), KeyModel(";"),
-        KeyModel("!"), KeyModel("?"),
+        KeyModel("=\\<", type = KeyType.SWITCH_MODE, weight = 1.3f),
+        KeyModel("*"), KeyModel("\""), KeyModel("'"), KeyModel(":"),
+        KeyModel(";"), KeyModel("!"), KeyModel("?"),
         KeyModel("delete", type = KeyType.BACKSPACE, weight = 1.3f)
     )
 
     val symbols2Row1 = listOf(
         KeyModel("~"), KeyModel("`"), KeyModel("|"), KeyModel("•"), KeyModel("√"),
-        KeyModel("π"), KeyModel("÷"), KeyModel("×"), KeyModel("¶"), KeyModel("Δ")
+        KeyModel("π"), KeyModel("÷"), KeyModel("×"), KeyModel("§"), KeyModel("Δ")
     )
 
     val symbols2Row2 = listOf(
-        KeyModel("£"), KeyModel("¢"), KeyModel("€"), KeyModel("¥"), KeyModel("^"),
+        KeyModel("£"), KeyModel("¥"), KeyModel("€"), KeyModel("¢"), KeyModel("^"),
         KeyModel("°"), KeyModel("="), KeyModel("{"), KeyModel("}"), KeyModel("\\")
     )
 
     val symbols2Row3 = listOf(
-        KeyModel("123", type = KeyType.SWITCH_MODE, weight = 1.3f),
-        KeyModel("%"), KeyModel("©"), KeyModel("®"), KeyModel("™"), KeyModel("✓"),
-        KeyModel("<"), KeyModel(">"), KeyModel("["), KeyModel("]"),
+        KeyModel("?123", type = KeyType.SWITCH_MODE, weight = 1.3f),
+        KeyModel("%"), KeyModel("©"), KeyModel("®"), KeyModel("™"),
+        KeyModel("✓"), KeyModel("["), KeyModel("]"),
         KeyModel("delete", type = KeyType.BACKSPACE, weight = 1.3f)
     )
 
-    val englishNumberRow = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0")
-    val arabicNumberRow = listOf("١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩", "٠")
-
-    // Calculator / Numpad Keypad (Image 6 from user)
     val numpadRow1 = listOf(
-        KeyModel("(", weight = 1f),
-        KeyModel(")", weight = 1f),
-        KeyModel("1", weight = 1.3f),
-        KeyModel("2", weight = 1.3f),
-        KeyModel("3", weight = 1.3f),
-        KeyModel("ABC", type = KeyType.SWITCH_MODE, weight = 1.2f)
+        KeyModel("ABC", type = KeyType.SWITCH_MODE, weight = 1.2f),
+        KeyModel("1", weight = 1f),
+        KeyModel("2", weight = 1f),
+        KeyModel("3", weight = 1f)
     )
 
     val numpadRow2 = listOf(
         KeyModel("+", weight = 1f),
-        KeyModel("-", weight = 1f),
-        KeyModel("4", weight = 1.3f),
-        KeyModel("5", weight = 1.3f),
-        KeyModel("6", weight = 1.3f),
-        KeyModel("=", weight = 1.2f)
+        KeyModel("4", weight = 1f),
+        KeyModel("5", weight = 1f),
+        KeyModel("6", weight = 1f)
     )
 
     val numpadRow3 = listOf(
-        KeyModel("/", weight = 1f),
-        KeyModel("%", weight = 1f),
-        KeyModel("7", weight = 1.3f),
-        KeyModel("8", weight = 1.3f),
-        KeyModel("9", weight = 1.3f),
-        KeyModel("delete", type = KeyType.BACKSPACE, weight = 1.2f)
+        KeyModel("-", weight = 1f),
+        KeyModel("7", weight = 1f),
+        KeyModel("8", weight = 1f),
+        KeyModel("9", weight = 1f)
     )
 
     val numpadRow4 = listOf(
-        KeyModel("123!#()", type = KeyType.SWITCH_MODE, weight = 1.2f),
-        KeyModel(",", weight = 1f),
-        KeyModel("*", weight = 1.3f),
-        KeyModel("0", weight = 1.3f),
+        KeyModel("0", weight = 1.5f),
         KeyModel(".", weight = 1f),
-        KeyModel("enter", type = KeyType.ENTER, weight = 1.2f)
+        KeyModel("⌫", type = KeyType.BACKSPACE, weight = 1.2f)
     )
 }

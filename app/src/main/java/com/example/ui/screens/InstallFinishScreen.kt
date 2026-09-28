@@ -5,9 +5,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -15,7 +18,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -38,96 +40,119 @@ fun InstallFinishScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF161618))
-            .systemBarsPadding(),
+            .statusBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Top Bar with Settings
+        // Top Bar with Settings gear
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 16.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             IconButton(
                 onClick = onNavigateToSettings,
-                modifier = Modifier.size(38.dp)
+                modifier = Modifier.size(36.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Settings,
                     contentDescription = "الإعدادات",
                     tint = Color.LightGray,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(22.dp)
                 )
             }
         }
 
-        // Mascot & Congratulatory Header
+        // Mascot & Congratulatory Header (Scrollable to guarantee responsiveness on any screen size)
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .weight(1f)
-                .padding(horizontal = 20.dp),
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 4.dp),
             verticalArrangement = Arrangement.Center
         ) {
             // Cute Mascot Card
             Box(
                 modifier = Modifier
-                    .size(80.dp)
+                    .size(68.dp)
                     .clip(CircleShape)
                     .background(Color(0xFFFFE4E6)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = "🧸💖", fontSize = 38.sp)
+                Text(text = "🧸💖", fontSize = 32.sp)
             }
 
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(8.dp))
 
             Text(
                 text = "اكتملت إعدادات لوحة\nمفاتيح التصميم!",
                 color = Color.White,
-                fontSize = 22.sp,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
-                lineHeight = 28.sp
+                lineHeight = 26.sp
             )
 
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(4.dp))
 
             Text(
                 text = "اكتملت جميع الإعدادات!\nلنجرّب معًا لوحة المفاتيح التي اخترتها",
                 color = Color.LightGray,
-                fontSize = 13.sp,
+                fontSize = 12.sp,
                 textAlign = TextAlign.Center,
-                lineHeight = 18.sp
+                lineHeight = 16.sp
             )
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(10.dp))
 
             // Test Input Area
-            Box(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp)
+                    .height(44.dp)
                     .clip(RoundedCornerShape(10.dp))
                     .background(Color(0xFF222226))
                     .border(1.dp, Color(0xFF333338), RoundedCornerShape(10.dp))
-                    .padding(horizontal = 14.dp),
-                contentAlignment = Alignment.CenterStart
+                    .padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                if (testText.isEmpty()) {
-                    Text(
-                        text = "جرّب اختبار لوحة المفاتيح.",
-                        color = Color.Gray,
-                        fontSize = 14.sp
-                    )
-                } else {
-                    Text(
-                        text = testText,
-                        color = Color.White,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium
-                    )
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    if (testText.isEmpty()) {
+                        Text(
+                            text = "جرّب اختبار لوحة المفاتيح.",
+                            color = Color.Gray,
+                            fontSize = 13.sp
+                        )
+                    } else {
+                        Text(
+                            text = testText,
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1
+                        )
+                    }
+                }
+
+                if (testText.isNotEmpty()) {
+                    IconButton(
+                        onClick = { testText = "" },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Clear,
+                            contentDescription = "مسح",
+                            tint = Color.Gray,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                 }
             }
         }
@@ -148,6 +173,7 @@ fun InstallFinishScreen(
                 hapticEnabled = prefs.hapticFeedback != "Off",
                 soundEnabled = prefs.keySound != "Off",
                 oneHandedMode = prefs.oneHandedMode,
+                applyNavigationBarsPadding = false,
                 suggestions = listOf("السلام", "شكراً", "تمام", "أهلاً"),
                 clipboardList = emptyList(),
                 isVoiceListening = false,

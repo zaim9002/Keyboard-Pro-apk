@@ -169,6 +169,7 @@ fun KeyboardScreen(
     soundVolume: Int = 50,
     hapticIntensity: String = "Medium",
     hapticDurationMs: Int = 20,
+    applyNavigationBarsPadding: Boolean = true,
     onLaunchVoiceActivity: () -> Unit = {},
     onChangeKeyboardHeightPercent: (Int) -> Unit = {},
     onChangeKeyboardWidthPercent: (Int) -> Unit = {},
@@ -283,7 +284,7 @@ fun KeyboardScreen(
                 .fillMaxWidth()
                 .wrapContentHeight(align = Alignment.Bottom)
                 .background(colorScheme.background)
-                .navigationBarsPadding()
+                .then(if (applyNavigationBarsPadding) Modifier.navigationBarsPadding() else Modifier)
         ) {
         // 0. News & Trend Ticker Bar with Menu Button (⊞)
         if (activePanel == KeyboardPanel.NONE) {
@@ -685,14 +686,15 @@ fun KeyboardScreen(
 
                                 // Optional Number Row on top
                                 if (showNumberRow && layoutMode == LayoutMode.ALPHA) {
-                                    val numRow = if (currentLanguage == "ar" && arabicNumerals) KeyboardLayouts.arabicNumberRow else KeyboardLayouts.englishNumberRow
+                                    val numRow = if (currentLanguage == "ar" && arabicNumerals) KeyboardLayouts.arabicNumbersRow else KeyboardLayouts.englishNumbersRow
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceEvenly
                                     ) {
-                                        for (num in numRow) {
+                                        for (numKey in numRow) {
                                             KeyButton(
-                                                text = num,
+                                                text = numKey.primaryText,
+                                                secondaryText = numKey.secondaryText,
                                                 isSpecial = true,
                                                 height = 36.dp,
                                                 fontSize = 15.sp,
@@ -701,7 +703,7 @@ fun KeyboardScreen(
                                                 soundEnabled = soundEnabled,
                                                 modifier = Modifier.weight(1f)
                                             ) {
-                                                onTextInput(num)
+                                                onTextInput(numKey.primaryText)
                                             }
                                         }
                                     }
@@ -1111,100 +1113,8 @@ fun KeyboardScreen(
             }
         }
 
-        // Safe Bottom Chin (المساحة الآمنة السفلية لرفع لوحة المفاتيح فوق شريط النظام/التنقل)
-        val context = LocalContext.current
-        val systemNavHeightDp = remember {
-            val res = context.resources
-            val resourceId = res.getIdentifier("navigation_bar_height", "dimen", "android")
-            if (resourceId > 0) {
-                val px = res.getDimensionPixelSize(resourceId)
-                (px / res.displayMetrics.density).dp
-            } else {
-                0.dp
-            }
-        }
-
-        val effectiveBottomPaddingDp = when (bottomChinPadding) {
-            "NONE" -> 0.dp
-            "SMALL" -> 16.dp
-            "MEDIUM" -> 28.dp
-            "LARGE" -> 40.dp
-            else -> {
-                // AUTO: adaptive height based on navigation bar, at least 22dp for gesture nav safety
-                if (systemNavHeightDp > 0.dp) {
-                    systemNavHeightDp.coerceIn(20.dp, 44.dp)
-                } else {
-                    22.dp
-                }
-            }
-        }
-
-        if (effectiveBottomPaddingDp > 0.dp) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(effectiveBottomPaddingDp)
-                    .background(colorScheme.background),
-                contentAlignment = Alignment.Center
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Hide Keyboard button (Gboard / Samsung style)
-                    if (onHideKeyboard != null) {
-                        IconButton(
-                            onClick = onHideKeyboard,
-                            modifier = Modifier.size(effectiveBottomPaddingDp.coerceAtMost(36.dp))
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.KeyboardHide,
-                                contentDescription = "إخفاء لوحة المفاتيح",
-                                tint = colorScheme.specialKeyText.copy(alpha = 0.55f),
-                                modifier = Modifier.size(19.dp)
-                            )
-                        }
-                    } else {
-                        Spacer(modifier = Modifier.size(24.dp))
-                    }
-
-                    // Centered elegant language badge
-                    val isArabic = currentLanguage.startsWith("ar")
-                    val langShort = if (isArabic) "عربي" else currentLanguage.take(2).uppercase()
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(colorScheme.keyBackground.copy(alpha = 0.65f))
-                            .clickable { onSwitchLanguage() }
-                            .padding(horizontal = 14.dp, vertical = 2.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = langShort,
-                            color = colorScheme.keyText.copy(alpha = 0.75f),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-
-                    // Quick Switch Language icon button
-                    IconButton(
-                        onClick = onSwitchLanguage,
-                        modifier = Modifier.size(effectiveBottomPaddingDp.coerceAtMost(36.dp))
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Language,
-                            contentDescription = "تغيير اللغة",
-                            tint = colorScheme.specialKeyText.copy(alpha = 0.55f),
-                            modifier = Modifier.size(19.dp)
-                        )
-                    }
-                }
-            }
-        }
+        // Bottom Navigation Bar Spacing
+        Spacer(modifier = Modifier.navigationBarsPadding())
     }
     }
 }
@@ -2148,71 +2058,57 @@ private fun BottomControlRow(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 1. Mode Switch (e.g. ?123, ١٢٣, ABC)
+        // 1. Sym Key (Sym ⚙️) - Switches to symbols; Long Press opens settings
         KeyButton(
-            text = modeLabel,
+            text = "Sym",
+            secondaryText = "⚙",
             isSpecial = true,
             fontSize = 13.sp,
+            secondaryFontSize = 8.sp,
+            height = keyHeight,
+            colorScheme = colorScheme,
+            hapticEnabled = hapticEnabled,
+            soundEnabled = soundEnabled,
+            modifier = Modifier.weight(1.25f),
+            onLongClick = onLongPressLanguage
+        ) {
+            onSwitchMode()
+        }
+
+        // 2. Comma Key (, ...)
+        KeyButton(
+            text = "،",
+            secondaryText = "...",
+            fontSize = 16.sp,
+            secondaryFontSize = 8.sp,
             height = keyHeight,
             colorScheme = colorScheme,
             hapticEnabled = hapticEnabled,
             soundEnabled = soundEnabled,
             modifier = Modifier.weight(1.0f)
         ) {
-            onSwitchMode()
+            onTextInput("،")
         }
 
-        // 2. Language Switch (🌐)
-        KeyButton(
-            text = langLabel,
-            isSpecial = true,
-            fontSize = 14.sp,
-            height = keyHeight,
-            colorScheme = colorScheme,
-            hapticEnabled = hapticEnabled,
-            soundEnabled = soundEnabled,
-            modifier = Modifier.weight(0.85f),
-            onLongClick = onLongPressLanguage
-        ) {
-            onSwitchLanguage()
-        }
-
-        // 3. Clipboard Button (📋) - Placed in the bottom row (where faces used to be)
-        KeyButton(
-            text = "📋",
-            isSpecial = true,
-            fontSize = 15.sp,
-            height = keyHeight,
-            colorScheme = colorScheme,
-            hapticEnabled = hapticEnabled,
-            soundEnabled = soundEnabled,
-            modifier = Modifier.weight(0.85f)
-        ) {
-            if (onOpenClipboard != null) {
-                onOpenClipboard()
-            }
-        }
-
-        // 4. Spacebar - Tap for space; swipe left/right to switch language
-        // 4. Spacebar - Tap for space; swipe left/right to switch language (ultra-responsive unified gesture)
+        // 3. Spacebar with ◀  Language  ▶ and cursor swipe
         var isSpacePressed by remember { mutableStateOf(false) }
         val currentOnSpace by rememberUpdatedState(onSpace)
-        val currentOnSwitchLanguage by rememberUpdatedState(onSwitchLanguage)
+        val currentOnMoveCursor by rememberUpdatedState(onMoveCursor)
 
         Box(
             modifier = Modifier
-                .weight(3.4f)
+                .weight(4.2f)
                 .height(keyHeight)
                 .padding(horizontal = 1.5.dp, vertical = 2.dp)
                 .shadow(
-                    elevation = if (isSpacePressed) 0.5.dp else 1.dp,
+                    elevation = if (isSpacePressed) 0.5.dp else 1.2.dp,
                     shape = RoundedCornerShape(6.dp),
                     ambientColor = Color.Black.copy(alpha = 0.3f),
                     spotColor = Color.Black.copy(alpha = 0.3f)
                 )
                 .clip(RoundedCornerShape(6.dp))
                 .background(if (isSpacePressed) colorScheme.accent.copy(alpha = 0.35f) else colorScheme.keyBackground)
-                .pointerInput(spacebarLanguageSwitch, hapticEnabled, soundEnabled) {
+                .pointerInput(hapticEnabled, soundEnabled) {
                     awaitEachGesture {
                         val down = awaitFirstDown(requireUnconsumed = false)
                         isSpacePressed = true
@@ -2220,7 +2116,7 @@ private fun BottomControlRow(
                         if (soundEnabled) view.playSoundEffect(SoundEffectConstants.CLICK)
 
                         var totalDragX = 0f
-                        var didSwipeLang = false
+                        var accumulatedSteps = 0
 
                         while (true) {
                             val event = awaitPointerEvent()
@@ -2230,74 +2126,76 @@ private fun BottomControlRow(
                                 break
                             }
                             val dragAmountX = change.position.x - down.position.x
-                            totalDragX = dragAmountX
-                            if (spacebarLanguageSwitch && !didSwipeLang && (totalDragX > 40f || totalDragX < -40f)) {
-                                didSwipeLang = true
-                                if (hapticEnabled) HapticHelper.performKeyHaptic(context, view, "Medium")
-                                currentOnSwitchLanguage()
+                            val step = (dragAmountX / 25f).toInt()
+                            if (step != accumulatedSteps) {
+                                val diff = step - accumulatedSteps
+                                currentOnMoveCursor(diff)
+                                accumulatedSteps = step
+                                if (hapticEnabled) HapticHelper.performKeyHaptic(context, view, "Light")
                             }
+                            totalDragX = dragAmountX
                         }
 
                         isSpacePressed = false
-                        if (!didSwipeLang) {
+                        if (totalDragX.toInt() == 0 && accumulatedSteps == 0) {
                             currentOnSpace()
                         }
                     }
                 },
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = spaceLabel,
-                color = colorScheme.keyText.copy(alpha = 0.75f),
-                fontSize = 12.5.sp,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "◀",
+                    color = colorScheme.keyText.copy(alpha = 0.45f),
+                    fontSize = 10.sp
+                )
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    text = spaceLabel,
+                    color = colorScheme.keyText.copy(alpha = 0.85f),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1
+                )
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    text = "▶",
+                    color = colorScheme.keyText.copy(alpha = 0.45f),
+                    fontSize = 10.sp
+                )
+            }
         }
 
-        // 5. Period Key (.)
+        // 4. Period Key (. ')
         KeyButton(
             text = ".",
-            height = keyHeight,
+            secondaryText = "'",
             fontSize = 18.sp,
+            secondaryFontSize = 9.sp,
+            height = keyHeight,
             colorScheme = colorScheme,
             hapticEnabled = hapticEnabled,
             soundEnabled = soundEnabled,
-            modifier = Modifier.weight(0.75f)
+            modifier = Modifier.weight(1.0f)
         ) {
             onTextInput(".")
         }
 
-        // 6. Emoji / Faces Button (😊) - In place of the translation button
-        KeyButton(
-            text = "😊",
-            isSpecial = true,
-            fontSize = 15.sp,
-            height = keyHeight,
-            colorScheme = colorScheme,
-            hapticEnabled = hapticEnabled,
-            soundEnabled = soundEnabled,
-            modifier = Modifier.weight(0.85f)
-        ) {
-            if (onOpenEmoji != null) {
-                onOpenEmoji()
-            }
-        }
-
-        // 7. Action / Enter Key - Tap triggers Enter; Long Press triggers Translation
+        // 5. Action / Enter Key (⏎)
         var isEnterPressed by remember { mutableStateOf(false) }
         val currentOnEnter by rememberUpdatedState(onEnter)
-        val currentOnLongPressEnter by rememberUpdatedState(onLongPressEnter)
-        val currentOnOpenTranslate by rememberUpdatedState(onOpenTranslate)
-        val coroutineScope = rememberCoroutineScope()
 
         Box(
             modifier = Modifier
-                .weight(1.15f)
+                .weight(1.35f)
                 .height(keyHeight)
                 .padding(horizontal = 1.5.dp, vertical = 2.dp)
                 .shadow(
-                    elevation = if (isEnterPressed) 0.5.dp else 1.dp,
+                    elevation = if (isEnterPressed) 0.5.dp else 1.2.dp,
                     shape = RoundedCornerShape(6.dp),
                     ambientColor = Color.Black.copy(alpha = 0.3f),
                     spotColor = Color.Black.copy(alpha = 0.3f)
@@ -2310,20 +2208,6 @@ private fun BottomControlRow(
                         isEnterPressed = true
                         if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
                         if (soundEnabled) view.playSoundEffect(SoundEffectConstants.CLICK)
-
-                        var isLongPress = false
-                        val longPressJob = coroutineScope.launch {
-                            delay(350L)
-                            isLongPress = true
-                            if (hapticEnabled) HapticHelper.performKeyHaptic(context, view)
-                            if (soundEnabled) view.playSoundEffect(SoundEffectConstants.CLICK)
-                            if (currentOnLongPressEnter != null) {
-                                currentOnLongPressEnter?.invoke()
-                            } else if (currentOnOpenTranslate != null) {
-                                currentOnOpenTranslate?.invoke()
-                            }
-                        }
-
                         while (true) {
                             val event = awaitPointerEvent()
                             val change = event.changes.firstOrNull { it.id == down.id } ?: break
@@ -2332,20 +2216,15 @@ private fun BottomControlRow(
                                 break
                             }
                         }
-
-                        longPressJob.cancel()
                         isEnterPressed = false
-
-                        if (!isLongPress) {
-                            currentOnEnter()
-                        }
+                        currentOnEnter()
                     }
                 },
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = actionIcon,
-                contentDescription = "إدخال (اضغط مطولاً للترجمة)",
+                contentDescription = "إدخال",
                 tint = Color.White,
                 modifier = Modifier.size(20.dp)
             )

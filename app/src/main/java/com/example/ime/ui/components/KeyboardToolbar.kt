@@ -14,14 +14,17 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ime.theme.KeyboardColorScheme
@@ -77,163 +80,204 @@ fun KeyboardToolbar(
     val context = LocalContext.current
     val view = LocalView.current
 
-    LazyRow(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(44.dp)
-            .background(colorScheme.background),
-        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        // 1. Mini Game (🎮 with red notification badge)
-        item(key = "game") {
-            ToolbarIconButtonWithBadge(
-                icon = Icons.Default.SportsEsports,
-                tooltip = "لعبة صغيرة",
-                hasBadge = true,
-                isSelected = activePanel == KeyboardPanel.GAME,
-                colorScheme = colorScheme,
-                onClick = {
-                    onPanelSelect(if (activePanel == KeyboardPanel.GAME) KeyboardPanel.NONE else KeyboardPanel.GAME)
-                }
-            )
-        }
-
-        // 2. Voice Input (🎙)
-        item(key = "voice") {
-            ToolbarIconButton(
-                icon = Icons.Default.Mic,
-                tooltip = "إدخال صوتي",
-                isSelected = activePanel == KeyboardPanel.VOICE,
-                colorScheme = colorScheme,
-                onClick = {
-                    onPanelSelect(if (activePanel == KeyboardPanel.VOICE) KeyboardPanel.NONE else KeyboardPanel.VOICE)
-                }
-            )
-        }
-
-        // 3. Translation (文A)
-        item(key = "translate") {
-            ToolbarIconButton(
-                icon = Icons.Default.Translate,
-                tooltip = "ترجمة",
-                isSelected = activePanel == KeyboardPanel.TRANSLATE,
-                colorScheme = colorScheme,
-                onClick = {
-                    onPanelSelect(if (activePanel == KeyboardPanel.TRANSLATE) KeyboardPanel.NONE else KeyboardPanel.TRANSLATE)
-                }
-            )
-        }
-
-        // 4. Quick Text / Clipboard (📋⚡)
-        item(key = "clipboard") {
-            ToolbarIconButton(
-                icon = Icons.Default.FlashOn,
-                tooltip = "نص سريع",
-                isSelected = activePanel == KeyboardPanel.CLIPBOARD,
-                colorScheme = colorScheme,
-                onClick = {
-                    onPanelSelect(if (activePanel == KeyboardPanel.CLIPBOARD) KeyboardPanel.NONE else KeyboardPanel.CLIPBOARD)
-                }
-            )
-        }
-
-        // 5. Theme Hanger (👕♡)
-        item(key = "theme") {
-            ToolbarIconButton(
-                icon = Icons.Default.Checkroom,
-                tooltip = "السمة",
-                isSelected = false,
-                colorScheme = colorScheme,
-                onClick = onOpenThemes
-            )
-        }
-
-        // 6. Emoji (😊)
-        item(key = "emoji") {
-            ToolbarIconButton(
-                icon = Icons.Default.Mood,
-                tooltip = "إيموجي",
-                isSelected = activePanel == KeyboardPanel.EMOJI,
-                colorScheme = colorScheme,
-                onClick = {
-                    onPanelSelect(if (activePanel == KeyboardPanel.EMOJI) KeyboardPanel.NONE else KeyboardPanel.EMOJI)
-                }
-            )
-        }
-
-        // 7. Mini Calculator (➗)
-        item(key = "calc") {
-            ToolbarIconButton(
-                icon = Icons.Default.Calculate,
-                tooltip = "الحاسبة",
-                isSelected = activePanel == KeyboardPanel.CALCULATOR,
-                colorScheme = colorScheme,
-                onClick = {
-                    onPanelSelect(if (activePanel == KeyboardPanel.CALCULATOR) KeyboardPanel.NONE else KeyboardPanel.CALCULATOR)
-                }
-            )
-        }
-
-        // 8. Text Editing / Cursor Controller (⤢)
-        item(key = "editing") {
-            ToolbarIconButton(
-                icon = Icons.Default.OpenWith,
-                tooltip = "تحرير النص",
-                isSelected = activePanel == KeyboardPanel.EDITING,
-                colorScheme = colorScheme,
-                onClick = {
-                    onPanelSelect(if (activePanel == KeyboardPanel.EDITING) KeyboardPanel.NONE else KeyboardPanel.EDITING)
-                }
-            )
-        }
-
-        // 9. Insta Font / Bio Styler (𝓕)
-        item(key = "insta_font") {
-            ToolbarIconButtonWithText(
-                text = "𝓕",
-                tooltip = "خط Insta",
-                isSelected = activePanel == KeyboardPanel.INSTA_FONTS,
-                colorScheme = colorScheme,
-                onClick = {
-                    onPanelSelect(if (activePanel == KeyboardPanel.INSTA_FONTS) KeyboardPanel.NONE else KeyboardPanel.INSTA_FONTS)
-                }
-            )
-        }
-
-        // 10. Settings Gear (⚙️)
-        item(key = "settings") {
-            ToolbarIconButton(
-                icon = Icons.Default.Settings,
-                tooltip = "إعدادات",
-                isSelected = false,
-                colorScheme = colorScheme,
-                onClick = onOpenSettings
-            )
-        }
-
-        // 11. Undo / Redo
-        if (showUndoRedo && onUndo != null) {
-            item(key = "undo") {
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+        LazyRow(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(44.dp)
+                .background(colorScheme.background),
+            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            // 0. Primary Menu Button (⊞ Opens Keyboard Feature Menu)
+            item(key = "menu") {
                 ToolbarIconButton(
-                    icon = Icons.AutoMirrored.Filled.Undo,
-                    tooltip = "تراجع",
-                    isSelected = false,
+                    icon = Icons.Default.GridView,
+                    tooltip = "قائمة لوحة المفاتيح",
+                    isSelected = activePanel == KeyboardPanel.MENU,
                     colorScheme = colorScheme,
-                    onClick = onUndo
+                    onClick = {
+                        onPanelSelect(if (activePanel == KeyboardPanel.MENU) KeyboardPanel.NONE else KeyboardPanel.MENU)
+                    }
                 )
             }
-        }
-        if (showUndoRedo && onRedo != null) {
-            item(key = "redo") {
+
+            // 1. Mini Game (🎮 with red notification badge)
+            item(key = "game") {
+                ToolbarIconButtonWithBadge(
+                    icon = Icons.Default.SportsEsports,
+                    tooltip = "لعبة صغيرة",
+                    hasBadge = true,
+                    isSelected = activePanel == KeyboardPanel.GAME,
+                    colorScheme = colorScheme,
+                    onClick = {
+                        onPanelSelect(if (activePanel == KeyboardPanel.GAME) KeyboardPanel.NONE else KeyboardPanel.GAME)
+                    }
+                )
+            }
+
+            // 2. Voice Input (🎙)
+            item(key = "voice") {
                 ToolbarIconButton(
-                    icon = Icons.AutoMirrored.Filled.Redo,
-                    tooltip = "إعادة",
+                    icon = Icons.Default.Mic,
+                    tooltip = "إدخال صوتي",
+                    isSelected = activePanel == KeyboardPanel.VOICE,
+                    colorScheme = colorScheme,
+                    onClick = {
+                        onPanelSelect(if (activePanel == KeyboardPanel.VOICE) KeyboardPanel.NONE else KeyboardPanel.VOICE)
+                    }
+                )
+            }
+
+            // 3. Translation (文A)
+            item(key = "translate") {
+                ToolbarIconButton(
+                    icon = Icons.Default.Translate,
+                    tooltip = "ترجمة مباشرة",
+                    isSelected = activePanel == KeyboardPanel.TRANSLATE,
+                    colorScheme = colorScheme,
+                    onClick = {
+                        onPanelSelect(if (activePanel == KeyboardPanel.TRANSLATE) KeyboardPanel.NONE else KeyboardPanel.TRANSLATE)
+                    }
+                )
+            }
+
+            // 4. Quick Text / Clipboard (📋⚡)
+            item(key = "clipboard") {
+                ToolbarIconButton(
+                    icon = Icons.Default.FlashOn,
+                    tooltip = "نص سريع والحافظة",
+                    isSelected = activePanel == KeyboardPanel.CLIPBOARD,
+                    colorScheme = colorScheme,
+                    onClick = {
+                        onPanelSelect(if (activePanel == KeyboardPanel.CLIPBOARD) KeyboardPanel.NONE else KeyboardPanel.CLIPBOARD)
+                    }
+                )
+            }
+
+            // 5. Theme Hanger (👕♡)
+            item(key = "theme") {
+                ToolbarIconButton(
+                    icon = Icons.Default.Checkroom,
+                    tooltip = "السمات والتخصيص",
                     isSelected = false,
                     colorScheme = colorScheme,
-                    onClick = onRedo
+                    onClick = onOpenThemes
                 )
+            }
+
+            // 6. Emoji & GIF (😊)
+            item(key = "emoji") {
+                ToolbarIconButton(
+                    icon = Icons.Default.Mood,
+                    tooltip = "إيموجي و GIF",
+                    isSelected = activePanel == KeyboardPanel.EMOJI || activePanel == KeyboardPanel.GIFS,
+                    colorScheme = colorScheme,
+                    onClick = {
+                        onPanelSelect(if (activePanel == KeyboardPanel.EMOJI) KeyboardPanel.NONE else KeyboardPanel.EMOJI)
+                    }
+                )
+            }
+
+            // 7. Mini Calculator (➗)
+            item(key = "calc") {
+                ToolbarIconButton(
+                    icon = Icons.Default.Calculate,
+                    tooltip = "الحاسبة الفورية",
+                    isSelected = activePanel == KeyboardPanel.CALCULATOR,
+                    colorScheme = colorScheme,
+                    onClick = {
+                        onPanelSelect(if (activePanel == KeyboardPanel.CALCULATOR) KeyboardPanel.NONE else KeyboardPanel.CALCULATOR)
+                    }
+                )
+            }
+
+            // 8. Text Editing / Cursor Controller (⤢)
+            item(key = "editing") {
+                ToolbarIconButton(
+                    icon = Icons.Default.OpenWith,
+                    tooltip = "تحرير النص والمؤشر",
+                    isSelected = activePanel == KeyboardPanel.EDITING,
+                    colorScheme = colorScheme,
+                    onClick = {
+                        onPanelSelect(if (activePanel == KeyboardPanel.EDITING) KeyboardPanel.NONE else KeyboardPanel.EDITING)
+                    }
+                )
+            }
+
+            // 9. Resize Keyboard Dimensions (📐)
+            item(key = "resize") {
+                ToolbarIconButton(
+                    icon = Icons.Default.AspectRatio,
+                    tooltip = "تغيير الحجم والخط",
+                    isSelected = activePanel == KeyboardPanel.RESIZE,
+                    colorScheme = colorScheme,
+                    onClick = {
+                        onPanelSelect(if (activePanel == KeyboardPanel.RESIZE) KeyboardPanel.NONE else KeyboardPanel.RESIZE)
+                    }
+                )
+            }
+
+            // 10. Insta Font / Bio Styler (𝓕)
+            item(key = "insta_font") {
+                ToolbarIconButtonWithText(
+                    text = "𝓕",
+                    tooltip = "خطوط Insta وزخرفة",
+                    isSelected = activePanel == KeyboardPanel.INSTA_FONTS,
+                    colorScheme = colorScheme,
+                    onClick = {
+                        onPanelSelect(if (activePanel == KeyboardPanel.INSTA_FONTS) KeyboardPanel.NONE else KeyboardPanel.INSTA_FONTS)
+                    }
+                )
+            }
+
+            // 11. Quick Notes (📝)
+            item(key = "notes") {
+                ToolbarIconButton(
+                    icon = Icons.Default.EditNote,
+                    tooltip = "ملاحظات سريعة",
+                    isSelected = activePanel == KeyboardPanel.NOTES,
+                    colorScheme = colorScheme,
+                    onClick = {
+                        onPanelSelect(if (activePanel == KeyboardPanel.NOTES) KeyboardPanel.NONE else KeyboardPanel.NOTES)
+                    }
+                )
+            }
+
+            // 12. Settings Gear (⚙️)
+            item(key = "settings") {
+                ToolbarIconButton(
+                    icon = Icons.Default.Settings,
+                    tooltip = "الإعدادات",
+                    isSelected = false,
+                    colorScheme = colorScheme,
+                    onClick = onOpenSettings
+                )
+            }
+
+            // 13. Undo / Redo
+            if (showUndoRedo && onUndo != null) {
+                item(key = "undo") {
+                    ToolbarIconButton(
+                        icon = Icons.AutoMirrored.Filled.Undo,
+                        tooltip = "تراجع",
+                        isSelected = false,
+                        colorScheme = colorScheme,
+                        onClick = onUndo
+                    )
+                }
+            }
+            if (showUndoRedo && onRedo != null) {
+                item(key = "redo") {
+                    ToolbarIconButton(
+                        icon = Icons.AutoMirrored.Filled.Redo,
+                        tooltip = "إعادة",
+                        isSelected = false,
+                        colorScheme = colorScheme,
+                        onClick = onRedo
+                    )
+                }
             }
         }
     }
@@ -252,7 +296,7 @@ fun ToolbarIconButton(
 
     Box(
         modifier = Modifier
-            .size(36.dp)
+            .size(38.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(if (isSelected) colorScheme.accent.copy(alpha = 0.25f) else Color.Transparent)
             .clickable(role = androidx.compose.ui.semantics.Role.Button) {
@@ -284,7 +328,7 @@ fun ToolbarIconButtonWithBadge(
 
     Box(
         modifier = Modifier
-            .size(36.dp)
+            .size(38.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(if (isSelected) colorScheme.accent.copy(alpha = 0.25f) else Color.Transparent)
             .clickable(role = androidx.compose.ui.semantics.Role.Button) {
@@ -303,7 +347,7 @@ fun ToolbarIconButtonWithBadge(
         if (hasBadge) {
             Box(
                 modifier = Modifier
-                    .size(6.dp)
+                    .size(7.dp)
                     .clip(CircleShape)
                     .background(Color(0xFFFF3B30))
                     .align(Alignment.TopStart)
@@ -325,7 +369,7 @@ fun ToolbarIconButtonWithText(
 
     Box(
         modifier = Modifier
-            .size(36.dp)
+            .size(38.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(if (isSelected) colorScheme.accent.copy(alpha = 0.25f) else Color.Transparent)
             .clickable(role = androidx.compose.ui.semantics.Role.Button) {
