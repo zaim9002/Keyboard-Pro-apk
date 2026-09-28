@@ -90,47 +90,45 @@ fun KeyboardToolbar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            // 0. Primary Menu Button (⊞ Opens Keyboard Feature Menu)
-            item(key = "menu") {
+            // 1. Emoji & GIF (😊)
+            item(key = "emoji") {
                 ToolbarIconButton(
-                    icon = Icons.Default.GridView,
-                    tooltip = "قائمة لوحة المفاتيح",
-                    isSelected = activePanel == KeyboardPanel.MENU,
+                    icon = Icons.Default.Mood,
+                    tooltip = "إيموجي و GIF",
+                    isSelected = activePanel == KeyboardPanel.EMOJI || activePanel == KeyboardPanel.GIFS,
                     colorScheme = colorScheme,
                     onClick = {
-                        onPanelSelect(if (activePanel == KeyboardPanel.MENU) KeyboardPanel.NONE else KeyboardPanel.MENU)
+                        onPanelSelect(if (activePanel == KeyboardPanel.EMOJI) KeyboardPanel.NONE else KeyboardPanel.EMOJI)
                     }
                 )
             }
 
-            // 1. Mini Game (🎮 with red notification badge)
-            item(key = "game") {
+            // 2. Theme Hanger (👕 with notification badge)
+            item(key = "theme") {
                 ToolbarIconButtonWithBadge(
-                    icon = Icons.Default.SportsEsports,
-                    tooltip = "لعبة صغيرة",
+                    icon = Icons.Default.Checkroom,
+                    tooltip = "السمة والتخصيص",
                     hasBadge = true,
-                    isSelected = activePanel == KeyboardPanel.GAME,
+                    isSelected = false,
                     colorScheme = colorScheme,
-                    onClick = {
-                        onPanelSelect(if (activePanel == KeyboardPanel.GAME) KeyboardPanel.NONE else KeyboardPanel.GAME)
-                    }
+                    onClick = onOpenThemes
                 )
             }
 
-            // 2. Voice Input (🎙)
-            item(key = "voice") {
+            // 3. Quick Text / Clipboard (📋 الحافظة)
+            item(key = "clipboard") {
                 ToolbarIconButton(
-                    icon = Icons.Default.Mic,
-                    tooltip = "إدخال صوتي",
-                    isSelected = activePanel == KeyboardPanel.VOICE,
+                    icon = Icons.Default.Assignment,
+                    tooltip = "الحافظة والنصوص المنسوخة",
+                    isSelected = activePanel == KeyboardPanel.CLIPBOARD,
                     colorScheme = colorScheme,
                     onClick = {
-                        onPanelSelect(if (activePanel == KeyboardPanel.VOICE) KeyboardPanel.NONE else KeyboardPanel.VOICE)
+                        onPanelSelect(if (activePanel == KeyboardPanel.CLIPBOARD) KeyboardPanel.NONE else KeyboardPanel.CLIPBOARD)
                     }
                 )
             }
 
-            // 3. Translation (文A)
+            // 4. Translation (文A)
             item(key = "translate") {
                 ToolbarIconButton(
                     icon = Icons.Default.Translate,
@@ -143,39 +141,29 @@ fun KeyboardToolbar(
                 )
             }
 
-            // 4. Quick Text / Clipboard (📋⚡)
-            item(key = "clipboard") {
+            // 5. Voice Input (🎙)
+            item(key = "voice") {
                 ToolbarIconButton(
-                    icon = Icons.Default.FlashOn,
-                    tooltip = "نص سريع والحافظة",
-                    isSelected = activePanel == KeyboardPanel.CLIPBOARD,
+                    icon = Icons.Default.Mic,
+                    tooltip = "إدخال صوتي",
+                    isSelected = activePanel == KeyboardPanel.VOICE,
                     colorScheme = colorScheme,
                     onClick = {
-                        onPanelSelect(if (activePanel == KeyboardPanel.CLIPBOARD) KeyboardPanel.NONE else KeyboardPanel.CLIPBOARD)
+                        onPanelSelect(if (activePanel == KeyboardPanel.VOICE) KeyboardPanel.NONE else KeyboardPanel.VOICE)
                     }
                 )
             }
 
-            // 5. Theme Hanger (👕♡)
-            item(key = "theme") {
-                ToolbarIconButton(
-                    icon = Icons.Default.Checkroom,
-                    tooltip = "السمات والتخصيص",
-                    isSelected = false,
-                    colorScheme = colorScheme,
-                    onClick = onOpenThemes
-                )
-            }
-
-            // 6. Emoji & GIF (😊)
-            item(key = "emoji") {
-                ToolbarIconButton(
-                    icon = Icons.Default.Mood,
-                    tooltip = "إيموجي و GIF",
-                    isSelected = activePanel == KeyboardPanel.EMOJI || activePanel == KeyboardPanel.GIFS,
+            // 6. Mini Game (🎮 with red notification badge)
+            item(key = "game") {
+                ToolbarIconButtonWithBadge(
+                    icon = Icons.Default.SportsEsports,
+                    tooltip = "لعبة صغيرة",
+                    hasBadge = true,
+                    isSelected = activePanel == KeyboardPanel.GAME,
                     colorScheme = colorScheme,
                     onClick = {
-                        onPanelSelect(if (activePanel == KeyboardPanel.EMOJI) KeyboardPanel.NONE else KeyboardPanel.EMOJI)
+                        onPanelSelect(if (activePanel == KeyboardPanel.GAME) KeyboardPanel.NONE else KeyboardPanel.GAME)
                     }
                 )
             }
@@ -206,7 +194,20 @@ fun KeyboardToolbar(
                 )
             }
 
-            // 9. Resize Keyboard Dimensions (📐)
+            // 9. Primary Menu Button (⊞ Opens Keyboard Feature Menu)
+            item(key = "menu") {
+                ToolbarIconButton(
+                    icon = Icons.Default.GridView,
+                    tooltip = "قائمة لوحة المفاتيح",
+                    isSelected = activePanel == KeyboardPanel.MENU,
+                    colorScheme = colorScheme,
+                    onClick = {
+                        onPanelSelect(if (activePanel == KeyboardPanel.MENU) KeyboardPanel.NONE else KeyboardPanel.MENU)
+                    }
+                )
+            }
+
+            // 10. Resize Keyboard Dimensions (📐)
             item(key = "resize") {
                 ToolbarIconButton(
                     icon = Icons.Default.AspectRatio,

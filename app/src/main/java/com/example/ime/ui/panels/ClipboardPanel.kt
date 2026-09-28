@@ -26,6 +26,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import com.example.data.local.entity.ClipboardEntity
 import com.example.ime.theme.KeyboardColorScheme
 import com.example.ime.util.HapticHelper
@@ -73,12 +75,13 @@ fun ClipboardPanel(
         }
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(colorScheme.background)
-            .padding(horizontal = 8.dp, vertical = 6.dp)
-    ) {
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+        Column(
+            modifier = modifier
+                .fillMaxWidth()
+                .background(colorScheme.background)
+                .padding(horizontal = 8.dp, vertical = 6.dp)
+        ) {
         // Top Action Bar styled precisely like Image 5
         Row(
             modifier = Modifier
@@ -323,4 +326,5 @@ fun ClipboardPanel(
             }
         }
     }
+}
 }

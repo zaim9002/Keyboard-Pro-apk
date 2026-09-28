@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import com.example.KeyboardProApp
 import com.example.ime.theme.KeyboardThemes
 import com.example.ime.ui.KeyboardScreen
@@ -32,7 +33,13 @@ fun InstallFinishScreen(
     onNavigateToThemes: () -> Unit
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    val prefs = KeyboardProApp.instance.preferences
+    val coroutineScope = rememberCoroutineScope()
+    val app = KeyboardProApp.instance
+    val prefs = app.preferences
+    val langManager = app.languageManager
+    val db = app.database
+    val clips by db.clipboardDao().getAllClips().collectAsState(initial = emptyList())
+
     var testText by remember { mutableStateOf("") }
     var currentLanguage by remember { mutableStateOf(prefs.currentLanguage) }
     val colorScheme = remember(prefs.theme) { KeyboardThemes.getColorScheme(prefs.theme) }
@@ -175,8 +182,8 @@ fun InstallFinishScreen(
                 soundEnabled = prefs.keySound != "Off",
                 oneHandedMode = prefs.oneHandedMode,
                 applyNavigationBarsPadding = false,
-                suggestions = listOf("السلام", "شكراً", "تمام", "أهلاً"),
-                clipboardList = emptyList(),
+                suggestions = listOf("السلام", "شكراً", "تمام", "أهلاً", "مرحباً"),
+                clipboardList = clips,
                 isVoiceListening = false,
                 voiceStatusText = "جاهز للاستماع",
                 voicePartialText = "",
@@ -195,15 +202,28 @@ fun InstallFinishScreen(
                     testText += " "
                 },
                 onSwitchLanguage = {
-                    currentLanguage = if (currentLanguage == "ar") "en" else "ar"
+                    currentLanguage = langManager.cycleNextLanguage()
+                },
+                onSwitchPreviousLanguage = {
+                    currentLanguage = langManager.cyclePreviousLanguage()
+                },
+                onSelectLanguage = { langId ->
+                    langManager.switchLanguage(langId)
+                    currentLanguage = langId
                 },
                 onMoveCursor = {},
                 onSelectSuggestion = { sug ->
                     testText += "$sug "
                 },
-                onTogglePinClip = { _, _ -> },
-                onDeleteClip = {},
-                onClearUnpinnedClips = {},
+                onTogglePinClip = { id, pinned ->
+                    coroutineScope.launch { db.clipboardDao().togglePin(id, pinned) }
+                },
+                onDeleteClip = { id ->
+                    coroutineScope.launch { db.clipboardDao().deleteById(id) }
+                },
+                onClearUnpinnedClips = {
+                    coroutineScope.launch { db.clipboardDao().clearUnpinned() }
+                },
                 onStartVoice = {},
                 onStopVoice = {},
                 onSelectAll = {},

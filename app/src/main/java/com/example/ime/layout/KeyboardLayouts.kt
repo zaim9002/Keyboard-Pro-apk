@@ -147,38 +147,46 @@ object KeyboardLayouts {
         KeyModel("delete", type = KeyType.BACKSPACE, weight = 1.3f)
     )
 
+    // Symbols Page 1 (Matching Screenshot 3)
     val symbols1Row1 = listOf(
         KeyModel("1"), KeyModel("2"), KeyModel("3"), KeyModel("4"), KeyModel("5"),
         KeyModel("6"), KeyModel("7"), KeyModel("8"), KeyModel("9"), KeyModel("0")
     )
 
     val symbols1Row2 = listOf(
-        KeyModel("@"), KeyModel("#"), KeyModel("$"), KeyModel("_"), KeyModel("&"),
-        KeyModel("-"), KeyModel("+"), KeyModel("("), KeyModel(")"), KeyModel("/")
+        KeyModel("+"), KeyModel("×"), KeyModel("÷"), KeyModel("="), KeyModel("/"),
+        KeyModel("_"), KeyModel("<"), KeyModel(">"), KeyModel("♡"), KeyModel("☆")
     )
 
     val symbols1Row3 = listOf(
-        KeyModel("=\\<", type = KeyType.SWITCH_MODE, weight = 1.3f),
-        KeyModel("*"), KeyModel("\""), KeyModel("'"), KeyModel(":"),
-        KeyModel(";"), KeyModel("!"), KeyModel("?"),
-        KeyModel("delete", type = KeyType.BACKSPACE, weight = 1.3f)
+        KeyModel("!"), KeyModel("@"), KeyModel("#"), KeyModel("~"), KeyModel("%"),
+        KeyModel("^"), KeyModel("&"), KeyModel("*"), KeyModel("("), KeyModel(")")
     )
 
+    val symbols1Row4 = listOf(
+        KeyModel("-"), KeyModel("'"), KeyModel("\""), KeyModel(":"), KeyModel("؛"),
+        KeyModel("،"), KeyModel("؟")
+    )
+
+    // Symbols Page 2 (Matching Screenshot 4)
     val symbols2Row1 = listOf(
-        KeyModel("~"), KeyModel("`"), KeyModel("|"), KeyModel("•"), KeyModel("√"),
-        KeyModel("π"), KeyModel("÷"), KeyModel("×"), KeyModel("§"), KeyModel("Δ")
+        KeyModel("1"), KeyModel("2"), KeyModel("3"), KeyModel("4"), KeyModel("5"),
+        KeyModel("6"), KeyModel("7"), KeyModel("8"), KeyModel("9"), KeyModel("0")
     )
 
     val symbols2Row2 = listOf(
-        KeyModel("£"), KeyModel("¥"), KeyModel("€"), KeyModel("¢"), KeyModel("^"),
-        KeyModel("°"), KeyModel("="), KeyModel("{"), KeyModel("}"), KeyModel("\\")
+        KeyModel("`"), KeyModel("₩"), KeyModel("\\"), KeyModel("|"), KeyModel("♠"),
+        KeyModel("♣"), KeyModel("{"), KeyModel("}"), KeyModel("["), KeyModel("]")
     )
 
     val symbols2Row3 = listOf(
-        KeyModel("?123", type = KeyType.SWITCH_MODE, weight = 1.3f),
-        KeyModel("%"), KeyModel("©"), KeyModel("®"), KeyModel("™"),
-        KeyModel("✓"), KeyModel("["), KeyModel("]"),
-        KeyModel("delete", type = KeyType.BACKSPACE, weight = 1.3f)
+        KeyModel("•"), KeyModel("°"), KeyModel("●"), KeyModel("□"), KeyModel("■"),
+        KeyModel("◇"), KeyModel("$"), KeyModel("€"), KeyModel("£"), KeyModel("¥")
+    )
+
+    val symbols2Row4 = listOf(
+        KeyModel("°"), KeyModel("※"), KeyModel("¤"), KeyModel("《"), KeyModel("》"),
+        KeyModel("¡"), KeyModel("¿")
     )
 
     val numpadRow1 = listOf(

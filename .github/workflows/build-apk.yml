@@ -39,7 +39,7 @@ jobs:
       - name: Create temporary debug keystore
         run: |
           if [ ! -f "./debug.keystore" ]; then
-            echo "debug.keystore not found. Generating a temporary debug keystore..."
+            echo "debug.keystore not found. Generating temporary debug keystore..."
             keytool -genkey -v \
               -keystore ./debug.keystore \
               -storepass android \
@@ -56,7 +56,7 @@ jobs:
             echo "Error: Failed to create ./debug.keystore"
             exit 1
           fi
-          echo "Temporary debug keystore verified."
+          echo "Debug keystore check completed successfully."
 
       - name: Build Debug APK
         run: gradle :app:assembleDebug --stacktrace --no-daemon
@@ -65,9 +65,9 @@ jobs:
         run: |
           APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
           if [ -f "$APK_PATH" ]; then
-            echo "Debug APK found at $APK_PATH"
+            echo "Debug APK successfully verified at $APK_PATH"
           else
-            echo "Error: $APK_PATH was not found!"
+            echo "Error: $APK_PATH not found!"
             echo "Searching only inside app/build/outputs/apk:"
             find app/build/outputs/apk -type f -name "*.apk" 2>/dev/null || true
             exit 1

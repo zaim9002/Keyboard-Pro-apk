@@ -26,19 +26,15 @@ class LanguageManager(
     val currentLanguage: StateFlow<String> = _currentLanguage.asStateFlow()
 
     fun switchLanguage(targetLangId: String) {
-        val safeLang = if (targetLangId.startsWith("ar") || targetLangId.startsWith("en") || cache.isInstalled(targetLangId)) {
-            targetLangId
-        } else {
-            "ar"
-        }
+        val langExists = repository.getLanguageById(targetLangId) != null
+        val safeLang = if (langExists) targetLangId else "ar"
         preferences.currentLanguage = safeLang
         _currentLanguage.value = safeLang
     }
 
     fun cycleNextLanguage(): String {
         val enabled = preferences.enabledLanguages.toList()
-        val installedList = enabled.filter { it.startsWith("ar") || it.startsWith("en") || cache.isInstalled(it) }
-        val effectiveList = if (installedList.isEmpty()) listOf("ar", "en") else installedList
+        val effectiveList = if (enabled.isEmpty()) listOf("ar", "en") else enabled
 
         val currentIndex = effectiveList.indexOf(preferences.currentLanguage)
         val nextIndex = if (currentIndex >= 0 && currentIndex < effectiveList.size - 1) {
@@ -49,6 +45,21 @@ class LanguageManager(
         val nextLang = effectiveList[nextIndex]
         switchLanguage(nextLang)
         return nextLang
+    }
+
+    fun cyclePreviousLanguage(): String {
+        val enabled = preferences.enabledLanguages.toList()
+        val effectiveList = if (enabled.isEmpty()) listOf("ar", "en") else enabled
+
+        val currentIndex = effectiveList.indexOf(preferences.currentLanguage)
+        val prevIndex = if (currentIndex > 0) {
+            currentIndex - 1
+        } else {
+            effectiveList.size - 1
+        }
+        val prevLang = effectiveList[prevIndex]
+        switchLanguage(prevLang)
+        return prevLang
     }
 
     fun getCurrentLayout(): KeyboardLayoutData {

@@ -3,6 +3,8 @@ package com.example.ime.ui.components
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
@@ -35,11 +38,11 @@ fun KeyboardTickerBar(
     onHeadlineClick: (String) -> Unit = {}
 ) {
     val headlines = listOf(
+        "رسميًا.. تحديد موعد نهائي لانطلاق كأس الخليج 27",
+        "رئيس Microsoft يعلق رسميا على مستقبل Xbox...",
         "«كفاية إنهم كلموني».. سماح أنور تعتذر عن مغادرتها مهرجان الإسكندرية السينمائي",
-        "تحديث جديد: إطلاق ميزات الذكاء الاصطناعي وصور GIF المباشرة بلوحة المفاتيح",
-        "حالة الطقس اليوم: أجواء معتدلة نهاراً ومائلة للبرودة ليلاً في أغلب المناطق",
-        "مباراة القمة اليوم: متابعة حية وتغطية خاصة لكافة الأحداث الرياضية",
-        "اكتشف أجمل ثيمات لوحة المفاتيح وتخصيص الألوان والصور من المعرض"
+        "تحديث جديد: إطلاق ميزات الذكاء الاصطناعي والميزات السريعة للوحة المفاتيح",
+        "حالة الطقس اليوم: أجواء معتدلة نهاراً ومائلة للبرودة ليلاً في أغلب المناطق"
     )
 
     var currentHeadlineIndex by remember { mutableIntStateOf(0) }
@@ -80,13 +83,19 @@ fun KeyboardTickerBar(
                 )
 
                 Box(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clipToBounds(),
                     contentAlignment = Alignment.CenterStart
                 ) {
                     AnimatedContent(
                         targetState = currentHeadline,
-                        transitionSpec = { fadeIn() togetherWith fadeOut() },
-                        label = "headline_anim"
+                        transitionSpec = {
+                            (slideInVertically { height -> height } + fadeIn()) togetherWith
+                            (slideOutVertically { height -> -height } + fadeOut())
+                        },
+                        label = "headline_anim",
+                        modifier = Modifier.fillMaxWidth().clipToBounds()
                     ) { text ->
                         Text(
                             text = text,

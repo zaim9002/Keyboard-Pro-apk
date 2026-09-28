@@ -80,6 +80,15 @@ fun KeyButton(
     val currentOnLongClick by rememberUpdatedState(onLongClick)
     val currentOnLongClickWithCoords by rememberUpdatedState(onLongClickWithCoords)
     val currentOnPreviewChange by rememberUpdatedState(onPreviewChange)
+    val currentHapticEnabled by rememberUpdatedState(hapticEnabled)
+    val currentHapticIntensity by rememberUpdatedState(hapticIntensity)
+    val currentHapticDurationMs by rememberUpdatedState(hapticDurationMs)
+    val currentSoundEnabled by rememberUpdatedState(soundEnabled)
+    val currentSoundType by rememberUpdatedState(soundType)
+    val currentSoundVolume by rememberUpdatedState(soundVolume)
+    val currentShowPreview by rememberUpdatedState(showPreview)
+    val currentText by rememberUpdatedState(text)
+    val currentIsSpecial by rememberUpdatedState(isSpecial)
 
     val hasLongClick = currentOnLongClickWithCoords != null || currentOnLongClick != null
 
@@ -127,22 +136,22 @@ fun KeyButton(
 
     Box(
         modifier = boxModifier
-            .pointerInput(hasLongClick, hapticEnabled, soundEnabled, hapticIntensity, soundType, soundVolume) {
+            .pointerInput(Unit) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
                     isPressed = true
 
                     // Immediate preview notification to centralized overlay (zero window allocations)
-                    if (showPreview && !isSpecial && text.isNotBlank()) {
-                        currentOnPreviewChange?.invoke(text, keyCoordinates, true)
+                    if (currentShowPreview && !currentIsSpecial && currentText.isNotBlank()) {
+                        currentOnPreviewChange?.invoke(currentText, keyCoordinates, true)
                     }
 
                     // 1. Immediate touch feedback (haptic & audio)
-                    if (hapticEnabled) {
-                        HapticHelper.performKeyHaptic(context, view, hapticIntensity, hapticDurationMs)
+                    if (currentHapticEnabled) {
+                        HapticHelper.performKeyHaptic(context, view, currentHapticIntensity, currentHapticDurationMs)
                     }
-                    if (soundEnabled) {
-                        HapticHelper.performKeySound(context, view, soundType, soundVolume)
+                    if (currentSoundEnabled) {
+                        HapticHelper.performKeySound(context, view, currentSoundType, currentSoundVolume)
                     }
 
                     var isLongTriggered = false
@@ -150,8 +159,8 @@ fun KeyButton(
                         coroutineScope.launch {
                             delay(350L)
                             isLongTriggered = true
-                            if (hapticEnabled) {
-                                HapticHelper.performKeyHaptic(context, view, hapticIntensity, hapticDurationMs)
+                            if (currentHapticEnabled) {
+                                HapticHelper.performKeyHaptic(context, view, currentHapticIntensity, currentHapticDurationMs)
                             }
                             keyCoordinates?.let { coords ->
                                 currentOnLongClickWithCoords?.invoke(coords)
@@ -179,8 +188,8 @@ fun KeyButton(
 
                     longPressJob?.cancel()
                     isPressed = false
-                    if (showPreview && !isSpecial) {
-                        currentOnPreviewChange?.invoke(text, null, false)
+                    if (currentShowPreview && !currentIsSpecial) {
+                        currentOnPreviewChange?.invoke(currentText, null, false)
                     }
 
                     // 3. Immediately emit click if not cancelled and not long-clicked
@@ -240,6 +249,12 @@ fun RepeatingDeleteKeyButton(
     val currentOnDelete by rememberUpdatedState(onDelete)
     val currentOnDeleteWord by rememberUpdatedState(onDeleteWord)
     val currentOnDeleteAll by rememberUpdatedState(onDeleteAll)
+    val currentHapticEnabled by rememberUpdatedState(hapticEnabled)
+    val currentHapticIntensity by rememberUpdatedState(hapticIntensity)
+    val currentHapticDurationMs by rememberUpdatedState(hapticDurationMs)
+    val currentSoundEnabled by rememberUpdatedState(soundEnabled)
+    val currentSoundType by rememberUpdatedState(soundType)
+    val currentSoundVolume by rememberUpdatedState(soundVolume)
 
     val bgColor = if (isPressed) colorScheme.specialKeyBackground.copy(alpha = 0.7f) else colorScheme.specialKeyBackground
     val iconColor = colorScheme.specialKeyText
@@ -278,16 +293,17 @@ fun RepeatingDeleteKeyButton(
 
     Box(
         modifier = boxModifier
-            .pointerInput(hapticEnabled, soundEnabled, hapticIntensity, soundType, soundVolume) {
+            .pointerInput(Unit) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
                     var isWordDeleted = false
+                    var isAllDeleted = false
                     isPressed = true
-                    if (hapticEnabled) {
-                        HapticHelper.performKeyHaptic(context, view, hapticIntensity, hapticDurationMs)
+                    if (currentHapticEnabled) {
+                        HapticHelper.performKeyHaptic(context, view, currentHapticIntensity, currentHapticDurationMs)
                     }
-                    if (soundEnabled) {
-                        HapticHelper.performKeySound(context, view, soundType, soundVolume)
+                    if (currentSoundEnabled) {
+                        HapticHelper.performKeySound(context, view, currentSoundType, currentSoundVolume)
                     }
                     // 1. Initial single delete
                     currentOnDelete()
@@ -297,28 +313,28 @@ fun RepeatingDeleteKeyButton(
                     val repeatJob: Job = coroutineScope.launch {
                         delay(320L) // initial hold delay before repeating
                         while (isActive) {
-                            if (isWordDeleted) break
+                            if (isWordDeleted || isAllDeleted) break
                             val elapsed = System.currentTimeMillis() - startTime
                             if (elapsed >= 4000L) {
                                 // AFTER 4 SECONDS: SUPER FAST TURBO ACCELERATED DELETE!
                                 currentOnDeleteWord?.invoke() ?: run {
                                     repeat(4) { currentOnDelete() }
                                 }
-                                if (hapticEnabled) {
+                                if (currentHapticEnabled) {
                                     HapticHelper.performKeyHaptic(context, view, "Light")
                                 }
                                 delay(25L)
                             } else if (elapsed >= 1800L) {
                                 // FAST DELETE (between 1.8s and 4s)
                                 currentOnDelete()
-                                if (hapticEnabled) {
+                                if (currentHapticEnabled) {
                                     HapticHelper.performKeyHaptic(context, view, "Light")
                                 }
                                 delay(50L)
                             } else {
                                 // NORMAL REPEAT (first 1.8s)
                                 currentOnDelete()
-                                if (hapticEnabled) {
+                                if (currentHapticEnabled) {
                                     HapticHelper.performKeyHaptic(context, view, "Light")
                                 }
                                 delay(85L)
@@ -326,7 +342,7 @@ fun RepeatingDeleteKeyButton(
                         }
                     }
 
-                    // Listen for release or left-swipe to delete full word
+                    // Listen for release or left-swipe to delete full word or entire line
                     while (true) {
                         val event = awaitPointerEvent()
                         val change = event.changes.firstOrNull { it.id == down.id } ?: break
@@ -334,14 +350,21 @@ fun RepeatingDeleteKeyButton(
                             break
                         }
                         val dragX = change.position.x - down.position.x
-                        // Swipe to the left by 40+ pixels: delete whole word!
-                        if (dragX < -40f && !isWordDeleted) {
+                        // Swipe far to the left by 120+ pixels: delete all!
+                        if (dragX < -120f && !isAllDeleted) {
+                            isAllDeleted = true
+                            repeatJob.cancel()
+                            if (currentHapticEnabled) {
+                                HapticHelper.performKeyHaptic(context, view, "Heavy")
+                            }
+                            currentOnDeleteAll?.invoke() ?: currentOnDeleteWord?.invoke()
+                        } else if (dragX < -36f && !isWordDeleted && !isAllDeleted) {
                             isWordDeleted = true
                             repeatJob.cancel()
-                            if (hapticEnabled) {
+                            if (currentHapticEnabled) {
                                 HapticHelper.performKeyHaptic(context, view, "Strong")
                             }
-                            currentOnDeleteWord?.invoke()
+                            currentOnDeleteWord?.invoke() ?: currentOnDelete()
                         }
                     }
 

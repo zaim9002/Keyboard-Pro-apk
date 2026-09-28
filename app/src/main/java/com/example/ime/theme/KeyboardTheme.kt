@@ -21,19 +21,19 @@ data class KeyboardColorScheme(
 
 object KeyboardThemes {
 
-    // === 24 Official Color Themes from "سمة الألوان" (Screenshot 3) ===
+    // === 24 Official Color Themes from "سمة الألوان" (Screenshot 3 & Screenshot 12) ===
     val Asasi = KeyboardColorScheme(
         name = "أساسي",
-        isDark = true,
-        background = Color(0xFF141921),
-        keyBackground = Color(0xFF38465B),
-        keyText = Color(0xFFFFFFFF),
-        specialKeyBackground = Color(0xFF2A3647),
-        specialKeyText = Color(0xFFFFFFFF),
-        accent = Color(0xFF435670),
-        suggestionBar = Color(0xFF141921),
-        suggestionText = Color(0xFFE2E8F0),
-        borderColor = Color(0x18FFFFFF),
+        isDark = false,
+        background = Color(0xFFD8DCE1),
+        keyBackground = Color(0xFFFFFFFF),
+        keyText = Color(0xFF1C1C1E),
+        specialKeyBackground = Color(0xFFE5E8ED),
+        specialKeyText = Color(0xFF3A3A3C),
+        accent = Color(0xFF2563EB),
+        suggestionBar = Color(0xFFD8DCE1),
+        suggestionText = Color(0xFF222222),
+        borderColor = Color(0x1F000000),
         category = "لون"
     )
 

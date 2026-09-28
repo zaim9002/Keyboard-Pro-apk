@@ -29,6 +29,8 @@ object KeyboardLayoutManager {
             langId == "fa" || layoutFamily == LayoutFamily.PERSIAN -> getPersianLayout()
             langId == "ur" || layoutFamily == LayoutFamily.URDU -> getUrduLayout()
             langId == "hi" || layoutFamily == LayoutFamily.DEVANAGARI -> getHindiLayout()
+            langId == "bn" || layoutFamily == LayoutFamily.BENGALI -> getBengaliLayout()
+            langId == "zh" || layoutFamily == LayoutFamily.CHINESE_PINYIN -> getChineseLayout()
             langId == "ko" || layoutFamily == LayoutFamily.KOREAN_HANGUL -> getKoreanLayout()
             langId == "ja" || layoutFamily == LayoutFamily.JAPANESE_KANA -> getJapaneseLayout()
             langId == "es" -> getSpanishLayout()
@@ -333,6 +335,45 @@ object KeyboardLayoutManager {
             KeyModel("delete", type = KeyType.BACKSPACE, weight = 1.3f)
         )
         return KeyboardLayoutData("ja", r1, r2, r3, spaceLabel = "日本語")
+    }
+
+    private fun getBengaliLayout(): KeyboardLayoutData {
+        val r1 = listOf(
+            KeyModel("ক"), KeyModel("খ"), KeyModel("গ"), KeyModel("ঘ"), KeyModel("ঙ"),
+            KeyModel("চ"), KeyModel("ছ"), KeyModel("জ"), KeyModel("ঝ"), KeyModel("ঞ")
+        )
+        val r2 = listOf(
+            KeyModel("ট"), KeyModel("ঠ"), KeyModel("ড"), KeyModel("ঢ"), KeyModel("ণ"),
+            KeyModel("ত"), KeyModel("থ"), KeyModel("দ"), KeyModel("ধ"), KeyModel("ন")
+        )
+        val r3 = listOf(
+            KeyModel("shift", type = KeyType.SHIFT, weight = 1.3f),
+            KeyModel("প"), KeyModel("ফ"), KeyModel("ব"), KeyModel("ভ"), KeyModel("ম"),
+            KeyModel("য"), KeyModel("র"), KeyModel("ল"), KeyModel("শ"),
+            KeyModel("delete", type = KeyType.BACKSPACE, weight = 1.3f)
+        )
+        return KeyboardLayoutData("bn", r1, r2, r3, spaceLabel = "বাংলা")
+    }
+
+    private fun getChineseLayout(): KeyboardLayoutData {
+        val r1 = listOf(
+            KeyModel("q", secondaryText = "1"), KeyModel("w", secondaryText = "2"),
+            KeyModel("e", secondaryText = "3"), KeyModel("r", secondaryText = "4"),
+            KeyModel("t", secondaryText = "5"), KeyModel("y", secondaryText = "6"),
+            KeyModel("u", secondaryText = "7"), KeyModel("i", secondaryText = "8"),
+            KeyModel("o", secondaryText = "9"), KeyModel("p", secondaryText = "0")
+        )
+        val r2 = listOf(
+            KeyModel("a"), KeyModel("s"), KeyModel("d"), KeyModel("f"),
+            KeyModel("g"), KeyModel("h"), KeyModel("j"), KeyModel("k"), KeyModel("l")
+        )
+        val r3 = listOf(
+            KeyModel("shift", type = KeyType.SHIFT, weight = 1.3f),
+            KeyModel("z"), KeyModel("x"), KeyModel("c"), KeyModel("v"),
+            KeyModel("b"), KeyModel("n"), KeyModel("m"),
+            KeyModel("delete", type = KeyType.BACKSPACE, weight = 1.3f)
+        )
+        return KeyboardLayoutData("zh", r1, r2, r3, spaceLabel = "拼音 (中文)")
     }
 
     private fun getTurkishLayout(): KeyboardLayoutData {

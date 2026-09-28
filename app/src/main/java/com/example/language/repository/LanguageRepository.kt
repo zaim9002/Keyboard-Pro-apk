@@ -9,8 +9,9 @@ import kotlinx.coroutines.flow.map
 
 class LanguageRepository(private val cache: LanguageCache) {
 
-    // Master catalog of all supported languages
-    private val masterCatalog = listOf(
+    companion object {
+        // Master catalog of all supported languages
+        val masterCatalog: List<LanguageInfo> = listOf(
         // === Arabic variants (العربية الفصحى ولهجاتها المستقلة) ===
         LanguageInfo(
             id = "ar",
@@ -525,6 +526,7 @@ class LanguageRepository(private val cache: LanguageCache) {
             layoutFamily = LayoutFamily.QWERTY
         )
     )
+    }
 
     fun getAllLanguages(): Flow<List<LanguageInfo>> {
         return cache.installedLanguages.map { installedSet ->

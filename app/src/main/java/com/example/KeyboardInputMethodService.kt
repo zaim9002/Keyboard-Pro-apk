@@ -274,10 +274,13 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
             val draftText by currentDraftText.collectAsState()
             val activeEditorInfo by editorInfoState.collectAsState()
 
+            val currentInputType = activeEditorInfo?.inputType ?: currentEditorInfo?.inputType ?: android.text.InputType.TYPE_CLASS_TEXT
+
             KeyboardScreen(
                 colorScheme = currentTheme,
                 currentLanguage = currentLang,
                 imeOptions = activeEditorInfo?.imeOptions ?: currentEditorInfo?.imeOptions ?: EditorInfo.IME_ACTION_DONE,
+                inputType = currentInputType,
                 isIncognito = effectiveIncognito,
                 keyboardHeight = keyboardHeight,
                 showNumberRow = showNumberRow,
@@ -322,6 +325,15 @@ open class KeyboardInputMethodService : ComposeInputMethodService() {
                 onSwitchLanguage = {
                     if (langManager != null) {
                         langManager.cycleNextLanguage()
+                    } else {
+                        val newLang = if (prefs.currentLanguage == "ar") "en" else "ar"
+                        prefs.currentLanguage = newLang
+                    }
+                    updateSuggestions()
+                },
+                onSwitchPreviousLanguage = {
+                    if (langManager != null) {
+                        langManager.cyclePreviousLanguage()
                     } else {
                         val newLang = if (prefs.currentLanguage == "ar") "en" else "ar"
                         prefs.currentLanguage = newLang
