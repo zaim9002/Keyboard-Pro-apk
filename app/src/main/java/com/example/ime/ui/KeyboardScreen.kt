@@ -199,10 +199,23 @@ fun KeyboardScreen(
             }
         }
     }
-    var layoutMode by remember(inputType, initialLayoutMode) { mutableStateOf(defaultMode) }
+    var layoutMode by remember { mutableStateOf(initialLayoutMode ?: defaultMode) }
+    var lastHandledInputClass by remember { mutableStateOf(inputType and android.text.InputType.TYPE_MASK_CLASS) }
+    var isNumberRowVisible by remember(showNumberRow) { mutableStateOf(showNumberRow) }
 
-    LaunchedEffect(inputType, initialLayoutMode) {
-        layoutMode = defaultMode
+    LaunchedEffect(inputType) {
+        val newClass = inputType and android.text.InputType.TYPE_MASK_CLASS
+        if (newClass != lastHandledInputClass) {
+            lastHandledInputClass = newClass
+            if (newClass == android.text.InputType.TYPE_CLASS_NUMBER ||
+                newClass == android.text.InputType.TYPE_CLASS_PHONE ||
+                newClass == android.text.InputType.TYPE_CLASS_DATETIME
+            ) {
+                layoutMode = LayoutMode.NUMPAD
+            } else {
+                layoutMode = LayoutMode.ALPHA
+            }
+        }
     }
     var shiftState by remember { mutableStateOf(ShiftState.OFF) }
     var activePanel by remember { mutableStateOf(KeyboardPanel.NONE) }
@@ -248,16 +261,19 @@ fun KeyboardScreen(
     }
 
     val canInterceptBack = activePanel != KeyboardPanel.NONE || layoutMode != LayoutMode.ALPHA || activeCalloutState != null || showLanguagePicker || isInlineTranslateOpen
-    androidx.activity.compose.BackHandler(enabled = canInterceptBack) {
-        handleBackAction()
+    val backDispatcherOwner = androidx.activity.compose.LocalOnBackPressedDispatcherOwner.current
+    if (backDispatcherOwner != null) {
+        androidx.activity.compose.BackHandler(enabled = canInterceptBack) {
+            handleBackAction()
+        }
     }
 
     val keyHeight = KeyboardLayoutController.getKeyHeight(keyboardHeight, heightPercent)
     val keyFontSize = KeyboardLayoutController.getKeyFontSize("Medium", keyFontSizeSp)
     val secondaryFontSize = KeyboardLayoutController.getSecondaryFontSize(secondaryFontSizeSp)
     val keyCornerRadius = keyCornerRadiusDp.dp
-    val panelHeight = remember(keyboardHeight, showNumberRow, heightPercent) {
-        KeyboardLayoutController.getPanelHeight(keyboardHeight, showNumberRow, heightPercent)
+    val panelHeight = remember(keyboardHeight, isNumberRowVisible, heightPercent) {
+        KeyboardLayoutController.getPanelHeight(keyboardHeight, isNumberRowVisible, heightPercent)
     }
 
     val actionIcon = remember(imeOptions) {
@@ -624,7 +640,12 @@ fun KeyboardScreen(
                         },
                         onOpenFonts = { activePanel = KeyboardPanel.INSTA_FONTS },
                         onToggleNumberRow = {
-                            // Toggle number row
+                            isNumberRowVisible = !isNumberRowVisible
+                            com.example.KeyboardProApp.instance.preferences.showNumberRow = isNumberRowVisible
+                            activePanel = KeyboardPanel.NONE
+                        },
+                        onOpenNumpad = {
+                            layoutMode = LayoutMode.NUMPAD
                             activePanel = KeyboardPanel.NONE
                         },
                         onOpenSettings = onOpenSettings,
@@ -745,7 +766,7 @@ fun KeyboardScreen(
                                 }
 
                                 // Optional Number Row on top
-                                if (showNumberRow && layoutMode == LayoutMode.ALPHA) {
+                                if (isNumberRowVisible && layoutMode == LayoutMode.ALPHA) {
                                     val numRow = if (currentLanguage == "ar" && arabicNumerals) KeyboardLayouts.arabicNumbersRow else KeyboardLayouts.englishNumbersRow
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
@@ -957,6 +978,7 @@ fun KeyboardScreen(
                                             hapticIntensity = hapticIntensity,
                                             hapticDurationMs = hapticDurationMs,
                                             currentLanguage = currentLanguage,
+                                            arabicNumerals = arabicNumerals,
                                             hapticEnabled = hapticEnabled,
                                             soundEnabled = soundEnabled,
                                             actionIcon = actionIcon,
@@ -994,6 +1016,7 @@ fun KeyboardScreen(
                                             hapticIntensity = hapticIntensity,
                                             hapticDurationMs = hapticDurationMs,
                                             currentLanguage = currentLanguage,
+                                            arabicNumerals = arabicNumerals,
                                             hapticEnabled = hapticEnabled,
                                             soundEnabled = soundEnabled,
                                             actionIcon = actionIcon,
@@ -1022,6 +1045,7 @@ fun KeyboardScreen(
                                     LayoutMode.NUMPAD -> {
                                         NumpadKeyboardLayout(
                                             colorScheme = colorScheme,
+                                            currentLanguage = currentLanguage,
                                             keyHeight = keyHeight,
                                             keyCornerRadius = keyCornerRadius,
                                             keyStrokeBorder = keyStrokeBorderEnabled,
@@ -1908,6 +1932,7 @@ private fun Symbols1Layout(
     hapticIntensity: String = "Medium",
     hapticDurationMs: Int = 20,
     currentLanguage: String = "ar",
+    arabicNumerals: Boolean = true,
     hapticEnabled: Boolean,
     soundEnabled: Boolean,
     actionIcon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -1933,11 +1958,14 @@ private fun Symbols1Layout(
     onMoveCursor: (Int) -> Unit,
     onPreviewChange: ((String, androidx.compose.ui.layout.LayoutCoordinates?, Boolean) -> Unit)? = null
 ) {
-    // Row 1 (1 2 3 4 5 6 7 8 9 0)
+    // Row 1 (Numbers row 1 2 3 4 5 6 7 8 9 0 or ١ ٢ ٣ ٤ ٥ ٦ ٧ ٨ ٩ ٠)
+    val isArabicNums = currentLanguage.startsWith("ar") && arabicNumerals
+    val row1Keys = if (isArabicNums) KeyboardLayouts.arabicNumbersRow else KeyboardLayouts.symbols1Row1
     Row(modifier = Modifier.fillMaxWidth()) {
-        for (key in KeyboardLayouts.symbols1Row1) {
+        for (key in row1Keys) {
             KeyButton(
                 text = key.primaryText,
+                secondaryText = key.secondaryText,
                 height = keyHeight,
                 cornerRadius = keyCornerRadius,
                 strokeBorder = keyStrokeBorder,
@@ -1996,12 +2024,14 @@ private fun Symbols1Layout(
         }
     }
 
-    // Row 4 (1/2 switch, - ' " : ؛ ، ؟, Delete)
+    // Row 4 (1/2 switch, - ' " : ؛ ، ؟, Numpad switch, Delete)
     Row(modifier = Modifier.fillMaxWidth()) {
         KeyButton(
             text = "1/2",
+            secondaryText = "#+=",
             isSpecial = true,
-            fontSize = 14.sp,
+            fontSize = 13.sp,
+            secondaryFontSize = 8.sp,
             height = keyHeight,
             cornerRadius = keyCornerRadius,
             strokeBorder = keyStrokeBorder,
@@ -2012,7 +2042,7 @@ private fun Symbols1Layout(
             soundEnabled = soundEnabled,
             soundType = soundType,
             soundVolume = soundVolume,
-            modifier = Modifier.weight(1.2f)
+            modifier = Modifier.weight(1.15f)
         ) { onSwitchToSymbols2() }
 
         for (key in KeyboardLayouts.symbols1Row4) {
@@ -2033,6 +2063,28 @@ private fun Symbols1Layout(
             ) { onTextInput(key.primaryText) }
         }
 
+        // Direct Quick Switch to Numeric Keypad
+        if (onSwitchToNumpad != null) {
+            KeyButton(
+                text = "🖩",
+                secondaryText = "123",
+                isSpecial = true,
+                fontSize = 14.sp,
+                secondaryFontSize = 8.sp,
+                height = keyHeight,
+                cornerRadius = keyCornerRadius,
+                strokeBorder = keyStrokeBorder,
+                colorScheme = colorScheme,
+                hapticEnabled = hapticEnabled,
+                hapticIntensity = hapticIntensity,
+                hapticDurationMs = hapticDurationMs,
+                soundEnabled = soundEnabled,
+                soundType = soundType,
+                soundVolume = soundVolume,
+                modifier = Modifier.weight(1.05f)
+            ) { onSwitchToNumpad() }
+        }
+
         RepeatingDeleteKeyButton(
             height = keyHeight,
             cornerRadius = keyCornerRadius,
@@ -2051,11 +2103,11 @@ private fun Symbols1Layout(
         )
     }
 
-    // Bottom Row
-    val modeLabel = if (currentLanguage.startsWith("ar")) "Ar" else "En"
+    // Bottom Row with clear Return-To-Letters label (أ ب ت / ABC)
+    val returnToLettersLabel = if (currentLanguage.startsWith("ar")) "أ ب ت" else "ABC"
     val spaceLabel = if (currentLanguage.startsWith("ar")) "العربية" else "English"
     BottomControlRow(
-        modeLabel = modeLabel,
+        modeLabel = returnToLettersLabel,
         currentLanguage = currentLanguage,
         spaceLabel = spaceLabel,
         commaLabel = "،",
@@ -2099,6 +2151,7 @@ private fun Symbols2Layout(
     hapticIntensity: String = "Medium",
     hapticDurationMs: Int = 20,
     currentLanguage: String = "ar",
+    arabicNumerals: Boolean = true,
     hapticEnabled: Boolean,
     soundEnabled: Boolean,
     actionIcon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -2123,11 +2176,14 @@ private fun Symbols2Layout(
     onMoveCursor: (Int) -> Unit,
     onPreviewChange: ((String, androidx.compose.ui.layout.LayoutCoordinates?, Boolean) -> Unit)? = null
 ) {
-    // Row 1 (1 2 3 4 5 6 7 8 9 0)
+    // Row 1
+    val isArabicNums = currentLanguage.startsWith("ar") && arabicNumerals
+    val row1Keys = if (isArabicNums) KeyboardLayouts.arabicNumbersRow else KeyboardLayouts.symbols2Row1
     Row(modifier = Modifier.fillMaxWidth()) {
-        for (key in KeyboardLayouts.symbols2Row1) {
+        for (key in row1Keys) {
             KeyButton(
                 text = key.primaryText,
+                secondaryText = key.secondaryText,
                 height = keyHeight,
                 cornerRadius = keyCornerRadius,
                 strokeBorder = keyStrokeBorder,
@@ -2186,12 +2242,14 @@ private fun Symbols2Layout(
         }
     }
 
-    // Row 4 (2/2 switch, ° ※ ¤ 《 》 ¡ ¿, Delete)
+    // Row 4 (2/2 switch back, ° ※ ¤ 《 》 ¡ ¿, Delete)
     Row(modifier = Modifier.fillMaxWidth()) {
         KeyButton(
             text = "2/2",
+            secondaryText = "123",
             isSpecial = true,
-            fontSize = 14.sp,
+            fontSize = 13.sp,
+            secondaryFontSize = 8.sp,
             height = keyHeight,
             cornerRadius = keyCornerRadius,
             strokeBorder = keyStrokeBorder,
@@ -2241,11 +2299,11 @@ private fun Symbols2Layout(
         )
     }
 
-    // Bottom Row
-    val modeLabel = if (currentLanguage.startsWith("ar")) "Ar" else "En"
+    // Bottom Row with clear Return-To-Letters label (أ ب ت / ABC)
+    val returnToLettersLabel = if (currentLanguage.startsWith("ar")) "أ ب ت" else "ABC"
     val spaceLabel = if (currentLanguage.startsWith("ar")) "العربية" else "English"
     BottomControlRow(
-        modeLabel = modeLabel,
+        modeLabel = returnToLettersLabel,
         currentLanguage = currentLanguage,
         spaceLabel = spaceLabel,
         commaLabel = "،",
@@ -2281,6 +2339,7 @@ private fun Symbols2Layout(
 @Composable
 private fun NumpadKeyboardLayout(
     colorScheme: KeyboardColorScheme,
+    currentLanguage: String = "ar",
     keyHeight: androidx.compose.ui.unit.Dp,
     keyCornerRadius: androidx.compose.ui.unit.Dp = 6.dp,
     keyStrokeBorder: Boolean = false,
@@ -2301,14 +2360,17 @@ private fun NumpadKeyboardLayout(
     onSwitchToSymbols: () -> Unit,
     onPreviewChange: ((String, androidx.compose.ui.layout.LayoutCoordinates?, Boolean) -> Unit)? = null
 ) {
+    val returnToLettersLabel = if (currentLanguage.startsWith("ar")) "أ ب ت" else "ABC"
+
     // Row 1: ( ) 1 2 3 ABC
     Row(modifier = Modifier.fillMaxWidth()) {
         for (key in KeyboardLayouts.numpadRow1) {
+            val keyDisplay = if (key.type == KeyType.SWITCH_MODE) returnToLettersLabel else key.primaryText
             KeyButton(
-                text = key.primaryText,
+                text = keyDisplay,
                 isSpecial = key.type != KeyType.CHARACTER,
                 height = keyHeight,
-                fontSize = if (key.type == KeyType.CHARACTER) 20.sp else 14.sp,
+                fontSize = if (key.type == KeyType.CHARACTER) 20.sp else 13.sp,
                 cornerRadius = keyCornerRadius,
                 strokeBorder = keyStrokeBorder,
                 colorScheme = colorScheme,

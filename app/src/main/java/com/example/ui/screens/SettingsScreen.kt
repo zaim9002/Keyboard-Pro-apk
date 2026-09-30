@@ -87,6 +87,10 @@ fun openSystemInputMethodPicker(context: Context) {
 fun SettingsScreen(
     onNavigateToThemes: () -> Unit = {},
     onNavigateToLanguages: () -> Unit = {},
+    onNavigateToSmartInput: () -> Unit = {},
+    onNavigateToShortcuts: () -> Unit = {},
+    onNavigateToDictionary: () -> Unit = {},
+    onNavigateToClipboard: () -> Unit = {},
     onBack: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
@@ -459,16 +463,51 @@ fun SettingsScreen(
 
                     HorizontalDivider(color = Color(0xFF2E2E36), thickness = 0.6.dp)
 
-                    // إعدادات الإدخال (NEW)
+                    // إعدادات الإدخال الذكي والتصحيح (NEW)
                     SettingRowItem(
                         icon = Icons.Default.Edit,
                         iconBgColor = Color(0xFFF97316),
-                        title = "إعدادات الإدخال الذكي",
+                        title = "إعدادات الإدخال الذكي والتصحيح",
                         isNew = true,
-                        subtitle = "تعيين الفاصل الزمني للمس، الإدخال التلقائي، الكلمات المقترحة والتصحيح الفوري.",
-                        onClick = {
-                            Toast.makeText(context, "الإدخال الذكي ومحرك الاقتراحات يعمل بأعلى دقة ✓", Toast.LENGTH_SHORT).show()
-                        }
+                        subtitle = "تصحيح الكتابة التلقائي، اقتراحات الكلمات، الترقيم وصف الأرقام.",
+                        subtitleColor = Color(0xFF818CF8),
+                        onClick = onNavigateToSmartInput
+                    )
+
+                    HorizontalDivider(color = Color(0xFF2E2E36), thickness = 0.6.dp)
+
+                    // القاموس الشخصي (NEW)
+                    SettingRowItem(
+                        icon = Icons.Default.MenuBook,
+                        iconBgColor = Color(0xFF10B981),
+                        title = "القاموس الشخصي (كلماتي)",
+                        subtitle = "إدارة الكلمات الخاصة والمصطلحات التي يتعلمها الكيبورد.",
+                        subtitleColor = Color(0xFF818CF8),
+                        onClick = onNavigateToDictionary
+                    )
+
+                    HorizontalDivider(color = Color(0xFF2E2E36), thickness = 0.6.dp)
+
+                    // تحرير مفاتيح اختصار الإدخال
+                    SettingRowItem(
+                        icon = Icons.Default.KeyboardReturn,
+                        iconBgColor = Color(0xFF3B82F6),
+                        title = "تحرير مفاتيح اختصار الإدخال (النصوص السريعة)",
+                        subtitle = "نص سريع وتوسيع الجمل التلقائي (Text Expansion).",
+                        subtitleColor = Color(0xFF818CF8),
+                        onClick = onNavigateToShortcuts
+                    )
+
+                    HorizontalDivider(color = Color(0xFF2E2E36), thickness = 0.6.dp)
+
+                    // مدير الحافظة والملاحظات
+                    SettingRowItem(
+                        icon = Icons.Default.ContentPaste,
+                        iconBgColor = Color(0xFF6366F1),
+                        title = "مدير الحافظة والملاحظات",
+                        subtitle = "عرض النصوص المنسوخة، تثبيت المهم منها، وتصنيفها في مجلدات.",
+                        subtitleColor = Color(0xFF818CF8),
+                        onClick = onNavigateToClipboard
                     )
 
                     HorizontalDivider(color = Color(0xFF2E2E36), thickness = 0.6.dp)
@@ -510,20 +549,6 @@ fun SettingsScreen(
 
                     HorizontalDivider(color = Color(0xFF2E2E36), thickness = 0.6.dp)
 
-                    // تحرير مفاتيح اختصار الإدخال
-                    SettingRowItem(
-                        icon = Icons.Default.KeyboardReturn,
-                        iconBgColor = Color(0xFF3B82F6),
-                        title = "تحرير مفاتيح اختصار الإدخال",
-                        subtitle = "نص سريع وتوسيع الجمل التلقائي (Text Expansion).",
-                        subtitleColor = Color(0xFF818CF8),
-                        onClick = {
-                            Toast.makeText(context, "الاختصارات السريعة متاحة في شريط الكيبورد", Toast.LENGTH_SHORT).show()
-                        }
-                    )
-
-                    HorizontalDivider(color = Color(0xFF2E2E36), thickness = 0.6.dp)
-
                     // تحرير مفاتيح اختصار المسافة
                     SettingRowItem(
                         icon = Icons.Default.SpaceBar,
@@ -532,7 +557,7 @@ fun SettingsScreen(
                         subtitle = "اسحب على مسطرة المسافة لتحريك المؤشر بدقة متناهية.",
                         subtitleColor = Color(0xFF818CF8),
                         onClick = {
-                            Toast.makeText(context, "السحب على المسافة لتحريك المؤشر مفعّل", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "السحب على المسافة لتحريك المؤشر مفعّل ✓", Toast.LENGTH_SHORT).show()
                         }
                     )
 

@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
@@ -19,8 +20,11 @@ import com.example.KeyboardProApp
 import com.example.data.repository.ShortcutRepository
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ShortcutsScreen() {
+fun ShortcutsScreen(
+    onBack: (() -> Unit)? = null
+) {
     val coroutineScope = rememberCoroutineScope()
     val repo = remember { ShortcutRepository(KeyboardProApp.instance.database.shortcutDao()) }
     val shortcuts by repo.allShortcuts.collectAsState(initial = emptyList())
@@ -36,6 +40,18 @@ fun ShortcutsScreen() {
     }
 
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("اختصارات النصوص التلقائية", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+                navigationIcon = {
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "رجوع")
+                        }
+                    }
+                }
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showAddDialog = true },

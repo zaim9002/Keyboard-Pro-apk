@@ -26,8 +26,13 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ClipboardScreen() {
+fun ClipboardScreen(
+    onBack: (() -> Unit)? = null
+) {
     val coroutineScope = rememberCoroutineScope()
     val repo = remember { ClipboardRepository(KeyboardProApp.instance.database.clipboardDao()) }
     val clips by repo.allClips.collectAsState(initial = emptyList())
@@ -47,6 +52,18 @@ fun ClipboardScreen() {
     }
 
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("مدير الحافظة والملاحظات", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+                navigationIcon = {
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "رجوع")
+                        }
+                    }
+                }
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showAddDialog = true },

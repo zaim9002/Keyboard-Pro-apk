@@ -50,6 +50,7 @@ fun KeyboardMenuPanel(
     onOpenNews: () -> Unit,
     onOpenFonts: () -> Unit,
     onToggleNumberRow: () -> Unit,
+    onOpenNumpad: () -> Unit = {},
     onOpenSettings: () -> Unit,
     onOpenInstaFonts: () -> Unit,
     onOpenHandwriting: () -> Unit,
@@ -70,7 +71,8 @@ fun KeyboardMenuPanel(
         MenuItemData("one_handed", "وضع اليد الواحدة", icon = Icons.Default.Smartphone),
         MenuItemData("news", "أخبار", icon = Icons.Default.Newspaper),
         MenuItemData("font", "الخط", textIcon = "Aa"),
-        MenuItemData("numbers", "تشغيل/إيقاف الأرقام", textIcon = "123"),
+        MenuItemData("numpad", "لوحة الأرقام", icon = Icons.Default.Pin, hasBadge = true),
+        MenuItemData("numbers", "صف الأرقام", textIcon = "123"),
         MenuItemData("settings", "الإعدادات", icon = Icons.Default.Settings),
         MenuItemData("insta_font", "خط Insta", textIcon = "𝓕"),
         MenuItemData("handwriting", "كتابة بخط اليد", icon = Icons.Default.Draw)
@@ -156,6 +158,7 @@ fun KeyboardMenuPanel(
                                     "one_handed" -> onToggleOneHanded()
                                     "news" -> onOpenNews()
                                     "font" -> onOpenFonts()
+                                    "numpad" -> onOpenNumpad()
                                     "numbers" -> onToggleNumberRow()
                                     "settings" -> onOpenSettings()
                                     "insta_font" -> onOpenInstaFonts()

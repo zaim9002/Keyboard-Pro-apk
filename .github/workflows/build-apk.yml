@@ -15,73 +15,74 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Java 17 (Temurin)
+      - name: Set up JDK 17 (Temurin)
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
+
+      - name: Verify Java environment
+        run: |
+          echo "=== Java Version ==="
+          java -version
+          echo "=== JAVA_HOME ==="
+          echo "JAVA_HOME is: $JAVA_HOME"
+          
+          JAVA_MAJOR=$(java -version 2>&1 | awk -F '"' '/version/ {print $2}' | awk -F '.' '{print $1}')
+          echo "Detected Java major version: $JAVA_MAJOR"
+          
+          if [ -z "$JAVA_MAJOR" ] || [ "$JAVA_MAJOR" -lt 17 ]; then
+            echo "ERROR: Active Java major version ($JAVA_MAJOR) is lower than 17."
+            exit 1
+          fi
+          echo "Java 17+ environment verified successfully."
 
       - name: Set up Gradle 9.3.1
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.3.1'
 
-      - name: Verify Java environment
-        run: |
-          java -version
-          echo "JAVA_HOME=$JAVA_HOME"
-          JAVA_MAJOR_VERSION=$(java -version 2>&1 | head -n 1 | awk -F '"' '{print $2}' | cut -d'.' -f1)
-          echo "Detected Java Major Version: $JAVA_MAJOR_VERSION"
-          if [ -z "$JAVA_MAJOR_VERSION" ] || [ "$JAVA_MAJOR_VERSION" -lt 17 ]; then
-            echo "Error: Active Java version ($JAVA_MAJOR_VERSION) is lower than 17 or could not be detected."
-            exit 1
-          fi
-          echo "Java environment verified successfully."
-
       - name: Create temporary debug keystore
         run: |
           if [ -f "./debug.keystore" ]; then
-            echo "Existing debug.keystore found."
+            echo "Debug keystore already exists at ./debug.keystore"
           else
-            echo "debug.keystore not found. Generating temporary debug keystore..."
+            echo "Creating temporary debug keystore..."
             keytool -genkeypair \
               -v \
               -keystore ./debug.keystore \
-              -storepass android \
               -alias androiddebugkey \
               -keypass android \
+              -storepass android \
+              -dname "CN=Android Debug,O=Android,C=US" \
               -keyalg RSA \
               -keysize 2048 \
-              -validity 10000 \
-              -dname "CN=Android Debug,O=Android,C=US"
+              -validity 10000
           fi
+          
           if [ ! -f "./debug.keystore" ]; then
-            echo "Error: Failed to create ./debug.keystore."
+            echo "ERROR: Failed to create ./debug.keystore"
             exit 1
           fi
-          echo "Temporary debug keystore verified."
+          echo "Debug keystore is ready."
 
-      - name: Build Debug APK
+      - name: Build debug APK
         run: gradle :app:assembleDebug --stacktrace --no-daemon
 
-      - name: Verify Debug APK Output
+      - name: Verify debug APK output
         run: |
           APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
           if [ -f "$APK_PATH" ]; then
-            echo "Debug APK found at $APK_PATH"
+            echo "Found debug APK at expected location: $APK_PATH"
+            ls -lh "$APK_PATH"
           else
-            echo "Error: $APK_PATH does not exist."
-            echo "Searching within app/build/outputs/apk:"
-            if [ -d "app/build/outputs/apk" ]; then
-              find app/build/outputs/apk -type f -name "*.apk"
-            else
-              echo "Directory app/build/outputs/apk does not exist."
-            fi
-            echo "Failing step because debug APK is missing."
+            echo "ERROR: Expected APK not found at $APK_PATH"
+            echo "Searching for any generated APK files inside app/build/outputs/apk:"
+            find app/build/outputs/apk -name "*.apk" 2>/dev/null || echo "No APK files found."
             exit 1
           fi
 
-      - name: Upload Debug APK
+      - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-debug-apk

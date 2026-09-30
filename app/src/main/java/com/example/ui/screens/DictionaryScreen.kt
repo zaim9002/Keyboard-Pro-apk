@@ -17,10 +17,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.KeyboardProApp
 import com.example.data.repository.UserWordRepository
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DictionaryScreen() {
+fun DictionaryScreen(
+    onBack: (() -> Unit)? = null
+) {
     val coroutineScope = rememberCoroutineScope()
     val repo = remember { UserWordRepository(KeyboardProApp.instance.database.userWordDao()) }
     val words by repo.allWords.collectAsState(initial = emptyList())
@@ -28,6 +32,18 @@ fun DictionaryScreen() {
     var showAddDialog by remember { mutableStateOf(false) }
 
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("القاموس الشخصي (كلماتي)", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+                navigationIcon = {
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "رجوع")
+                        }
+                    }
+                }
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showAddDialog = true },
